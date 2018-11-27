@@ -1,0 +1,325 @@
+#region CopyRight 2018
+/*
+    Copyright (c) 2003-2018 Andreas Rohleder (andreas@rohleder.cc)
+    All rights reserved
+*/
+#endregion
+#region License LGPL-3
+/*
+    This program/library/sourcecode is free software; you can redistribute it
+    and/or modify it under the terms of the GNU Lesser General Public License
+    version 3 as published by the Free Software Foundation subsequent called
+    the License.
+
+    You may not use this program/library/sourcecode except in compliance
+    with the License. The License is included in the LICENSE file
+    found at the installation directory or the distribution package.
+
+    Permission is hereby granted, free of charge, to any person obtaining
+    a copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+#endregion
+#region Authors & Contributors
+/*
+   Author:
+     Andreas Rohleder <andreas@rohleder.cc>
+
+   Contributors:
+ */
+#endregion
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
+using System.Reflection;
+using System.Text;
+using Cave.IO;
+using Cave.Text;
+
+namespace Cave.Net
+{
+	/// <summary>
+	/// Provides a simple asynchronous http fetch
+	/// </summary>
+	public sealed class HttpConnection
+    {
+        static HttpConnection()
+        {
+            //Get the assembly that contains the internal class
+            Type outerType = AppDom.FindType("System.Net.Configuration.SettingsSection", AppDom.LoadMode.NoException);
+            if (outerType != null)
+            {
+                Assembly asm = Assembly.GetAssembly(outerType);
+                if (asm != null)
+                {
+                    //Use the assembly in order to get the internal type for the internal class
+                    Type type = asm.GetType("System.Net.Configuration.SettingsSectionInternal");
+                    if (type != null)
+                    {
+                        //Use the internal static property to get an instance of the internal settings class.
+                        //If the static instance isn't created allready the property will create it for us.
+                        object obj = type.InvokeMember("Section", BindingFlags.Static | BindingFlags.GetProperty | BindingFlags.NonPublic, null, null, new object[] { });
+                        if (obj != null)
+                        {
+                            //Locate the private bool field that tells the framework is unsafe header parsing should be allowed or not
+                            FieldInfo field = type.GetField("useUnsafeHeaderParsing", BindingFlags.NonPublic | BindingFlags.Instance);
+                            if (field != null)
+                            {
+                                field.SetValue(obj, true);
+                                Trace.WriteLine("UseUnsafeHeaderParsing <green>enabled.");
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            Trace.WriteLine("UseUnsafeHeaderParsing <red>disabled.");
+        }
+
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring</summary>
+        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <returns></returns>
+        public static byte[] Get(ConnectionString connectionString, ConnectionString? proxy = null)
+        {
+            HttpConnection connection = new HttpConnection();
+            if (proxy.HasValue) connection.SetProxy(proxy.Value);
+            return connection.Download(connectionString);
+        }
+
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring</summary>
+        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="callback">Callback to run after each block or null</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <param name="userItem">The user item.</param>
+        /// <returns></returns>
+        public static byte[] Get(ConnectionString connectionString, ProgressCallback callback, ConnectionString? proxy = null, object userItem = null)
+        {
+            HttpConnection connection = new HttpConnection();
+            if (proxy.HasValue) connection.SetProxy(proxy.Value);
+            return connection.Download(connectionString, callback, userItem);
+        }
+
+        /// <summary>
+        /// Directly obtains the data of the file represented by the specified connectionstring
+        /// </summary>
+        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="stream">Stream to copy the received content to</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <returns></returns>
+        public static long Copy(ConnectionString connectionString, Stream stream, ConnectionString? proxy = null)
+        {
+            HttpConnection connection = new HttpConnection();
+            if (proxy.HasValue) connection.SetProxy(proxy.Value);
+            return connection.Download(connectionString, stream);
+
+        }
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring</summary>
+        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="stream">Stream to copy the received content to</param>
+        /// <param name="callback">Callback to run after each block or null</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <param name="userItem">The user item.</param>
+        /// <returns></returns>
+        public static long Copy(ConnectionString connectionString, Stream stream, ProgressCallback callback, ConnectionString? proxy = null, object userItem = null)
+        {
+            HttpConnection connection = new HttpConnection();
+            if (proxy.HasValue) connection.SetProxy(proxy.Value);
+            return connection.Download(connectionString, stream, callback, userItem);
+        }
+
+        /// <summary>
+        /// Directly obtains the data of the file represented by the specified connectionstring as string
+        /// </summary>
+        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <returns></returns>
+        public static string GetString(ConnectionString connectionString, ConnectionString? proxy = null)
+        {
+            return Encoding.UTF8.GetString(Get(connectionString, proxy));
+        }
+
+		/// <summary>The headers to use</summary>
+		public readonly Dictionary<string, string> Headers = new Dictionary<string, string>();
+
+        #region private functionality
+        HttpWebRequest CreateRequest(ConnectionString connectionString)
+        {
+            Uri target = connectionString.ToUri();
+            HttpWebRequest newRequest;
+            newRequest = (HttpWebRequest)WebRequest.Create(target);
+            if (Proxy != null) newRequest.Proxy = Proxy;
+            //set defaults
+            newRequest.ProtocolVersion = ProtocolVersion;
+            if (UserAgent != null) newRequest.UserAgent = UserAgent;
+            if (Referer != null) newRequest.Referer = Referer;
+			if (Accept != null) newRequest.Accept = Accept;
+			foreach (var head in Headers)
+			{
+				newRequest.Headers[head.Key] = head.Value;
+			}
+            newRequest.AllowAutoRedirect = true;
+            newRequest.CookieContainer = new CookieContainer();
+			CredentialCache credentialCache = new CredentialCache
+            {
+                { connectionString.ToUri(), "plain", connectionString.GetCredentials() }
+            };
+            newRequest.Credentials = credentialCache;
+            newRequest.KeepAlive = false;
+            newRequest.Timeout = (int)Timeout.TotalMilliseconds;
+            newRequest.ReadWriteTimeout = (int)Timeout.TotalMilliseconds;
+            return newRequest;
+        }
+
+        #endregion
+
+        /// <summary>Gets or sets the protocol version.</summary>
+        /// <value>The protocol version.</value>
+        public Version ProtocolVersion = new Version("1.0");
+
+        /// <summary>Gets or sets the referer.</summary>
+        /// <value>The referer.</value>
+        public string Referer;
+
+		/// <summary>The accept string</summary>
+		public string Accept;
+
+        /// <summary>Gets or sets the user agent.</summary>
+        /// <value>The user agent.</value>
+        public string UserAgent = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)";
+
+        /// <summary>Sets the proxy.</summary>
+        /// <param name="proxy">The proxy.</param>
+        public void SetProxy(ConnectionString proxy)
+        {
+            Proxy = new WebProxy(proxy.ToString(ConnectionStringPart.Server), true, new string[] { "localhost" }, new NetworkCredential(proxy.UserName, proxy.Password));
+        }
+
+        /// <summary>
+        /// Creates a new http connection.
+        /// </summary>
+        public HttpConnection() { }
+
+        /// <summary>Gets or sets the proxy.</summary>
+        /// <value>The proxy.</value>
+        public IWebProxy Proxy;
+
+        /// <summary>
+        /// Download Timeout
+        /// </summary>
+        public TimeSpan Timeout = TimeSpan.FromSeconds(5);
+
+        /// <summary>
+        /// Downloads a file
+        /// </summary>
+        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <returns></returns>
+        public byte[] Download(ConnectionString connectionString)
+        {
+            HttpWebResponse response = null;
+            try
+            {
+                HttpWebRequest request = CreateRequest(connectionString);
+                response = (HttpWebResponse)request.GetResponse();
+                Stream responseStream = response.GetResponseStream();
+                byte[] result = responseStream.ReadAllBytes(response.ContentLength);
+                responseStream.Close();
+                return result;
+            }
+            finally
+            {
+                if (response != null) response.Close();
+            }
+        }
+
+        /// <summary>Downloads a file</summary>
+        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="callback">Callback to run after each block or null</param>
+        /// <param name="userItem">The user item.</param>
+        /// <returns></returns>
+        public byte[] Download(ConnectionString connectionString, ProgressCallback callback, object userItem = null)
+        {
+            HttpWebResponse response = null;
+            try
+            {
+                HttpWebRequest request = CreateRequest(connectionString);
+                response = (HttpWebResponse)request.GetResponse();
+                Stream responseStream = response.GetResponseStream();
+                byte[] result = responseStream.ReadBlock((int)response.ContentLength, callback, userItem);
+                responseStream.Close();
+                return result;
+            }
+            finally
+            {
+                if (response != null) response.Close();
+            }
+        }
+
+        /// <summary>
+        /// Downloads a file
+        /// </summary>
+        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="stream"></param>
+        /// <returns></returns>
+        public long Download(ConnectionString connectionString, Stream stream)
+        {
+            HttpWebResponse response = null;
+            try
+            {
+                HttpWebRequest request = CreateRequest(connectionString);
+                response = (HttpWebResponse)request.GetResponse();
+                Stream responseStream = response.GetResponseStream();
+                long size = responseStream.CopyBlocksTo(stream);
+                responseStream.Close();
+                return size;
+            }
+            finally
+            {
+                if (response != null) response.Close();
+            }
+        }
+
+        /// <summary>Downloads a file</summary>
+        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="stream">The stream.</param>
+        /// <param name="callback">Callback to run after each block or null</param>
+        /// <param name="userItem">The user item.</param>
+        /// <returns></returns>
+        public long Download(ConnectionString connectionString, Stream stream, ProgressCallback callback, object userItem = null)
+        {
+            HttpWebResponse response = null;
+            try
+            {
+                HttpWebRequest request = CreateRequest(connectionString);
+                if (Proxy != null) request.Proxy = Proxy;
+                response = (HttpWebResponse)request.GetResponse();
+                Stream responseStream = response.GetResponseStream();
+                long size = responseStream.CopyBlocksTo(stream, response.ContentLength, callback, userItem);
+                responseStream.Close();
+                return size;
+            }
+            finally
+            {
+                if (response != null) response.Close();
+            }
+        }
+    }
+}
