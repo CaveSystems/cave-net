@@ -17,7 +17,7 @@ namespace Cave.Net
         /// <summary>Determines whether the specified address is localhost.</summary>
         /// <param name="address">The address.</param>
         /// <returns><c>true</c> if the specified address is localhost; otherwise, <c>false</c>.</returns>
-        public static bool IsLocalhost(IPAddress address)
+        public static bool IsLocalhost(this IPAddress address)
         {
             string stringAddress = address.ToString();
             switch (address.AddressFamily)
@@ -67,7 +67,7 @@ namespace Cave.Net
             }
 
             List<IPEndPoint> result = new List<IPEndPoint>();
-            foreach (IPAddress address in Dns.GetHostEntry(text).AddressList)
+            foreach (IPAddress address in System.Net.Dns.GetHostEntry(text).AddressList)
             {
                 result.Add(new IPEndPoint(address, port));
             }
@@ -97,7 +97,7 @@ namespace Cave.Net
         public static IPAddress[] GetLocalAddresses(AddressFamily addressFamily)
         {
             List<IPAddress> result = new List<IPAddress>();
-            foreach (IPAddress addr in Dns.GetHostAddresses(Dns.GetHostName()))
+            foreach (IPAddress addr in System.Net.Dns.GetHostAddresses(System.Net.Dns.GetHostName()))
             {
                 if (addr.AddressFamily == addressFamily)
                 {
@@ -116,7 +116,7 @@ namespace Cave.Net
         /// <returns></returns>
         public static IPAddress GetAddress(string hostName, AddressFamily addressFamily)
         {
-            foreach (IPAddress address in Dns.GetHostAddresses(hostName))
+            foreach (IPAddress address in System.Net.Dns.GetHostAddresses(hostName))
             {
                 if (address.AddressFamily == addressFamily)
                 {
@@ -136,7 +136,7 @@ namespace Cave.Net
         public static IPAddress[] GetAddresses(string hostName, AddressFamily addressFamily)
         {
             List<IPAddress> addresses = new List<IPAddress>();
-            foreach (IPAddress address in Dns.GetHostAddresses(hostName))
+            foreach (IPAddress address in System.Net.Dns.GetHostAddresses(hostName))
             {
                 if (address.AddressFamily == addressFamily)
                 {
@@ -201,7 +201,7 @@ namespace Cave.Net
             }
             if (string.IsNullOrEmpty(hostName))
             {
-                try { hostName = Dns.GetHostName(); }
+                try { hostName = System.Net.Dns.GetHostName(); }
                 catch { }
             }
             if (string.IsNullOrEmpty(hostName))
@@ -249,7 +249,7 @@ namespace Cave.Net
             {
                 try
                 {
-                    IPHostEntry entry = Dns.GetHostEntry(str);
+                    IPHostEntry entry = System.Net.Dns.GetHostEntry(str);
                     s_HostName = entry.HostName;
                     return s_HostName;
                 }
