@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Cave.Net.DNS
+namespace Cave.Net.Dns
 {
     /// <summary>
     /// DNS Header Flags

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Cave.Collections.Generic;
 using Cave.IO;
 
-namespace Cave.Net.DNS
+namespace Cave.Net.Dns
 {
     /// <summary>
     ///   Provides a client for querying dns records

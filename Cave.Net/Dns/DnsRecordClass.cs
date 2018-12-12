@@ -1,4 +1,4 @@
-﻿namespace Cave.Net.DNS
+﻿namespace Cave.Net.Dns
 {
     /// <summary>
     /// DNS record classes
