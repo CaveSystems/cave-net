@@ -3,7 +3,7 @@ using System.IO;
 using System.Net;
 using Cave.IO;
 
-namespace Cave.Net.DNS
+namespace Cave.Net.Dns
 {
     /// <summary>
     /// Provides a DnsAnswer

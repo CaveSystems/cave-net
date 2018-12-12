@@ -1,6 +1,6 @@
 ﻿using Cave.IO;
 
-namespace Cave.Net.DNS
+namespace Cave.Net.Dns
 {
     /// <summary>
     /// Provides a MaileXchange dns record
