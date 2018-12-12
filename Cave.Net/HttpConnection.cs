@@ -1,49 +1,3 @@
-#region CopyRight 2018
-/*
-    Copyright (c) 2003-2018 Andreas Rohleder (andreas@rohleder.cc)
-    All rights reserved
-*/
-#endregion
-#region License LGPL-3
-/*
-    This program/library/sourcecode is free software; you can redistribute it
-    and/or modify it under the terms of the GNU Lesser General Public License
-    version 3 as published by the Free Software Foundation subsequent called
-    the License.
-
-    You may not use this program/library/sourcecode except in compliance
-    with the License. The License is included in the LICENSE file
-    found at the installation directory or the distribution package.
-
-    Permission is hereby granted, free of charge, to any person obtaining
-    a copy of this software and associated documentation files (the
-    "Software"), to deal in the Software without restriction, including
-    without limitation the rights to use, copy, modify, merge, publish,
-    distribute, sublicense, and/or sell copies of the Software, and to
-    permit persons to whom the Software is furnished to do so, subject to
-    the following conditions:
-
-    The above copyright notice and this permission notice shall be included
-    in all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-#endregion
-#region Authors & Contributors
-/*
-   Author:
-     Andreas Rohleder <andreas@rohleder.cc>
-
-   Contributors:
- */
-#endregion
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -52,14 +6,13 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using Cave.IO;
-using Cave.Text;
 
 namespace Cave.Net
 {
-	/// <summary>
-	/// Provides a simple asynchronous http fetch
-	/// </summary>
-	public sealed class HttpConnection
+    /// <summary>
+    /// Provides a simple asynchronous http fetch
+    /// </summary>
+    public sealed class HttpConnection
     {
         static HttpConnection()
         {
@@ -101,7 +54,11 @@ namespace Cave.Net
         public static byte[] Get(ConnectionString connectionString, ConnectionString? proxy = null)
         {
             HttpConnection connection = new HttpConnection();
-            if (proxy.HasValue) connection.SetProxy(proxy.Value);
+            if (proxy.HasValue)
+            {
+                connection.SetProxy(proxy.Value);
+            }
+
             return connection.Download(connectionString);
         }
 
@@ -114,7 +71,11 @@ namespace Cave.Net
         public static byte[] Get(ConnectionString connectionString, ProgressCallback callback, ConnectionString? proxy = null, object userItem = null)
         {
             HttpConnection connection = new HttpConnection();
-            if (proxy.HasValue) connection.SetProxy(proxy.Value);
+            if (proxy.HasValue)
+            {
+                connection.SetProxy(proxy.Value);
+            }
+
             return connection.Download(connectionString, callback, userItem);
         }
 
@@ -128,7 +89,11 @@ namespace Cave.Net
         public static long Copy(ConnectionString connectionString, Stream stream, ConnectionString? proxy = null)
         {
             HttpConnection connection = new HttpConnection();
-            if (proxy.HasValue) connection.SetProxy(proxy.Value);
+            if (proxy.HasValue)
+            {
+                connection.SetProxy(proxy.Value);
+            }
+
             return connection.Download(connectionString, stream);
 
         }
@@ -142,7 +107,11 @@ namespace Cave.Net
         public static long Copy(ConnectionString connectionString, Stream stream, ProgressCallback callback, ConnectionString? proxy = null, object userItem = null)
         {
             HttpConnection connection = new HttpConnection();
-            if (proxy.HasValue) connection.SetProxy(proxy.Value);
+            if (proxy.HasValue)
+            {
+                connection.SetProxy(proxy.Value);
+            }
+
             return connection.Download(connectionString, stream, callback, userItem);
         }
 
@@ -157,8 +126,8 @@ namespace Cave.Net
             return Encoding.UTF8.GetString(Get(connectionString, proxy));
         }
 
-		/// <summary>The headers to use</summary>
-		public readonly Dictionary<string, string> Headers = new Dictionary<string, string>();
+        /// <summary>The headers to use</summary>
+        public readonly Dictionary<string, string> Headers = new Dictionary<string, string>();
 
         #region private functionality
         HttpWebRequest CreateRequest(ConnectionString connectionString)
@@ -166,19 +135,34 @@ namespace Cave.Net
             Uri target = connectionString.ToUri();
             HttpWebRequest newRequest;
             newRequest = (HttpWebRequest)WebRequest.Create(target);
-            if (Proxy != null) newRequest.Proxy = Proxy;
+            if (Proxy != null)
+            {
+                newRequest.Proxy = Proxy;
+            }
             //set defaults
             newRequest.ProtocolVersion = ProtocolVersion;
-            if (UserAgent != null) newRequest.UserAgent = UserAgent;
-            if (Referer != null) newRequest.Referer = Referer;
-			if (Accept != null) newRequest.Accept = Accept;
-			foreach (var head in Headers)
-			{
-				newRequest.Headers[head.Key] = head.Value;
-			}
+            if (UserAgent != null)
+            {
+                newRequest.UserAgent = UserAgent;
+            }
+
+            if (Referer != null)
+            {
+                newRequest.Referer = Referer;
+            }
+
+            if (Accept != null)
+            {
+                newRequest.Accept = Accept;
+            }
+
+            foreach (KeyValuePair<string, string> head in Headers)
+            {
+                newRequest.Headers[head.Key] = head.Value;
+            }
             newRequest.AllowAutoRedirect = true;
             newRequest.CookieContainer = new CookieContainer();
-			CredentialCache credentialCache = new CredentialCache
+            CredentialCache credentialCache = new CredentialCache
             {
                 { connectionString.ToUri(), "plain", connectionString.GetCredentials() }
             };
@@ -199,8 +183,8 @@ namespace Cave.Net
         /// <value>The referer.</value>
         public string Referer;
 
-		/// <summary>The accept string</summary>
-		public string Accept;
+        /// <summary>The accept string</summary>
+        public string Accept;
 
         /// <summary>Gets or sets the user agent.</summary>
         /// <value>The user agent.</value>
@@ -246,7 +230,10 @@ namespace Cave.Net
             }
             finally
             {
-                if (response != null) response.Close();
+                if (response != null)
+                {
+                    response.Close();
+                }
             }
         }
 
@@ -269,7 +256,10 @@ namespace Cave.Net
             }
             finally
             {
-                if (response != null) response.Close();
+                if (response != null)
+                {
+                    response.Close();
+                }
             }
         }
 
@@ -293,7 +283,10 @@ namespace Cave.Net
             }
             finally
             {
-                if (response != null) response.Close();
+                if (response != null)
+                {
+                    response.Close();
+                }
             }
         }
 
@@ -309,7 +302,11 @@ namespace Cave.Net
             try
             {
                 HttpWebRequest request = CreateRequest(connectionString);
-                if (Proxy != null) request.Proxy = Proxy;
+                if (Proxy != null)
+                {
+                    request.Proxy = Proxy;
+                }
+
                 response = (HttpWebResponse)request.GetResponse();
                 Stream responseStream = response.GetResponseStream();
                 long size = responseStream.CopyBlocksTo(stream, response.ContentLength, callback, userItem);
@@ -318,7 +315,10 @@ namespace Cave.Net
             }
             finally
             {
-                if (response != null) response.Close();
+                if (response != null)
+                {
+                    response.Close();
+                }
             }
         }
     }

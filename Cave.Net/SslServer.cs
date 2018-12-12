@@ -1,58 +1,10 @@
-#region CopyRight 2018
-/*
-    Copyright (c) 2007-2018 Andreas Rohleder (andreas@rohleder.cc)
-    All rights reserved
-*/
-#endregion
-#region License LGPL-3
-/*
-    This program/library/sourcecode is free software; you can redistribute it
-    and/or modify it under the terms of the GNU Lesser General Public License
-    version 3 as published by the Free Software Foundation subsequent called
-    the License.
-
-    You may not use this program/library/sourcecode except in compliance
-    with the License. The License is included in the LICENSE file
-    found at the installation directory or the distribution package.
-
-    Permission is hereby granted, free of charge, to any person obtaining
-    a copy of this software and associated documentation files (the
-    "Software"), to deal in the Software without restriction, including
-    without limitation the rights to use, copy, modify, merge, publish,
-    distribute, sublicense, and/or sell copies of the Software, and to
-    permit persons to whom the Software is furnished to do so, subject to
-    the following conditions:
-
-    The above copyright notice and this permission notice shall be included
-    in all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-#endregion
-#region Authors & Contributors
-/*
-   Author:
-     Andreas Rohleder <andreas@rohleder.cc>
-
-   Contributors:
- */
-#endregion
-
-using Cave.Collections.Generic;
-using Cave.Text;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using System.Diagnostics;
 using Cave.IO;
 
 namespace Cave.Net
@@ -73,7 +25,13 @@ namespace Cave.Net
             while (!m_Closed)
             {
                 //stop if listener closed
-                lock (m_Listeners) if (!m_Listeners.Contains(listener)) break;
+                lock (m_Listeners)
+                {
+                    if (!m_Listeners.Contains(listener))
+                    {
+                        break;
+                    }
+                }
                 //accept client
                 TcpClient tcpClient = null;
                 try
@@ -87,7 +45,13 @@ namespace Cave.Net
                 catch (Exception ex)
                 {
                     Trace.WriteLine(ex);
-                    try { if ((tcpClient != null) && tcpClient.Connected) tcpClient.Close(); }
+                    try
+                    {
+                        if ((tcpClient != null) && tcpClient.Connected)
+                        {
+                            tcpClient.Close();
+                        }
+                    }
                     catch { }
                 }
             }
@@ -132,10 +96,13 @@ namespace Cave.Net
         protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs)
         {
             EventHandler<SslAuthenticationEventArgs> evt = Authenticate;
-            if (evt != null) evt.Invoke(this, eventArgs);
+            if (evt != null)
+            {
+                evt.Invoke(this, eventArgs);
+            }
         }
         #endregion
-        
+
         #region public events
         /// <summary>
         /// Event to be executed on each new incoming connection
@@ -162,7 +129,10 @@ namespace Cave.Net
         public SslServer(X509Certificate2 certificate)
         {
             Certificate = certificate as X509Certificate2;
-            if (Certificate == null) throw new ArgumentException(string.Format("Certificate has to be a valid X509Certificate2!"));
+            if (Certificate == null)
+            {
+                throw new ArgumentException(string.Format("Certificate has to be a valid X509Certificate2!"));
+            }
         }
 
         /// <summary>
@@ -172,9 +142,15 @@ namespace Cave.Net
         /// <param name="port">The port (1..65534) to listen at</param>
         public void Listen(IPAddress address, int port)
         {
-            if (m_Closed) throw new ObjectDisposedException("SslServer");
-            TcpListener listener = new TcpListener(address, port);
-            listener.ExclusiveAddressUse = true;
+            if (m_Closed)
+            {
+                throw new ObjectDisposedException("SslServer");
+            }
+
+            TcpListener listener = new TcpListener(address, port)
+            {
+                ExclusiveAddressUse = true
+            };
             Task.Factory.StartNew(new Action<object>(m_Listen), listener);
             m_Listeners.Add(listener);
         }
@@ -185,9 +161,15 @@ namespace Cave.Net
         /// <param name="iPEndPoint">The local IPEndPoint to listen at</param>
         public void Listen(IPEndPoint iPEndPoint)
         {
-            if (m_Closed) throw new ObjectDisposedException("SslServer");
-            TcpListener listener = new TcpListener(iPEndPoint);
-            listener.ExclusiveAddressUse = true;
+            if (m_Closed)
+            {
+                throw new ObjectDisposedException("SslServer");
+            }
+
+            TcpListener listener = new TcpListener(iPEndPoint)
+            {
+                ExclusiveAddressUse = true
+            };
             Task.Factory.StartNew(new Action<object>(m_Listen), listener);
             m_Listeners.Add(listener);
         }
@@ -211,14 +193,18 @@ namespace Cave.Net
 
         /// <summary>Gets the name of the log source.</summary>
         /// <value>The name of the log source.</value>
-        public string LogSourceName { get { return "SslServer"; } }
+        public string LogSourceName => "SslServer";
 
         /// <summary>
         /// Stops listening and closes all client connections and the server
         /// </summary>
         public void Close()
         {
-            if (m_Closed) throw new ObjectDisposedException("SslServer");
+            if (m_Closed)
+            {
+                throw new ObjectDisposedException("SslServer");
+            }
+
             m_Closed = true;
             lock (m_Listeners)
             {

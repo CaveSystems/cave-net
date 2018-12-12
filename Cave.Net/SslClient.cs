@@ -1,50 +1,5 @@
-#region CopyRight 2018
-/*
-    Copyright (c) 2007-2018 Andreas Rohleder (andreas@rohleder.cc)
-    All rights reserved
-*/
-#endregion
-#region License LGPL-3
-/*
-    This program/library/sourcecode is free software; you can redistribute it
-    and/or modify it under the terms of the GNU Lesser General Public License
-    version 3 as published by the Free Software Foundation subsequent called
-    the License.
-
-    You may not use this program/library/sourcecode except in compliance
-    with the License. The License is included in the LICENSE file
-    found at the installation directory or the distribution package.
-
-    Permission is hereby granted, free of charge, to any person obtaining
-    a copy of this software and associated documentation files (the
-    "Software"), to deal in the Software without restriction, including
-    without limitation the rights to use, copy, modify, merge, publish,
-    distribute, sublicense, and/or sell copies of the Software, and to
-    permit persons to whom the Software is furnished to do so, subject to
-    the following conditions:
-
-    The above copyright notice and this permission notice shall be included
-    in all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-#endregion
-#region Authors & Contributors
-/*
-   Author:
-     Andreas Rohleder <andreas@rohleder.cc>
-
-   Contributors:
- */
-#endregion
-
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Security;
@@ -54,8 +9,6 @@ using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Diagnostics;
-using Cave.Net;
 using Cave.IO;
 
 namespace Cave.Net
@@ -79,7 +32,11 @@ namespace Cave.Net
         /// <returns></returns>
         protected virtual X509Certificate OnSelectLocalCert(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
         {
-            foreach (X509Certificate cert in localCertificates) return cert;
+            foreach (X509Certificate cert in localCertificates)
+            {
+                return cert;
+            }
+
             return null;
         }
 
@@ -91,7 +48,11 @@ namespace Cave.Net
         /// <returns></returns>
         protected virtual bool OnValidateRemoteCert(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            if (PolicyErrors == 0) PolicyErrors = sslPolicyErrors;
+            if (PolicyErrors == 0)
+            {
+                PolicyErrors = sslPolicyErrors;
+            }
+
             SslAuthenticationEventArgs e;
             if (certificate != null)
             {
@@ -118,7 +79,7 @@ namespace Cave.Net
                 }
                 catch (Exception ex)
                 {
-                    Trace.WriteLine($"CertificateError_DateTime {certificate}");
+                    Trace.TraceInformation($"CertificateError_DateTime {certificate}: {ex}");
                     return false;
                 }
                 e = new SslAuthenticationEventArgs(this, new X509Certificate2(certificate), chain, sslPolicyErrors, ValidationErrors);
@@ -140,7 +101,11 @@ namespace Cave.Net
         /// <param name="eventArgs"></param>
         protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs)
         {
-            if (eventArgs == null) throw new ArgumentNullException("eventArgs");
+            if (eventArgs == null)
+            {
+                throw new ArgumentNullException("eventArgs");
+            }
+
             EventHandler<SslAuthenticationEventArgs> auth = Authenticate;
             if (auth != null)
             {
@@ -179,7 +144,11 @@ namespace Cave.Net
         /// </summary>
         public SslClient(TcpClient client)
         {
-            if (client == null) throw new ArgumentNullException("client");
+            if (client == null)
+            {
+                throw new ArgumentNullException("client");
+            }
+
             m_Client = client;
             m_RemoteEndPoint = (IPEndPoint)m_Client.Client.RemoteEndPoint;
         }
@@ -197,18 +166,12 @@ namespace Cave.Net
         /// <summary>
         /// Obtains the remote <see cref="IPEndPoint"/> this client is/was connected to
         /// </summary>
-        public IPEndPoint RemoteEndPoint
-        {
-            get
-            {
-                return m_RemoteEndPoint;
-            }
-        }
+        public IPEndPoint RemoteEndPoint => m_RemoteEndPoint;
 
         /// <summary>
         /// Checks whether the client is connected or not
         /// </summary>
-        public bool Connected { get { return (m_Client != null) && (m_Client.Client.Connected); } }
+        public bool Connected => (m_Client != null) && (m_Client.Client.Connected);
 
         /// <summary>
         /// Starts TLS negotiation and authenticates as server. Use the Authenticate event to implement user defined policy checking!
@@ -216,16 +179,39 @@ namespace Cave.Net
         /// </summary>
         public void DoServerTLS(X509Certificate2 certificate)
         {
-            if (certificate == null) throw new ArgumentNullException("Certificate required!", "certificate");
-            if (m_Stream != null) throw new InvalidOperationException(string.Format("TLS negotiation already started!"));
-            if (m_Client == null) throw new InvalidOperationException(string.Format("Please establish connection first!"));
-            if (!certificate.Verify()) throw new SecurityException("Certificate is invalid!");
+            if (certificate == null)
+            {
+                throw new ArgumentNullException("Certificate required!", "certificate");
+            }
+
+            if (m_Stream != null)
+            {
+                throw new InvalidOperationException(string.Format("TLS negotiation already started!"));
+            }
+
+            if (m_Client == null)
+            {
+                throw new InvalidOperationException(string.Format("Please establish connection first!"));
+            }
+
+            if (!certificate.Verify())
+            {
+                throw new SecurityException("Certificate is invalid!");
+            }
+
             PolicyErrors = 0;
             ValidationErrors = 0;
             m_Stream = new SslStream(m_Client.GetStream(), false, new RemoteCertificateValidationCallback(OnValidateRemoteCert), new LocalCertificateSelectionCallback(OnSelectLocalCert));
             m_Stream.AuthenticateAsServer(certificate, false, SslProtocols.Tls, CheckRevocation);
-            if (!m_Stream.IsEncrypted) throw new CryptographicException("Stream is not encrypted!");
-            if (!m_Stream.IsAuthenticated) throw new CryptographicException("Stream is not authenticated!");
+            if (!m_Stream.IsEncrypted)
+            {
+                throw new CryptographicException("Stream is not encrypted!");
+            }
+
+            if (!m_Stream.IsAuthenticated)
+            {
+                throw new CryptographicException("Stream is not authenticated!");
+            }
         }
 
         /// <summary>
@@ -246,21 +232,35 @@ namespace Cave.Net
         /// <param name="certificate">The clients certificate</param>
         public void DoClientTLS(string serverCN, X509Certificate2 certificate)
         {
-            if (m_Stream != null) throw new InvalidOperationException(string.Format("TLS negotiation already started!"));
-            if (m_Client == null) throw new InvalidOperationException(string.Format("Please establish connection first!"));
+            if (m_Stream != null)
+            {
+                throw new InvalidOperationException(string.Format("TLS negotiation already started!"));
+            }
+
+            if (m_Client == null)
+            {
+                throw new InvalidOperationException(string.Format("Please establish connection first!"));
+            }
 #if NET20 || NET35
 			m_Stream = new SslStream(m_Client.GetStream(), false, new RemoteCertificateValidationCallback(OnValidateRemoteCert), new LocalCertificateSelectionCallback(OnSelectLocalCert));
 #else
-			m_Stream = new SslStream(m_Client.GetStream(), false, new RemoteCertificateValidationCallback(OnValidateRemoteCert), new LocalCertificateSelectionCallback(OnSelectLocalCert), EncryptionPolicy.RequireEncryption);
+            m_Stream = new SslStream(m_Client.GetStream(), false, new RemoteCertificateValidationCallback(OnValidateRemoteCert), new LocalCertificateSelectionCallback(OnSelectLocalCert), EncryptionPolicy.RequireEncryption);
 #endif
-			X509CertificateCollection certificates = new X509CertificateCollection();
+            X509CertificateCollection certificates = new X509CertificateCollection();
             if (certificate != null)
             {
-                if (!certificate.Verify()) throw new SecurityException("Certificate is invalid!");
+                if (!certificate.Verify())
+                {
+                    throw new SecurityException("Certificate is invalid!");
+                }
+
                 certificates.Add(certificate);
             }
             m_Stream.AuthenticateAsClient(serverCN, certificates, SslProtocols.Tls, CheckRevocation);
-			if (!m_Stream.IsEncrypted) throw new SecurityException("Stream is not encrypted!");
+            if (!m_Stream.IsEncrypted)
+            {
+                throw new SecurityException("Stream is not encrypted!");
+            }
         }
 
         /// <summary>
@@ -270,7 +270,11 @@ namespace Cave.Net
         /// <param name="port">The port to connect to</param>
         public void Connect(string host, int port)
         {
-            if (m_Client != null) throw new InvalidOperationException(string.Format("Connection already established!"));
+            if (m_Client != null)
+            {
+                throw new InvalidOperationException(string.Format("Connection already established!"));
+            }
+
             m_Client = new TcpClient(host, port);
             m_RemoteEndPoint = (IPEndPoint)m_Client.Client.RemoteEndPoint;
         }
@@ -282,7 +286,11 @@ namespace Cave.Net
         /// <param name="port">The port to connect to</param>
         public void Connect(IPAddress address, int port)
         {
-            if (m_Client != null) throw new InvalidOperationException(string.Format("Connection already established!"));
+            if (m_Client != null)
+            {
+                throw new InvalidOperationException(string.Format("Connection already established!"));
+            }
+
             m_Client = new TcpClient();
             m_Client.Connect(address, port);
             m_RemoteEndPoint = (IPEndPoint)m_Client.Client.RemoteEndPoint;
@@ -295,7 +303,11 @@ namespace Cave.Net
         {
             get
             {
-                if (m_Stream == null) throw new InvalidOperationException(string.Format("TLS negotiation not jet started!"));
+                if (m_Stream == null)
+                {
+                    throw new InvalidOperationException(string.Format("TLS negotiation not jet started!"));
+                }
+
                 return m_Stream;
             }
         }
@@ -307,7 +319,7 @@ namespace Cave.Net
         /// <summary>
         /// Obtains the policy errors found while authenticating
         /// </summary>
-        public SslPolicyErrors PolicyErrors{ get; private set; }
+        public SslPolicyErrors PolicyErrors { get; private set; }
 
         /// <summary>Gets the name of the log source.</summary>
         /// <value>The name of the log source.</value>
@@ -315,7 +327,11 @@ namespace Cave.Net
         {
             get
             {
-                if (Connected) return "SslClient <" + RemoteEndPoint + ">";
+                if (Connected)
+                {
+                    return "SslClient <" + RemoteEndPoint + ">";
+                }
+
                 return "SslClient <not connected>";
             }
         }
