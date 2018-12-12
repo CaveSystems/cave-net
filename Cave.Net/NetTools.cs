@@ -1,56 +1,9 @@
-#region CopyRight 2018
-/*
-    Copyright (c) 2007-2018 Andreas Rohleder (andreas@rohleder.cc)
-    All rights reserved
-*/
-#endregion
-#region License LGPL-3
-/*
-    This program/library/sourcecode is free software; you can redistribute it
-    and/or modify it under the terms of the GNU Lesser General Public License
-    version 3 as published by the Free Software Foundation subsequent called
-    the License.
-
-    You may not use this program/library/sourcecode except in compliance
-    with the License. The License is included in the LICENSE file
-    found at the installation directory or the distribution package.
-
-    Permission is hereby granted, free of charge, to any person obtaining
-    a copy of this software and associated documentation files (the
-    "Software"), to deal in the Software without restriction, including
-    without limitation the rights to use, copy, modify, merge, publish,
-    distribute, sublicense, and/or sell copies of the Software, and to
-    permit persons to whom the Software is furnished to do so, subject to
-    the following conditions:
-
-    The above copyright notice and this permission notice shall be included
-    in all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-#endregion
-#region Authors & Contributors
-/*
-   Author:
-     Andreas Rohleder <andreas@rohleder.cc>
-
-   Contributors:
- */
-#endregion
-
-using Cave.Collections.Generic;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using Cave.Collections.Generic;
 
 namespace Cave.Net
 {
@@ -61,29 +14,32 @@ namespace Cave.Net
     {
         static string s_HostName = null;
 
-		/// <summary>Determines whether the specified address is localhost.</summary>
-		/// <param name="address">The address.</param>
-		/// <returns><c>true</c> if the specified address is localhost; otherwise, <c>false</c>.</returns>
-		public static bool IsLocalhost(IPAddress address)
-		{
-			var stringAddress = address.ToString();
-			switch (address.AddressFamily)
-			{
-				case AddressFamily.InterNetwork: return (stringAddress.StartsWith("127."));
-				case AddressFamily.InterNetworkV6: return stringAddress.StartsWith("::ffff:127.") || stringAddress == "::1";
-			}
-			return false;
-		}
-
-		/// <summary>
-		/// Parses a string for a valid IPAddress[:Port] or DnsName[:Port] combination and retrieves all 
-		/// matching <see cref="IPEndPoint"/>s. If no port is specified DefaultPort will be returned.
-		/// </summary>
-		/// <param name="text">The string containing the ip endpoint (server[:port] or ipaddress[:port])</param>
-		/// <param name="defaultPort">The default port used if no port was given</param>
-		public static IPEndPoint[] GetIPEndPoints(string text, int defaultPort)
+        /// <summary>Determines whether the specified address is localhost.</summary>
+        /// <param name="address">The address.</param>
+        /// <returns><c>true</c> if the specified address is localhost; otherwise, <c>false</c>.</returns>
+        public static bool IsLocalhost(IPAddress address)
         {
-            if (string.IsNullOrEmpty(text)) return null;
+            string stringAddress = address.ToString();
+            switch (address.AddressFamily)
+            {
+                case AddressFamily.InterNetwork: return (stringAddress.StartsWith("127."));
+                case AddressFamily.InterNetworkV6: return stringAddress.StartsWith("::ffff:127.") || stringAddress == "::1";
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Parses a string for a valid IPAddress[:Port] or DnsName[:Port] combination and retrieves all 
+        /// matching <see cref="IPEndPoint"/>s. If no port is specified DefaultPort will be returned.
+        /// </summary>
+        /// <param name="text">The string containing the ip endpoint (server[:port] or ipaddress[:port])</param>
+        /// <param name="defaultPort">The default port used if no port was given</param>
+        public static IPEndPoint[] GetIPEndPoints(string text, int defaultPort)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return null;
+            }
 
             int port = defaultPort;
             int portIndex = text.LastIndexOf(':');
@@ -105,8 +61,7 @@ namespace Cave.Net
                 };
             }
 
-            IPAddress a;
-            if (IPAddress.TryParse(text, out a))
+            if (IPAddress.TryParse(text, out IPAddress a))
             {
                 return new IPEndPoint[] { new IPEndPoint(a, port) };
             }
@@ -124,13 +79,13 @@ namespace Cave.Net
         /// </summary>
         public static UnicastIPAddressInformation[] GetLocalAddresses()
         {
-			Set<UnicastIPAddressInformation> result = new Set<UnicastIPAddressInformation>();
+            Set<UnicastIPAddressInformation> result = new Set<UnicastIPAddressInformation>();
             foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
             {
-                var p = ni.GetIPProperties();
-                foreach (var ip in p.UnicastAddresses)
+                IPInterfaceProperties p = ni.GetIPProperties();
+                foreach (UnicastIPAddressInformation ip in p.UnicastAddresses)
                 {
-					result.Include(ip);
+                    result.Include(ip);
                 }
             }
             return result.ToArray();
@@ -144,7 +99,10 @@ namespace Cave.Net
             List<IPAddress> result = new List<IPAddress>();
             foreach (IPAddress addr in Dns.GetHostAddresses(Dns.GetHostName()))
             {
-                if (addr.AddressFamily == addressFamily) result.Add(addr);
+                if (addr.AddressFamily == addressFamily)
+                {
+                    result.Add(addr);
+                }
             }
             return result.ToArray();
         }
@@ -160,7 +118,10 @@ namespace Cave.Net
         {
             foreach (IPAddress address in Dns.GetHostAddresses(hostName))
             {
-                if (address.AddressFamily == addressFamily) return address;
+                if (address.AddressFamily == addressFamily)
+                {
+                    return address;
+                }
             }
             throw new ArgumentException(string.Format("Could not find an IPAddress for {0} with AddressFamily {1}!", hostName, addressFamily));
         }
@@ -177,7 +138,10 @@ namespace Cave.Net
             List<IPAddress> addresses = new List<IPAddress>();
             foreach (IPAddress address in Dns.GetHostAddresses(hostName))
             {
-                if (address.AddressFamily == addressFamily) addresses.Add(address);
+                if (address.AddressFamily == addressFamily)
+                {
+                    addresses.Add(address);
+                }
             }
             return addresses.ToArray();
         }
@@ -192,7 +156,7 @@ namespace Cave.Net
             try
             {
 #if NET45 || NET46 || NET471 || NETSTANDARD20
-				TcpListener listener = TcpListener.Create(port);
+                TcpListener listener = TcpListener.Create(port);
 #elif NET20 || NET35 || NET40
 #pragma warning disable CS0618
 				TcpListener listener = new TcpListener(IPAddress.Any, port);
@@ -217,7 +181,10 @@ namespace Cave.Net
                 }
                 catch
                 {
-                    if (i >= maximumTries) throw;
+                    if (i >= maximumTries)
+                    {
+                        throw;
+                    }
                 }
             }
         }
@@ -252,7 +219,10 @@ namespace Cave.Net
                 try { hostName = Environment.GetEnvironmentVariable("HOSTNAME"); }
                 catch { }
             }
-            if (string.IsNullOrEmpty(hostName)) hostName = "localhost";
+            if (string.IsNullOrEmpty(hostName))
+            {
+                hostName = "localhost";
+            }
 
             string domainName = null;
             {
@@ -296,10 +266,14 @@ namespace Cave.Net
         {
             get
             {
-                if (s_HostName != null) return s_HostName;
+                if (s_HostName != null)
+                {
+                    return s_HostName;
+                }
+
                 s_HostName = GetHostName();
                 return s_HostName;
-            }                
+            }
         }
     }
 }
