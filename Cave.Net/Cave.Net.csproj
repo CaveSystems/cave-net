@@ -10,7 +10,7 @@
     <PackageLicenseUrl>https://www.gnu.org/licenses/lgpl-3.0.en.html</PackageLicenseUrl>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>Cave.Net.snk</AssemblyOriginatorKeyFile>
-    <Version>1.0.0-alpha-$(Configuration.ToLower())-1</Version>
+    <Version>1.0.0-beta-$(Configuration.ToLower())-1</Version>
     <PackageIconUrl>https://www.cavesystems.de/favicon.ico</PackageIconUrl>
     <PackageTags>CaveSystems Net</PackageTags>
     <PackageProjectUrl>https://www.cavesystems.de</PackageProjectUrl>
@@ -21,7 +21,7 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AssemblyVersion>1.0.0.1</AssemblyVersion>
-    <FileVersion>2018.1127.1924.1025</FileVersion>
+    <FileVersion>2018.1212.1818.1092</FileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DebugType>pdbonly</DebugType>
@@ -60,10 +60,12 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Cave.BaseX" Version="1.0.0-alpha-release-1" />
     <PackageReference Include="Cave.Collections" Version="1.0.0-alpha-release-1" />
-    <PackageReference Include="Cave.Extensions" Version="1.0.0-alpha-release-4" />
-    <PackageReference Include="Cave.IO" Version="1.0.0-alpha-release-5" />
-    <PackageReference Include="Cave.Platform" Version="1.0.0-alpha-release-1" />
-    <PackageReference Include="Cave.TcpServer" Version="1.0.0-alpha-release-3" />
+    <PackageReference Include="Cave.Extensions" Version="1.0.0-alpha-release-5" />
+    <PackageReference Include="Cave.FileSystem" Version="1.0.0-beta-release-1" />
+    <PackageReference Include="Cave.IO" Version="1.0.0-beta-release-1" />
+    <PackageReference Include="Cave.Platform" Version="1.0.0-alpha-release-2" />
+    <PackageReference Include="Cave.TcpServer" Version="1.0.0-beta-release-2" />
   </ItemGroup>
 </Project>
