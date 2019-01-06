@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using Cave.IO;
@@ -68,7 +69,7 @@ namespace Cave.Net.Dns
                 DnsRecord item = DnsRecord.Parse(reader);
                 result.Add(item);
 #if DEBUG
-                this.LogVerbose(Sender + " Answer " + i + " " + item);
+                Trace.WriteLine(Sender + " Answer " + i + " " + item);
 #endif
             }
             return result.AsReadOnly();
@@ -82,7 +83,7 @@ namespace Cave.Net.Dns
                 DnsQuery item = DnsQuery.Parse(reader);
                 result.Add(item);
 #if DEBUG
-                this.LogVerbose(Sender + " Question " + i + " " + item);
+                Trace.WriteLine(Sender + " Question " + i + " " + item);
 #endif
             }
             return result.AsReadOnly();
