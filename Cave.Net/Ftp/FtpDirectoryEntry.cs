@@ -24,7 +24,7 @@ namespace Cave.Net.Ftp
                 new FtpDirectoryEntry()
                 {
                     Name = ".",
-                    DateTime = Cave.FileSystem.FileSystem.GetLastWriteTime(folder),
+                    DateTime = FileSystem.GetLastWriteTime(folder),
                     Permissions = 775,
                     Type = FtpDirectoryEntryType.Directory,
                 }
@@ -38,7 +38,7 @@ namespace Cave.Net.Ftp
                 {
                     FtpDirectoryEntry entry = new FtpDirectoryEntry()
                     {
-                        DateTime = Cave.FileSystem.FileSystem.GetLastWriteTime(dirName),
+                        DateTime = FileSystem.GetLastWriteTime(dirName),
                         Name = Path.GetFileName(dirName),
                         Permissions = 775,
                         Type = FtpDirectoryEntryType.Directory,
@@ -62,8 +62,8 @@ namespace Cave.Net.Ftp
             {
                 FtpDirectoryEntry entry = new FtpDirectoryEntry()
                 {
-                    DateTime = Cave.FileSystem.FileSystem.GetLastWriteTime(name),
-                    Size = Cave.FileSystem.FileSystem.GetSize(name),
+                    DateTime = FileSystem.GetLastWriteTime(name),
+                    Size = FileSystem.GetSize(name),
                     Permissions = 664,
                     Name = Path.GetFileName(name),
                     Type = FtpDirectoryEntryType.File,
