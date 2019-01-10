@@ -257,10 +257,10 @@ namespace Cave.Net.Ftp
                     string[] parts = ftpName.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
                     if (Server.RootFolders.TryGetValue(parts.FirstOrDefault(), out string root))
                     {
-                        string ftpDir = FileSystem.FileSystem.Combine('/', currentFtpFolder, ftpName);
+                        string ftpDir = FileSystem.Combine('/', currentFtpFolder, ftpName);
                         if (!ftpDir.StartsWith(".."))
                         {
-                            fileSystemDir = FileSystem.FileSystem.Combine(root, parts.SubRange(1).Join('/'));
+                            fileSystemDir = FileSystem.Combine(root, parts.SubRange(1).Join('/'));
                         }
                     }
                 }
@@ -276,7 +276,7 @@ namespace Cave.Net.Ftp
                 }
                 else
                 {
-                    string ftpDir = FileSystem.FileSystem.Combine('/', currentFtpFolder, ftpName);
+                    string ftpDir = FileSystem.Combine('/', currentFtpFolder, ftpName);
                     if (ftpDir == "/")
                     {
                         fileSystemDir = null;
@@ -284,7 +284,7 @@ namespace Cave.Net.Ftp
                     }
                     else if (!ftpDir.StartsWith(".."))
                     {
-                        fileSystemDir = FileSystem.FileSystem.Combine(currentFileSystemDirectory, ftpName);
+                        fileSystemDir = FileSystem.Combine(currentFileSystemDirectory, ftpName);
                     }
                 }
             }
@@ -745,7 +745,7 @@ namespace Cave.Net.Ftp
 
             try
             {
-                string fileName = FileSystem.FileSystem.Combine(currentFileSystemDirectory, ftpName);
+                string fileName = FileSystem.Combine(currentFileSystemDirectory, ftpName);
                 File.Delete(fileName);
                 SendAnswer("250 Requested file action okay, completed.");
             }
@@ -782,7 +782,7 @@ namespace Cave.Net.Ftp
 
             try
             {
-                string dirName = FileSystem.FileSystem.Combine(currentFileSystemDirectory, ftpName);
+                string dirName = FileSystem.Combine(currentFileSystemDirectory, ftpName);
                 Directory.CreateDirectory(dirName);
                 SendAnswer("250 Requested file action okay, completed.");
             }
@@ -819,7 +819,7 @@ namespace Cave.Net.Ftp
 
             try
             {
-                string dirName = FileSystem.FileSystem.Combine(currentFileSystemDirectory, ftpName);
+                string dirName = FileSystem.Combine(currentFileSystemDirectory, ftpName);
                 Directory.Delete(dirName, false);
                 SendAnswer("250 Requested file action okay, completed.");
             }
@@ -869,7 +869,7 @@ namespace Cave.Net.Ftp
                 return;
             }
 
-            string fileName = FileSystem.FileSystem.Combine(currentFileSystemDirectory, ftpName);
+            string fileName = FileSystem.Combine(currentFileSystemDirectory, ftpName);
             long size = new FileInfo(fileName).Length;
             SendAnswer($"213 {size} {ftpName}");
         }
@@ -892,7 +892,7 @@ namespace Cave.Net.Ftp
             }
             //check file access
             string ftpName = Unescape(args);
-            string fileName = FileSystem.FileSystem.Combine(currentFileSystemDirectory, ftpName);
+            string fileName = FileSystem.Combine(currentFileSystemDirectory, ftpName);
             if (!CheckAccess(FtpAccessType.DownloadFile, ftpName))
             {
                 return;
@@ -973,7 +973,7 @@ namespace Cave.Net.Ftp
             }
             //check file access
             string ftpName = Unescape(args);
-            string fileName = FileSystem.FileSystem.Combine(currentFileSystemDirectory, ftpName);
+            string fileName = FileSystem.Combine(currentFileSystemDirectory, ftpName);
             if (!CheckAccess(FtpAccessType.RenameFrom, ftpName))
             {
                 return;
@@ -1006,7 +1006,7 @@ namespace Cave.Net.Ftp
                 return;
             }
             string ftpName = Unescape(args);
-            string target = FileSystem.FileSystem.Combine(currentFileSystemDirectory, ftpName);
+            string target = FileSystem.Combine(currentFileSystemDirectory, ftpName);
             if (!CheckAccess(FtpAccessType.RenameTo, ftpName))
             {
                 return;
@@ -1053,7 +1053,7 @@ namespace Cave.Net.Ftp
             }
             //check file access
             string ftpName = Unescape(args);
-            string fileName = FileSystem.FileSystem.Combine(currentFileSystemDirectory, ftpName);
+            string fileName = FileSystem.Combine(currentFileSystemDirectory, ftpName);
             if (!CheckAccess(FtpAccessType.UploadFile, ftpName))
             {
                 return;
@@ -1175,8 +1175,8 @@ namespace Cave.Net.Ftp
                     string[] parts = ftpName.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
                     if (Server.RootFolders.TryGetValue(parts.FirstOrDefault(), out string root))
                     {
-                        fileSystemDir = FileSystem.FileSystem.Combine(root, parts.SubRange(1).Join('/'));
-                        ftpDir = FileSystem.FileSystem.Combine('/', parts);
+                        fileSystemDir = FileSystem.Combine(root, parts.SubRange(1).Join('/'));
+                        ftpDir = FileSystem.Combine('/', parts);
                         if (ftpDir.StartsWith(".."))
                         {
                             throw new DirectoryNotFoundException();
@@ -1196,7 +1196,7 @@ namespace Cave.Net.Ftp
                 }
                 else
                 {
-                    ftpDir = FileSystem.FileSystem.Combine('/', currentFtpFolder, ftpName);
+                    ftpDir = FileSystem.Combine('/', currentFtpFolder, ftpName);
                     if (ftpDir == "/")
                     {
                         fileSystemDir = null;
@@ -1207,7 +1207,7 @@ namespace Cave.Net.Ftp
                     }
                     else
                     {
-                        fileSystemDir = FileSystem.FileSystem.Combine(currentFileSystemDirectory, ftpName);
+                        fileSystemDir = FileSystem.Combine(currentFileSystemDirectory, ftpName);
                     }
                 }
             }
