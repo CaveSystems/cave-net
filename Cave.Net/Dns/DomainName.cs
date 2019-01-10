@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Cave.Collections;
@@ -218,11 +219,23 @@ namespace Cave
         /// <value>The parts.</value>
         public string[] Parts { get; private set; }
 
+        const string safeUrlChars = ASCII.Strings.Letters + ASCII.Strings.Digits + "_-";
+
         /// <summary>Creates a new instance of the DomainName class</summary>
         /// <param name="parts">The parts of the DomainName</param>
-        private DomainName(string[] parts)
+        public DomainName(IEnumerable<string> parts) : this(parts.ToArray())
+        {
+        }
+
+        /// <summary>Creates a new instance of the DomainName class</summary>
+        /// <param name="parts">The parts of the DomainName</param>
+        public DomainName(params string[] parts)
         {
             Parts = parts;
+            foreach (string part in parts)
+            {
+                if (part.HasInvalidChars(safeUrlChars)) throw new InvalidDataException("Invalid characters at domain name!");
+            }
         }
 
         /// <summary>Gets the parent zone of the domain name.</summary>
