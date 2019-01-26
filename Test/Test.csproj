@@ -1,21 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-
     <IsPackable>false</IsPackable>
-
     <StartupObject>Test.Program</StartupObject>
+    <Version>1.0.2</Version>
+    <AssemblyVersion>1.0.2</AssemblyVersion>
+    <FileVersion>2019.126.1438.515</FileVersion>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="nunit" Version="3.10.1" />
-    <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
+    <PackageReference Include="nunit" Version="3.11.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.12.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.8.0" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\Cave.Net\Cave.Net.csproj" />
   </ItemGroup>
-
 </Project>

@@ -1,46 +1,77 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
+using Cave;
 using NUnit.Framework;
 
 namespace Test
 {
     class Program
     {
-        public static bool WarningsOnly { get; private set; }
+        static readonly object consoleLock = new object();
 
-        static int Main(string[] args)
+        static readonly ParallelOptions parallelOptions = new ParallelOptions()
         {
-            WarningsOnly = true;
-            var types = typeof(Program).Assembly.GetTypes();
-            foreach (var type in types)
+            MaxDegreeOfParallelism = Environment.ProcessorCount * 2,
+        };
+
+        static bool Test(MethodInfo method)
+        {
+            try
             {
-                /*if (!type.GetCustomAttributes(typeof(TestAttribute), false).Any())
+                object obj = Activator.CreateInstance(method.DeclaringType);
+                method.Invoke(obj, new object[0]);
+                lock (consoleLock)
                 {
-                    continue;
-                }*/
-
-                var instance = Activator.CreateInstance(type);
-                foreach (var method in type.GetMethods())
-                {
-                    if (!method.GetCustomAttributes(typeof(TestAttribute), false).Any())
-                    {
-                        continue;
-                    }
-
-                    var id = "T" + method.GetHashCode().ToString("x4");
-                    Console.WriteLine($"Test : info {id}: {type} {method}");
-                    try
-                    {
-                        method.Invoke(instance, new object[0]);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Test : error T0002: {ex}");
-                        return 1;
-                    }
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.Write("Success ");
+                    Console.ResetColor();
+                    Console.WriteLine($"{method.DeclaringType}.{method.Name}");
                 }
+                return true;
             }
-            return 0;
+            catch (Exception ex)
+            {
+                lock (consoleLock)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Write("Error ");
+                    Console.ResetColor();
+                    Console.WriteLine($"{method.DeclaringType}.{method.Name}");
+                    Console.WriteLine(ex.ToString());
+                }
+                return false;
+            }
+        }
+
+
+        public static void Main()
+        {
+            System.Collections.Generic.IEnumerable<MethodInfo> methods = typeof(Program)
+                .Assembly
+                .GetTypes()
+                //.Where(t => t
+                //.HasAttribute<TestClassAttribute>())
+                .SelectMany(t => t
+                .GetMethods()
+                .Where(m => m
+                //.HasAttribute<TestMethodAttribute>()));
+                .HasAttribute<TestAttribute>()));
+#if DEBUG
+            foreach (MethodInfo method in methods)
+            {
+                Test(method);
+            }
+#else
+            Parallel.ForEach(methods, parallelOptions, (method) => Test(method));
+#endif
+            if (Debugger.IsAttached)
+            {
+                Console.WriteLine("--- press enter to exit ---");
+                Console.ReadLine();
+            }
         }
     }
 }

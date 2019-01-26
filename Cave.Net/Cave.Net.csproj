@@ -10,7 +10,7 @@
     <PackageLicenseUrl>https://www.gnu.org/licenses/lgpl-3.0.en.html</PackageLicenseUrl>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>Cave.Net.snk</AssemblyOriginatorKeyFile>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <PackageIconUrl>https://www.cavesystems.de/favicon.ico</PackageIconUrl>
     <PackageTags>CaveSystems Net</PackageTags>
     <PackageProjectUrl>https://www.cavesystems.de</PackageProjectUrl>
@@ -20,20 +20,18 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AssemblyVersion>1.0.1</AssemblyVersion>
-    <FileVersion>2019.110.1733.328</FileVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AssemblyVersion>1.0.2</AssemblyVersion>
+    <FileVersion>2019.126.1438.515</FileVersion>
     <DebugType>pdbonly</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <IncludeSymbols>true</IncludeSymbols>
+    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DefineConstants>TRACE;DEBUG;</DefineConstants>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <IncludeSymbols>true</IncludeSymbols>
-    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
-    <EmbedSources>true</EmbedSources>
   </PropertyGroup>
   <!-- Workaround for EmbedSources support, see https://github.com/dotnet/roslyn/issues/19127-->
   <Target Condition="'$(Configuration)'=='Debug'" Name="PopulateEmbeddedFiles" AfterTargets="BeforeCompile" BeforeTargets="CoreCompile">
@@ -62,9 +60,9 @@
   <ItemGroup>
     <PackageReference Include="Cave.BaseX" Version="1.0.0" />
     <PackageReference Include="Cave.Collections" Version="1.0.1" />
-    <PackageReference Include="Cave.Extensions" Version="1.0.1" />
+    <PackageReference Include="Cave.Extensions" Version="1.0.3" />
     <PackageReference Include="Cave.FileSystem" Version="1.1.0" />
-    <PackageReference Include="Cave.IO" Version="1.0.1" />
+    <PackageReference Include="Cave.IO" Version="1.0.2" />
     <PackageReference Include="Cave.Platform" Version="1.0.0" />
     <PackageReference Include="Cave.TcpServer" Version="1.0.2" />
   </ItemGroup>
