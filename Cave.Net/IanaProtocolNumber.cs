@@ -1,7 +1,7 @@
 namespace Cave.Net
 {
     /// <summary>
-    /// http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
+    /// http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml.
     /// </summary>
     public enum IanaProtocolNumber : byte
     {

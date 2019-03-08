@@ -5,19 +5,19 @@ using System.Threading;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides a TcpServer interface
+    /// Provides a TcpServer interface.
     /// </summary>
     /// <seealso cref="IDisposable" />
     public interface ITcpServer : IDisposable
     {
         /// <summary>Listens at the specified end point.</summary>
         /// <param name="endPoint">The end point.</param>
-        /// <exception cref="ObjectDisposedException">TcpSocketServer</exception>
+        /// <exception cref="ObjectDisposedException">TcpSocketServer.</exception>
         void Listen(IPEndPoint endPoint);
 
         /// <summary>Listens at the specified port.</summary>
         /// <param name="port">The port.</param>
-        /// <exception cref="ObjectDisposedException">TcpSocketServer</exception>
+        /// <exception cref="ObjectDisposedException">TcpSocketServer.</exception>
         void Listen(int port);
 
         /// <summary>Closes the server and performs shutdown on all clients.</summary>
@@ -25,13 +25,13 @@ namespace Cave.Net
 
         /// <summary>Gets or sets the maximum length of the pending connections queue.</summary>
         /// <value>The maximum length of the pending connections queue.</value>
-        /// <exception cref="InvalidOperationException">Socket is already listening!</exception>
+        /// <exception cref="InvalidOperationException">Socket is already listening.</exception>
         int AcceptBacklog { get; set; }
 
         /// <summary>Gets or sets the size of the buffer used when receiving data.</summary>
         /// <value>The size of the buffer.</value>
-        /// <exception cref="InvalidOperationException">Socket is already listening!</exception>
-        /// <exception cref="ArgumentOutOfRangeException">value</exception>
+        /// <exception cref="InvalidOperationException">Socket is already listening.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">value.</exception>
         int BufferSize { get; set; }
 
         /// <summary>Gets or sets the amount of time, in milliseconds, thata read operation blocks waiting for data.</summary>

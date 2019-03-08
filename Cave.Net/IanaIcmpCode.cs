@@ -2,7 +2,7 @@ namespace Cave.Net
 {
     /// <summary>
     /// Assigned Internet Protocol Numbers - Last Updated 2015-01-06
-    /// http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
+    /// http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml.
     /// </summary>
     public enum IanaIcmpDestinationUnreachableCode
     {

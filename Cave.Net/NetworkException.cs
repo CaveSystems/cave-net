@@ -9,7 +9,7 @@ namespace Cave.Net
     public class NetworkException : Exception
     {
         /// <summary>Initializes a new instance of the <see cref="NetworkException"/> class.
-        /// Message: Network problem!
+        /// Message: Network problem.
         /// </summary>
         public NetworkException()
             : base("Network problem!")

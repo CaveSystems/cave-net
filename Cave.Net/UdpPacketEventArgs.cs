@@ -3,12 +3,12 @@ using System;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides <see cref="EventArgs"/> for packet events
+    /// Provides <see cref="EventArgs"/> for packet events.
     /// </summary>
     public class UdpPacketEventArgs : EventArgs
     {
         /// <summary>
-        /// Gets the packet
+        /// Gets the packet.
         /// </summary>
         public UdpPacket Packet { get; private set; }
 

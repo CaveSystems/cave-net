@@ -8,7 +8,7 @@ using System.Text;
 namespace Cave.Net
 {
     /// <summary>
-    /// Extension class for the <see cref="IPAddress" /> class
+    /// Extension class for the <see cref="IPAddress" /> class.
     /// </summary>
     public static class IPAddressExtensions
     {
@@ -26,17 +26,17 @@ namespace Cave.Net
             return (byte)result;
         }
 
-        /// <summary>The ipv4 multicast address</summary>
+        /// <summary>The ipv4 multicast address.</summary>
         public static readonly IPAddress IPv4MulticastAddress = IPAddress.Parse("224.0.0.0");
 
-        /// <summary>The ipv6 multicast address</summary>
+        /// <summary>The ipv6 multicast address.</summary>
         public static readonly IPAddress IPv6MulticastAddress = IPAddress.Parse("FF00::");
 
         /// <summary>
-        /// Reverses the order of the bytes of an address
+        /// Reverses the order of the bytes of an address.
         /// </summary>
-        /// <param name="address"> Instance of the address, that should be reversed </param>
-        /// <returns> New reversed address </returns>
+        /// <param name="address"> Instance of the address, that should be reversed. </param>
+        /// <returns> New reversed address. </returns>
         public static IPAddress Reverse(this IPAddress address)
         {
             if (address == null)
@@ -54,8 +54,9 @@ namespace Cave.Net
         /// <param name="netmask">The netmask.</param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException">
+        /// address or netmask.
         /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">AddressFamily of address and netmask do not match</exception>
+        /// <exception cref="ArgumentOutOfRangeException">AddressFamily of address and netmask do not match.</exception>
         public static IPAddress GetAddress(this IPAddress address, IPAddress netmask)
         {
             if (address == null)
@@ -176,11 +177,11 @@ namespace Cave.Net
         /// <param name="address">The address.</param>
         /// <param name="netmask">The netmask.</param>
         /// <returns></returns>
-        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException">address.</exception>
         /// <exception cref="ArgumentException">
         /// Netmask has to be in range of 0 to 32 on IPv4 addresses
         /// or
-        /// Netmask has to be in range of 0 to 128 on IPv6 addresses
+        /// Netmask has to be in range of 0 to 128 on IPv6 addresses.
         /// </exception>
         public static IPAddress GetAddress(this IPAddress address, int netmask)
         {
@@ -212,10 +213,10 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Returns the reverse lookup address of an IPAddress
+        /// Returns the reverse lookup address of an IPAddress.
         /// </summary>
-        /// <param name="address"> Instance of the IPAddress, that should be used </param>
-        /// <returns> A string with the reverse lookup address </returns>
+        /// <param name="address"> Instance of the IPAddress, that should be used. </param>
+        /// <returns> A string with the reverse lookup address. </returns>
         public static string GetReverseLookupAddress(this IPAddress address)
         {
             if (address == null)
@@ -256,10 +257,10 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Returns the reverse lookup DomainName of an IPAddress
+        /// Returns the reverse lookup DomainName of an IPAddress.
         /// </summary>
-        /// <param name="address"> Instance of the IPAddress, that should be used </param>
-        /// <returns> A DomainName with the reverse lookup address </returns>
+        /// <param name="address"> Instance of the IPAddress, that should be used. </param>
+        /// <returns> A DomainName with the reverse lookup address. </returns>
         public static DomainName GetReverseLookupDomain(this IPAddress address)
         {
             if (address == null)
@@ -280,7 +281,10 @@ namespace Cave.Net
             else if (address.AddressFamily == AddressFamily.InterNetworkV6)
             {
                 string s = address.GetAddressBytes().ToHexString();
-                foreach (char c in s) { parts.Add(c.ToString()); }
+                foreach (char c in s)
+                {
+                    parts.Add(c.ToString());
+                }
                 parts.Reverse();
                 parts.Add("ip6");
             }
@@ -294,10 +298,10 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Returns a value indicating whether a ip address is a multicast address
+        /// Returns a value indicating whether a ip address is a multicast address.
         /// </summary>
-        /// <param name="address"> Instance of the IPAddress, that should be used </param>
-        /// <returns> true, if the given address is a multicast address; otherwise, false </returns>
+        /// <param name="address"> Instance of the IPAddress, that should be used. </param>
+        /// <returns> true, if the given address is a multicast address; otherwise, false. </returns>
         public static bool IsMulticast(this IPAddress address)
         {
             if (address == null)

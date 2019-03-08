@@ -2,7 +2,7 @@
 {
     /// <summary>
     /// DNS record classes
-    /// <see href="http://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml" />
+    /// <see href="http://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml" />.
     /// </summary>
     public enum DnsRecordClass
     {

@@ -4,7 +4,7 @@ using System.Net;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides <see cref="EventArgs"/> for remote endpoint
+    /// Provides <see cref="EventArgs"/> for remote endpoint.
     /// </summary>
     public class IPEndPointEventArgs : EventArgs
     {
@@ -16,7 +16,7 @@ namespace Cave.Net
         /// <summary>
         /// Initializes a new instance of the <see cref="IPEndPointEventArgs"/> class.
         /// </summary>
-        /// <param name="endPoint">IP endpoint</param>
+        /// <param name="endPoint">IP endpoint.</param>
         public IPEndPointEventArgs(IPEndPoint endPoint)
         {
             EndPoint = endPoint;

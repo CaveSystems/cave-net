@@ -8,7 +8,7 @@ using Cave.IO;
 namespace Cave.Net.Dns
 {
     /// <summary>
-    /// Provides a soa record
+    /// Provides a soa record.
     /// </summary>
     public struct SoaRecord
     {
@@ -25,7 +25,7 @@ namespace Cave.Net.Dns
                 RefreshInterval = reader.ReadInt32(),
                 RetryInterval = reader.ReadInt32(),
                 ExpireInterval = reader.ReadInt32(),
-                NegativeCachingTTL = reader.ReadInt32()
+                NegativeCachingTTL = reader.ReadInt32(),
             };
             return result;
         }
@@ -101,25 +101,25 @@ namespace Cave.Net.Dns
             }
         }
 
-        /// <summary>The master name</summary>
+        /// <summary>The master name.</summary>
         public DomainName MasterName;
 
-        /// <summary>The responsible name</summary>
+        /// <summary>The responsible name.</summary>
         public MailAddress ResponsibleName;
 
-        /// <summary>The serial number</summary>
+        /// <summary>The serial number.</summary>
         public uint SerialNumber;
 
-        /// <summary>The refresh interval (seconds)</summary>
+        /// <summary>The refresh interval (seconds).</summary>
         public int RefreshInterval;
 
-        /// <summary>The retry interval (seconds)</summary>
+        /// <summary>The retry interval (seconds).</summary>
         public int RetryInterval;
 
-        /// <summary>The expire interval (seconds)</summary>
+        /// <summary>The expire interval (seconds).</summary>
         public int ExpireInterval;
 
-        /// <summary>The negative caching TTL (seconds)</summary>
+        /// <summary>The negative caching TTL (seconds).</summary>
         public int NegativeCachingTTL;
 
         /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
@@ -132,7 +132,14 @@ namespace Cave.Net.Dns
                  "\t{3} ; refresh\n" +
                  "\t{4} ; retry\n" +
                  "\t{5} ; expire\n" +
-                 "\t{6} ) ; ttl", MasterName, ResponsibleName, SerialNumber, RefreshInterval, RetryInterval, ExpireInterval, NegativeCachingTTL);
+                 "\t{6} ) ; ttl",
+                MasterName,
+                ResponsibleName,
+                SerialNumber,
+                RefreshInterval,
+                RetryInterval,
+                ExpireInterval,
+                NegativeCachingTTL);
         }
     }
 }

@@ -11,12 +11,12 @@ using Cave.IO;
 namespace Cave.Net.Dns
 {
     /// <summary>
-    /// Provides a client for querying dns records
+    /// Provides a client for querying dns records.
     /// </summary>
     public class DnsClient
     {
         #region static class
-        static DnsClient DefaultClient;
+        static DnsClient defaultClient;
 
         static void LoadEtcResolvConf(List<IPAddress> result)
         {
@@ -66,14 +66,14 @@ namespace Cave.Net.Dns
         {
             get
             {
-                if (DefaultClient == null)
+                if (defaultClient == null)
                 {
-                    DefaultClient = new DnsClient
+                    defaultClient = new DnsClient
                     {
-                        Servers = GetDefaultDnsServers()
+                        Servers = GetDefaultDnsServers(),
                     };
                 }
-                return DefaultClient;
+                return defaultClient;
             }
         }
 
@@ -85,18 +85,18 @@ namespace Cave.Net.Dns
         {
             get
             {
-                if (DefaultClient == null)
+                if (defaultClient == null)
                 {
-                    DefaultClient = new DnsClient();
+                    defaultClient = new DnsClient();
                     long ip = BitConverter.IsLittleEndian ? 0x04040808 : 0x08080404;
-                    DefaultClient.Servers = new IPAddress[] { new IPAddress(0x08080808), new IPAddress(ip) };
+                    defaultClient.Servers = new IPAddress[] { new IPAddress(0x08080808), new IPAddress(ip) };
                 }
-                return DefaultClient;
+                return defaultClient;
             }
         }
 
         /// <summary>Gets a list of the local configured DNS servers.</summary>
-        /// <returns>Returns a array of <see cref="IPAddress"/> instances</returns>
+        /// <returns>Returns a array of <see cref="IPAddress"/> instances.</returns>
         public static IPAddress[] GetDefaultDnsServers()
         {
             var result = new List<IPAddress>();
@@ -164,7 +164,7 @@ namespace Cave.Net.Dns
 
         /// <summary>Gets a value indicating whether [use random case].</summary>
         /// <value><c>true</c> if [use random case]; otherwise, <c>false</c>.</value>
-        /// <remarks><see href="https://tools.ietf.org/html/draft-vixie-dnsext-dns0x20-00"/></remarks>
+        /// <remarks><see href="https://tools.ietf.org/html/draft-vixie-dnsext-dns0x20-00"/>.</remarks>
         public bool UseRandomCase { get; private set; }
 
         /// <summary>Gets the name of the log source.</summary>
@@ -182,12 +182,12 @@ namespace Cave.Net.Dns
         }
 
         /// <summary>Queries a dns server for specified records.</summary>
-        /// <param name="domainName">Domain, that should be queried</param>
-        /// <param name="recordType">Type the should be queried</param>
-        /// <param name="recordClass">Class the should be queried</param>
-        /// <param name="flags">Options for the query</param>
-        /// <returns>The complete response of the dns server</returns>
-        /// <exception cref="ArgumentNullException">Name must be provided</exception>
+        /// <param name="domainName">Domain, that should be queried.</param>
+        /// <param name="recordType">Type the should be queried.</param>
+        /// <param name="recordClass">Class the should be queried.</param>
+        /// <param name="flags">Options for the query.</param>
+        /// <returns>The complete response of the dns server.</returns>
+        /// <exception cref="ArgumentNullException">Name must be provided.</exception>
         public DnsResponse Resolve(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
         {
             return Resolve(new DnsQuery()
@@ -201,10 +201,10 @@ namespace Cave.Net.Dns
 
         /// <summary>Queries a dns server for specified records.</summary>
         /// <param name="query">The query.</param>
-        /// <returns>The complete response of the dns server</returns>
-        /// <exception cref="ArgumentNullException">Name must be provided</exception>
-        /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp!</exception>
-        /// <exception cref="AggregateException"></exception>
+        /// <returns>The complete response of the dns server.</returns>
+        /// <exception cref="ArgumentNullException">Name must be provided.</exception>
+        /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp.</exception>
+        /// <exception cref="AggregateException">Could not reach any dns server.</exception>
         public DnsResponse Resolve(DnsQuery query)
         {
             if (Servers == null)
@@ -343,7 +343,10 @@ namespace Cave.Net.Dns
                 var response = new DnsResponse(srv, data);
                 return response;
             }
-            finally { udp?.Close(); }
+            finally
+            {
+                udp?.Close();
+            }
         }
 
         DnsResponse QueryTcp(IPAddress srv, byte[] query)
@@ -368,7 +371,10 @@ namespace Cave.Net.Dns
                     return new DnsResponse(srv, reader.ReadBytes(length));
                 }
             }
-            finally { tcp?.Close(); }
+            finally
+            {
+                tcp?.Close();
+            }
         }
     }
 }

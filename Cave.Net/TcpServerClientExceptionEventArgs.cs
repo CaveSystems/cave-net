@@ -10,7 +10,7 @@ namespace Cave.Net
     public class TcpServerClientExceptionEventArgs<TClient> : EventArgs
     {
         /// <summary>
-        /// Gets the <see cref="Exception"/> that was encountered
+        /// Gets the <see cref="Exception"/> that was encountered.
         /// </summary>
         public Exception Exception { get; private set; }
 
@@ -20,7 +20,7 @@ namespace Cave.Net
 
         /// <summary>Initializes a new instance of the <see cref="TcpServerClientExceptionEventArgs{TClient}"/> class.</summary>
         /// <param name="client">The client.</param>
-        /// <param name="ex">The <see cref="Exception"/> that was encountered</param>
+        /// <param name="ex">The <see cref="Exception"/> that was encountered.</param>
         public TcpServerClientExceptionEventArgs(TClient client, Exception ex)
         {
             Client = client;

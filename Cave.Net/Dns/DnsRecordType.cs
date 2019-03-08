@@ -4,7 +4,7 @@ namespace Cave.Net.Dns
 {
     /// <summary>
     /// DNS record types
-    /// <see href="http://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml" />
+    /// <see href="http://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml" />.
     /// </summary>
     public enum DnsRecordType : ushort
     {

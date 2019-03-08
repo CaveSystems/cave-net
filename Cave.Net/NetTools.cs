@@ -7,7 +7,7 @@ using System.Net.Sockets;
 namespace Cave.Net
 {
     /// <summary>
-    /// Network specific settings and addresses
+    /// Network specific settings and addresses.
     /// </summary>
     public static class NetTools
     {
@@ -31,8 +31,8 @@ namespace Cave.Net
         /// Parses a string for a valid IPAddress[:Port] or DnsName[:Port] combination and retrieves all
         /// matching <see cref="IPEndPoint"/>s. If no port is specified DefaultPort will be returned.
         /// </summary>
-        /// <param name="text">The string containing the ip endpoint (server[:port] or ipaddress[:port])</param>
-        /// <param name="defaultPort">The default port used if no port was given</param>
+        /// <param name="text">The string containing the ip endpoint (server[:port] or ipaddress[:port]).</param>
+        /// <param name="defaultPort">The default port used if no port was given.</param>
         public static IPEndPoint[] GetIPEndPoints(string text, int defaultPort)
         {
             if (string.IsNullOrEmpty(text))
@@ -51,7 +51,7 @@ namespace Cave.Net
                 }
             }
 
-            if (text == "" || text == "any")
+            if (text == string.Empty || text == "any")
             {
                 return new IPEndPoint[]
                 {
@@ -74,7 +74,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Retrieves all local addresses
+        /// Retrieves all local addresses.
         /// </summary>
         public static UnicastIPAddressInformation[] GetLocalAddresses()
         {
@@ -91,8 +91,9 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Retrieves local addresses with the specified addresfamily
+        /// Retrieves local addresses with the specified addresfamily.
         /// </summary>
+        /// <returns></returns>
         public static IPAddress[] GetLocalAddresses(AddressFamily addressFamily)
         {
             var result = new List<IPAddress>();
@@ -108,7 +109,7 @@ namespace Cave.Net
 
         /// <summary>
         /// Obtains the first available <see cref="IPAddress"/> for the specified hostname with the
-        /// specified <see cref="AddressFamily"/>
+        /// specified <see cref="AddressFamily"/>.
         /// </summary>
         /// <param name="hostName"></param>
         /// <param name="addressFamily"></param>
@@ -127,7 +128,7 @@ namespace Cave.Net
 
         /// <summary>
         /// Obtains all available <see cref="IPAddress"/> for the specified hostname with the
-        /// specified <see cref="AddressFamily"/>
+        /// specified <see cref="AddressFamily"/>.
         /// </summary>
         /// <param name="hostName"></param>
         /// <param name="addressFamily"></param>
@@ -167,7 +168,9 @@ namespace Cave.Net
                 listener.Stop();
                 return (ushort)port;
             }
-            catch { }
+            catch
+            {
+            }
             for (int i = 0; ; i++)
             {
                 try
@@ -189,34 +192,59 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Obtains the fqdn (hostname) of the system
+        /// Obtains the fqdn (hostname) of the system.
         /// </summary>
         static string GetHostName()
         {
             string hostName = null;
             {
-                try { hostName = IPGlobalProperties.GetIPGlobalProperties().HostName; }
-                catch { }
+                try
+                {
+                    hostName = IPGlobalProperties.GetIPGlobalProperties().HostName;
+                }
+                catch
+                {
+                }
             }
             if (string.IsNullOrEmpty(hostName))
             {
-                try { hostName = System.Net.Dns.GetHostName(); }
-                catch { }
+                try
+                {
+                    hostName = System.Net.Dns.GetHostName();
+                }
+                catch
+                {
+                }
             }
             if (string.IsNullOrEmpty(hostName))
             {
-                try { hostName = Environment.MachineName; }
-                catch { }
+                try
+                {
+                    hostName = Environment.MachineName;
+                }
+                catch
+                {
+                }
             }
             if (string.IsNullOrEmpty(hostName))
             {
-                try { hostName = Environment.GetEnvironmentVariable("COMPUTERNAME"); }
-                catch { }
+                try
+                {
+                    hostName = Environment.GetEnvironmentVariable("COMPUTERNAME");
+                }
+                catch
+                {
+                }
             }
             if (string.IsNullOrEmpty(hostName))
             {
-                try { hostName = Environment.GetEnvironmentVariable("HOSTNAME"); }
-                catch { }
+                try
+                {
+                    hostName = Environment.GetEnvironmentVariable("HOSTNAME");
+                }
+                catch
+                {
+                }
             }
             if (string.IsNullOrEmpty(hostName))
             {
@@ -225,13 +253,23 @@ namespace Cave.Net
 
             string domainName = null;
             {
-                try { domainName = IPGlobalProperties.GetIPGlobalProperties().DomainName; }
-                catch { }
+                try
+                {
+                    domainName = IPGlobalProperties.GetIPGlobalProperties().DomainName;
+                }
+                catch
+                {
+                }
             }
             if (string.IsNullOrEmpty(domainName))
             {
-                try { domainName = Environment.UserDomainName; }
-                catch { }
+                try
+                {
+                    domainName = Environment.UserDomainName;
+                }
+                catch
+                {
+                }
             }
             if (string.IsNullOrEmpty(domainName))
             {
@@ -252,7 +290,9 @@ namespace Cave.Net
                     myHostName = entry.HostName;
                     return myHostName;
                 }
-                catch { }
+                catch
+                {
+                }
             }
 
             // no network fallback
@@ -260,7 +300,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Obtains the fqdn (hostname) caching the result
+        /// Gets the fqdn (hostname) caching the result.
         /// </summary>
         public static string HostName
         {

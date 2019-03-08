@@ -1,6 +1,6 @@
 ﻿namespace Cave.Net.Dns
 {
-    /// <summary>Dns return codes</summary>
+    /// <summary>Dns return codes.</summary>
     public enum DnsResponseCode : ushort
     {
         /// <summary>No error condition</summary>

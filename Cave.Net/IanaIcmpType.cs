@@ -3,7 +3,7 @@ using System;
 namespace Cave.Net
 {
     /// <summary>
-    /// http://www.nthelp.com/icmp.html
+    /// http://www.nthelp.com/icmp.html.
     /// </summary>
     public enum IanaIcmpType
     {

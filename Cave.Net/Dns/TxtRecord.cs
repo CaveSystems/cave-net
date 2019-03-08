@@ -5,7 +5,7 @@ using Cave.IO;
 namespace Cave.Net.Dns
 {
     /// <summary>
-    /// Provides a txt record
+    /// Provides a txt record.
     /// </summary>
     public class TxtRecord
     {

@@ -12,7 +12,7 @@ using Cave.IO;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides an async udp client implementation
+    /// Provides an async udp client implementation.
     /// </summary>
     [DebuggerDisplay("{RemoteEndPoint}")]
     public class UdpAsyncClient : IDisposable
@@ -84,7 +84,7 @@ ReadCompletedBegin:
         /// Calls the <see cref="Error"/> event.
         /// </summary>
         /// <param name="remoteEndPoint">The remote endpoint causing the error. This may be null if the host encountered an error.</param>
-        /// <param name="ex">The exception (most of the time this will be a <see cref="SocketException"/></param>
+        /// <param name="ex">The exception (most of the time this will be a <see cref="SocketException"/>.</param>
         protected virtual void OnError(IPEndPoint remoteEndPoint, Exception ex)
         {
             Error?.Invoke(this, new RemoteEndPointExceptionEventArgs(remoteEndPoint, ex));
@@ -139,14 +139,14 @@ ReadCompletedBegin:
         /// <summary>Listens at the specified <paramref name="address"/> and <paramref name="port"/>.</summary>
         /// <param name="address">The ip address to listen at.</param>
         /// <param name="port">The port to listen at.</param>
-        /// <exception cref="ObjectDisposedException">UdpAsyncClient</exception>
-        /// <exception cref="InvalidOperationException">Socket is already bound!</exception>
+        /// <exception cref="ObjectDisposedException">UdpAsyncClient.</exception>
+        /// <exception cref="InvalidOperationException">Socket is already bound.</exception>
         public void Bind(IPAddress address, int port) => Bind(new IPEndPoint(address, port));
 
         /// <summary>Listens at the specified end point.</summary>
         /// <param name="endPoint">The end point.</param>
-        /// <exception cref="ObjectDisposedException">UdpAsyncClient</exception>
-        /// <exception cref="InvalidOperationException">Socket is already bound!</exception>
+        /// <exception cref="ObjectDisposedException">UdpAsyncClient.</exception>
+        /// <exception cref="InvalidOperationException">Socket is already bound.</exception>
         public void Bind(IPEndPoint endPoint)
         {
             if (closing)
@@ -160,7 +160,7 @@ ReadCompletedBegin:
 
             socket = new Socket(endPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp)
             {
-                ExclusiveAddressUse = false
+                ExclusiveAddressUse = false,
             };
             switch (endPoint.AddressFamily)
             {
@@ -190,15 +190,15 @@ ReadCompletedBegin:
 
         /// <summary>Listens at the specified port on IPv4 and IPv6 if available.</summary>
         /// <param name="port">The port.</param>
-        /// <exception cref="ObjectDisposedException">UdpAsyncClient</exception>
-        /// <exception cref="InvalidOperationException">Socket is already bound!</exception>
+        /// <exception cref="ObjectDisposedException">UdpAsyncClient.</exception>
+        /// <exception cref="InvalidOperationException">Socket is already bound.</exception>
         public void Bind(int port) => Bind(port, null);
 
         /// <summary>Listens at the specified port.</summary>
         /// <param name="port">The port.</param>
         /// <param name="useIPv6">Use dualstack socket. Defaults value is true.</param>
-        /// <exception cref="ObjectDisposedException">UdpAsyncClient</exception>
-        /// <exception cref="InvalidOperationException">Socket is already bound!</exception>
+        /// <exception cref="ObjectDisposedException">UdpAsyncClient.</exception>
+        /// <exception cref="InvalidOperationException">Socket is already bound.</exception>
         public void Bind(int port, bool? useIPv6 = null)
         {
             if (closing)
@@ -380,7 +380,7 @@ ReadCompletedBegin:
         /// <summary>
         /// Returns a string that represents the current object.
         /// </summary>
-        /// <returns>tcp://localip:port</returns>
+        /// <returns>tcp://localip:port.</returns>
         public override string ToString()
         {
             return $"udp://{LocalEndPoint}";

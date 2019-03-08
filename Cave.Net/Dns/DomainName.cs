@@ -10,7 +10,7 @@ using Cave.IO;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides domain name parsing
+    /// Provides domain name parsing.
     /// </summary>
     public sealed class DomainName
     {
@@ -22,7 +22,7 @@ namespace Cave.Net
         /// <summary>Performs an implicit conversion from <see cref="string"/> to <see cref="DomainName"/>.</summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
-        /// <exception cref="InvalidDataException">{0} is not a valid domain name!</exception>
+        /// <exception cref="InvalidDataException">{0} is not a valid domain name.</exception>
         public static implicit operator DomainName(string value)
         {
             if (!TryParse(value, out DomainName name))
@@ -96,7 +96,7 @@ namespace Cave.Net
             }
         }
 
-        /// <summary>Tries to parse a domain name</summary>
+        /// <summary>Tries to parse a domain name.</summary>
         /// <param name="value">The value.</param>
         /// <param name="name">The name.</param>
         /// <returns>Returns true if the value was parsed correctly, false otherwise.</returns>
@@ -149,7 +149,7 @@ namespace Cave.Net
         /// <summary>Parses a domain name using the specified reader.</summary>
         /// <param name="reader">The reader.</param>
         /// <returns>Returns a new <see cref="DomainName"/> instance.</returns>
-        /// <exception cref="NotSupportedException">Unsupported extended dns label</exception>
+        /// <exception cref="NotSupportedException">Unsupported extended dns label.</exception>
         public static DomainName Parse(DataReader reader)
         {
             long endposition = -1;
@@ -228,7 +228,7 @@ namespace Cave.Net
         /// <summary>
         /// Initializes a new instance of the <see cref="DomainName"/> class.
         /// </summary>
-        /// <param name="parts">The parts of the DomainName</param>
+        /// <param name="parts">The parts of the DomainName.</param>
         public DomainName(IEnumerable<string> parts)
             : this(parts.ToArray())
         {
@@ -237,7 +237,7 @@ namespace Cave.Net
         /// <summary>
         /// Initializes a new instance of the <see cref="DomainName"/> class.
         /// </summary>
-        /// <param name="parts">The parts of the DomainName</param>
+        /// <param name="parts">The parts of the DomainName.</param>
         public DomainName(params string[] parts)
         {
             Parts = parts;
@@ -251,7 +251,7 @@ namespace Cave.Net
         }
 
         /// <summary>Gets the parent zone of the domain name.</summary>
-        /// <returns>The DomainName of the parent zone</returns>
+        /// <returns>The DomainName of the parent zone.</returns>
         /// <exception cref="Exception">No parent available.</exception>
         public DomainName GetParent()
         {
