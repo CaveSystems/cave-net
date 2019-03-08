@@ -4,7 +4,7 @@ namespace Cave.Net.Dns
 {
     /// <summary>
     /// DNS Header Flags
-    /// In DNS query header there is a flag field in the second 16 bit word in query from bit 5 through bit 11 ([RFC1035] section 4.1.1)
+    /// In DNS query header there is a flag field in the second 16 bit word in query from bit 5 through bit 11 ([RFC1035] section 4.1.1).
     /// </summary>
     [Flags]
     public enum DnsFlags

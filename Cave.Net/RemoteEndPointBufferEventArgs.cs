@@ -3,7 +3,7 @@
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides event arguments with remote endpoint and buffer data
+    /// Provides event arguments with remote endpoint and buffer data.
     /// </summary>
     public class RemoteEndPointBufferEventArgs : BufferEventArgs
     {

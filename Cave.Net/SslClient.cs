@@ -14,7 +14,7 @@ using Cave.IO;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides a ssl client implementation
+    /// Provides a ssl client implementation.
     /// </summary>
     public class SslClient : IDisposable
     {
@@ -95,7 +95,7 @@ namespace Cave.Net
 
         /// <summary>
         /// This function will be called while authenticating a connection to another sslclient instance and runs the
-        /// <see cref="Authenticate"/> event
+        /// <see cref="Authenticate"/> event.
         /// </summary>
         /// <param name="eventArgs">Ssl authentication arguments.</param>
         protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs)
@@ -160,26 +160,26 @@ namespace Cave.Net
         #endregion
 
         /// <summary>
-        /// Check certificate revocation
+        /// Check certificate revocation.
         /// </summary>
         public bool CheckRevocation = false;
 
-        /// <summary>Allow client authentication without cert</summary>
+        /// <summary>Allow client authentication without cert.</summary>
         public bool AllowClientAuthWithoutCert = true;
 
         /// <summary>
-        /// Gets the remote <see cref="IPEndPoint"/> this client is/was connected to
+        /// Gets the remote <see cref="IPEndPoint"/> this client is/was connected to.
         /// </summary>
         public IPEndPoint RemoteEndPoint { get; private set; }
 
         /// <summary>
-        /// Gets a value indicating whether the client is connected or not
+        /// Gets a value indicating whether the client is connected or not.
         /// </summary>
         public bool Connected => (client != null) && client.Client.Connected;
 
         /// <summary>
         /// Starts TLS negotiation and authenticates as server. Use the Authenticate event to implement user defined policy checking!
-        /// By default SslPolicyErrors will be ignored!
+        /// By default SslPolicyErrors will be ignored.
         /// </summary>
         /// <param name="certificate">Certificate to use for the server instance.</param>
         public void DoServerTLS(X509Certificate2 certificate)
@@ -221,7 +221,7 @@ namespace Cave.Net
 
         /// <summary>
         /// Starts TLS negotiation and authenticates as client. Use the Authenticate event to implement user defined policy checking!
-        /// By default SslPolicyErrors will be ignored!
+        /// By default SslPolicyErrors will be ignored.
         /// </summary>
         /// <param name="serverCN">Server common name (has to be present at the server certificate).</param>
         public void DoClientTLS(string serverCN)
@@ -231,10 +231,10 @@ namespace Cave.Net
 
         /// <summary>
         /// Starts TLS negotiation and authenticates as client. Use the Authenticate event to implement user defined policy checking!
-        /// By default SslPolicyErrors will be ignored!
+        /// By default SslPolicyErrors will be ignored.
         /// </summary>
-        /// <param name="serverCN">The servers common name (this is checked against the server certificate)</param>
-        /// <param name="certificate">The clients certificate</param>
+        /// <param name="serverCN">The servers common name (this is checked against the server certificate).</param>
+        /// <param name="certificate">The clients certificate.</param>
         public void DoClientTLS(string serverCN, X509Certificate2 certificate)
         {
             if (stream != null)
@@ -269,10 +269,10 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Creates a connection to the specified host and port
+        /// Creates a connection to the specified host and port.
         /// </summary>
-        /// <param name="host">The hostname or ipaddress</param>
-        /// <param name="port">The port to connect to</param>
+        /// <param name="host">The hostname or ipaddress.</param>
+        /// <param name="port">The port to connect to.</param>
         public void Connect(string host, int port)
         {
             if (client != null)
@@ -285,10 +285,10 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Creates a connection to the specified host and port
+        /// Creates a connection to the specified host and port.
         /// </summary>
-        /// <param name="address">The ipaddress</param>
-        /// <param name="port">The port to connect to</param>
+        /// <param name="address">The ipaddress.</param>
+        /// <param name="port">The port to connect to.</param>
         public void Connect(IPAddress address, int port)
         {
             if (client != null)
@@ -302,7 +302,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Gets the <see cref="Stream"/> instance for the client
+        /// Gets the <see cref="Stream"/> instance for the client.
         /// </summary>
         public Stream Stream
         {
@@ -322,7 +322,7 @@ namespace Cave.Net
         public SslValidationErrors ValidationErrors { get; private set; }
 
         /// <summary>
-        /// Gets the policy errors found while authenticating
+        /// Gets the policy errors found while authenticating.
         /// </summary>
         public SslPolicyErrors PolicyErrors { get; private set; }
 
@@ -342,7 +342,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Closes the connection
+        /// Closes the connection.
         /// </summary>
         public void Close()
         {
@@ -382,7 +382,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Obtains a hashcode for this instance
+        /// Obtains a hashcode for this instance.
         /// </summary>
         /// <returns></returns>
         public override int GetHashCode()
@@ -413,7 +413,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Releases all resources used by the this instance
+        /// Releases all resources used by the this instance.
         /// </summary>
         public void Dispose()
         {

@@ -10,7 +10,7 @@ using Cave.IO;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides a ssl server implementation accepting and authenticating <see cref="SslClient"/> connections
+    /// Provides a ssl server implementation accepting and authenticating <see cref="SslClient"/> connections.
     /// </summary>
     public class SslServer
     {
@@ -53,7 +53,9 @@ namespace Cave.Net
                             tcpClient.Close();
                         }
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                 }
             }
         }
@@ -68,7 +70,7 @@ namespace Cave.Net
         #region event starters
 
         /// <summary>
-        /// Handles the incoming connection and calls the <see cref="Connected"/> event
+        /// Handles the incoming connection and calls the <see cref="Connected"/> event.
         /// </summary>
         /// <param name="client"></param>
         protected virtual void OnConnected(SslClient client)
@@ -84,15 +86,20 @@ namespace Cave.Net
             {
                 if (client.Connected)
                 {
-                    try { client.Close(); }
-                    catch { }
+                    try
+                    {
+                        client.Close();
+                    }
+                    catch
+                    {
+                    }
                 }
                 Trace.WriteLine(ex);
             }
         }
 
         /// <summary>
-        /// Calls the <see cref="Authenticate"/> event
+        /// Calls the <see cref="Authenticate"/> event.
         /// </summary>
         /// <param name="eventArgs"></param>
         protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs)
@@ -122,14 +129,14 @@ namespace Cave.Net
         #region public functionality
 
         /// <summary>
-        /// Gets the certificate the server uses
+        /// Gets the certificate the server uses.
         /// </summary>
         public X509Certificate2 Certificate { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SslServer"/> class.
         /// </summary>
-        /// <param name="certificate">The certificate</param>
+        /// <param name="certificate">The certificate.</param>
         public SslServer(X509Certificate2 certificate)
         {
             Certificate = certificate as X509Certificate2;
@@ -140,10 +147,10 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Starts listening at the specified port (IPv4)
+        /// Starts listening at the specified port (IPv4).
         /// </summary>
-        /// <param name="address">The ip address to listen at</param>
-        /// <param name="port">The port (1..65534) to listen at</param>
+        /// <param name="address">The ip address to listen at.</param>
+        /// <param name="port">The port (1..65534) to listen at.</param>
         public void Listen(IPAddress address, int port)
         {
             if (isClosed)
@@ -153,16 +160,16 @@ namespace Cave.Net
 
             var listener = new TcpListener(address, port)
             {
-                ExclusiveAddressUse = true
+                ExclusiveAddressUse = true,
             };
             Task.Factory.StartNew(new Action<object>(Listen), listener);
             listeners.Add(listener);
         }
 
         /// <summary>
-        /// Starts listening at the specified local <see cref="IPEndPoint"/>
+        /// Starts listening at the specified local <see cref="IPEndPoint"/>.
         /// </summary>
-        /// <param name="iPEndPoint">The local IPEndPoint to listen at</param>
+        /// <param name="iPEndPoint">The local IPEndPoint to listen at.</param>
         public void Listen(IPEndPoint iPEndPoint)
         {
             if (isClosed)
@@ -172,14 +179,14 @@ namespace Cave.Net
 
             var listener = new TcpListener(iPEndPoint)
             {
-                ExclusiveAddressUse = true
+                ExclusiveAddressUse = true,
             };
             Task.Factory.StartNew(new Action<object>(Listen), listener);
             listeners.Add(listener);
         }
 
         /// <summary>
-        /// Provides a list of local IPEndPoints currently listened at
+        /// Gets a list of local IPEndPoints currently listened at.
         /// </summary>
         public IPEndPoint[] LocalEndPoints
         {
@@ -200,7 +207,7 @@ namespace Cave.Net
         public string LogSourceName => "SslServer";
 
         /// <summary>
-        /// Stops listening and closes all client connections and the server
+        /// Stops listening and closes all client connections and the server.
         /// </summary>
         public void Close()
         {

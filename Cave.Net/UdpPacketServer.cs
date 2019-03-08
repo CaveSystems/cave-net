@@ -10,7 +10,7 @@ using Cave.IO;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides a udp server using <see cref="UdpPacket"/> client server communication
+    /// Provides a udp server using <see cref="UdpPacket"/> client server communication.
     /// </summary>
     public class UdpPacketServer
     {
@@ -29,7 +29,7 @@ namespace Cave.Net
 
         /// <summary>
         /// Will be called whenever a timeout occured in a background thread.
-        /// If you override this function do not forget to call the base method!
+        /// If you override this function do not forget to call the base method.
         /// </summary>
         /// <param name="remoteEndPoint">Remote endpoint.</param>
         protected virtual void OnTimeout(IPEndPoint remoteEndPoint)
@@ -46,7 +46,7 @@ namespace Cave.Net
 
         /// <summary>
         /// Will be called whenever a new packet was received.
-        /// If you override this function do not forget to call the base method!
+        /// If you override this function do not forget to call the base method.
         /// </summary>
         /// <param name="packet">Incoming packet.</param>
         protected virtual void OnPacketIncoming(UdpPacket packet)
@@ -63,7 +63,7 @@ namespace Cave.Net
 
         /// <summary>
         /// Will be called whenever a new connection was established.
-        /// If you override this function do not forget to call the base method!
+        /// If you override this function do not forget to call the base method.
         /// </summary>
         /// <param name="remoteEndPoint">Remote endpoint.</param>
         protected virtual void OnNewConnection(IPEndPoint remoteEndPoint)
@@ -80,9 +80,9 @@ namespace Cave.Net
 
         /// <summary>
         /// Will be called whenever an exception occurs in an background thread.
-        /// If you override this function do not forget to call the base method!
+        /// If you override this function do not forget to call the base method.
         /// </summary>
-        /// <param name="ex">Exception</param>
+        /// <param name="ex">Exception.</param>
         protected virtual void OnException(Exception ex)
         {
             try
@@ -241,7 +241,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Starts listening at the specified <see cref="IPEndPoint"/>
+        /// Starts listening at the specified <see cref="IPEndPoint"/>.
         /// </summary>
         /// <param name="ipEndPoint">Ip endpoint to listen at.</param>
         public void Listen(EndPoint ipEndPoint)
@@ -263,7 +263,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Starts listening at the specified hostname and port
+        /// Starts listening at the specified hostname and port.
         /// </summary>
         /// <param name="hostName">Hostname to listen at.</param>
         /// <param name="port">Port to listen at.</param>
@@ -276,7 +276,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Starts listening at the specified ipaddress and port
+        /// Starts listening at the specified ipaddress and port.
         /// </summary>
         /// <param name="address">Local address to listen at.</param>
         /// <param name="port">Port to listen at.</param>
@@ -286,7 +286,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Listens at any ipv6 and ipv4 interfaces at the specified port
+        /// Listens at any ipv6 and ipv4 interfaces at the specified port.
         /// </summary>
         /// <param name="port">Port to listen at.</param>
         public void Listen(int port)
@@ -296,7 +296,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Gets the local <see cref="IPEndPoint"/>s currently connected
+        /// Gets the local <see cref="IPEndPoint"/>s currently connected.
         /// </summary>
         public IPEndPoint[] LocalEndPoints
         {
@@ -316,7 +316,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Gets the remote <see cref="IPEndPoint"/>s currently connected
+        /// Gets the remote <see cref="IPEndPoint"/>s currently connected.
         /// </summary>
         public IPEndPoint[] RemoteEndPoints
         {
@@ -330,7 +330,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Obtains a list of all clients seen active within <see cref="Timeout"/>
+        /// Gets a list of all clients seen active within <see cref="Timeout"/>.
         /// </summary>
         public UdpPacketClient[] Clients
         {
@@ -344,7 +344,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Sends a packet via the client connected to the packets destination
+        /// Sends a packet via the client connected to the packets destination.
         /// </summary>
         /// <param name="packet"></param>
         public virtual void Send(UdpPacket packet)
@@ -367,25 +367,25 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Sends a packet via the client connected to the specified destination
+        /// Sends a packet via the client connected to the specified destination.
         /// </summary>
         /// <param name="destination">Remote endpoint to send data to.</param>
-        /// <param name="data">Byte array to send</param>
+        /// <param name="data">Byte array to send.</param>
         public void Send(IPEndPoint destination, byte[] data) => Send(destination, data, 0, data.Length);
 
         /// <summary>
-        /// Sends a packet via the client connected to the specified destination
+        /// Sends a packet via the client connected to the specified destination.
         /// </summary>
         /// <param name="destination">Remote endpoint to send data to.</param>
-        /// <param name="data">Byte array to send</param>
+        /// <param name="data">Byte array to send.</param>
         /// <param name="size">Number of bytes to send.</param>
         public void Send(IPEndPoint destination, byte[] data, int size) => Send(destination, data, 0, size);
 
         /// <summary>
-        /// Sends a packet via the client connected to the specified destination
+        /// Sends a packet via the client connected to the specified destination.
         /// </summary>
         /// <param name="destination">Remote endpoint to send data to.</param>
-        /// <param name="data">Byte array to send</param>
+        /// <param name="data">Byte array to send.</param>
         /// <param name="offset">Offset at buffer to start sending at.</param>
         /// <param name="size">Number of bytes to send.</param>
         public void Send(IPEndPoint destination, byte[] data, int offset, int size)
@@ -408,7 +408,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Obtains the string "UcpPacketServer&lt;LocalEndPoint[s]&gt;
+        /// Obtains the string "UcpPacketServer&lt;LocalEndPoint[s]&gt;.
         /// </summary>
         /// <returns></returns>
         public override string ToString()
@@ -417,7 +417,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Closes the <see cref="UdpPacketServer"/>
+        /// Closes the <see cref="UdpPacketServer"/>.
         /// </summary>
         public virtual void Close()
         {

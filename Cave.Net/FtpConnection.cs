@@ -7,14 +7,14 @@ using Cave.IO;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides a simple asynchronous http fetch
+    /// Provides a simple asynchronous http fetch.
     /// </summary>
     public sealed class FtpConnection
     {
         /// <summary>
-        /// Directly obtains the data of the file represented by the specified connectionstring
+        /// Directly obtains the data of the file represented by the specified connectionstring.
         /// </summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <returns>Returns an array of byte.</returns>
         public static byte[] Get(ConnectionString connectionString)
         {
@@ -23,9 +23,9 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Directly obtains the data of the specified fileName by using the specified connectionstring as string
+        /// Directly obtains the data of the specified fileName by using the specified connectionstring as string.
         /// </summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <returns>Returns the downloaded data as string (utf8).</returns>
         public static string GetString(ConnectionString connectionString)
         {
@@ -58,9 +58,9 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Obtains a list of files and directories at the current path
+        /// Obtains a list of files and directories at the current path.
         /// </summary>
-        /// <param name="connectionString">The full connectionstring for the path to list</param>
+        /// <param name="connectionString">The full connectionstring for the path to list.</param>
         /// <returns>Returns a new array of strings. This is may be empty but is never null.</returns>
         public string[] List(ConnectionString connectionString)
         {
@@ -98,9 +98,9 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Uploads a file
+        /// Uploads a file.
         /// </summary>
-        /// <param name="connectionString">The full connectionstring for the upload</param>
+        /// <param name="connectionString">The full connectionstring for the upload.</param>
         /// <param name="data">Byte array to upload.</param>
         public void Upload(ConnectionString connectionString, byte[] data)
         {
@@ -126,9 +126,9 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Uploads a file
+        /// Uploads a file.
         /// </summary>
-        /// <param name="connectionString">The full connectionstring for the upload</param>
+        /// <param name="connectionString">The full connectionstring for the upload.</param>
         /// <param name="stream">The stream to upload.</param>
         /// <returns>Returns the number of bytes uploaded.</returns>
         public long Upload(ConnectionString connectionString, Stream stream)
@@ -157,9 +157,9 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Downloads a file
+        /// Downloads a file.
         /// </summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <returns>Returns an array of bytes.</returns>
         public byte[] Download(ConnectionString connectionString)
         {
@@ -196,9 +196,9 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Downloads a file
+        /// Downloads a file.
         /// </summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <param name="stream">Target stream to download to.</param>
         /// <returns>Returns the number of bytes downloaded.</returns>
         public long Download(ConnectionString connectionString, Stream stream)

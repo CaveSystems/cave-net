@@ -10,7 +10,7 @@ using System.Threading;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides a fast TcpServer implementation
+    /// Provides a fast TcpServer implementation.
     /// </summary>
     /// <typeparam name="TClient">The type of the client.</typeparam>
     /// <seealso cref="IDisposable" />
@@ -222,7 +222,7 @@ AcceptCompletedBegin:
 
         /// <summary>Listens at the specified end point.</summary>
         /// <param name="endPoint">The end point.</param>
-        /// <exception cref="ObjectDisposedException">TcpServer</exception>
+        /// <exception cref="ObjectDisposedException">TcpServer.</exception>
         public void Listen(IPEndPoint endPoint)
         {
             if (disposed)
@@ -255,13 +255,13 @@ AcceptCompletedBegin:
 
         /// <summary>Listens at the specified port on IPv4 and IPv6 if available.</summary>
         /// <param name="port">The port.</param>
-        /// <exception cref="ObjectDisposedException">TcpServer</exception>
+        /// <exception cref="ObjectDisposedException">TcpServer.</exception>
         public void Listen(int port) => Listen(port, null);
 
         /// <summary>Listens at the specified port.</summary>
         /// <param name="port">The port.</param>
         /// <param name="useIPv6">Use dualstack socket. Defaults value is true.</param>
-        /// <exception cref="ObjectDisposedException">TcpServer</exception>
+        /// <exception cref="ObjectDisposedException">TcpServer.</exception>
         public void Listen(int port, bool? useIPv6 = null)
         {
             if (disposed)
@@ -328,8 +328,8 @@ AcceptCompletedBegin:
 
         /// <summary>Gets or sets the maximum number of pending connections.</summary>
         /// <value>The maximum length of the pending connections queue.</value>
-        /// <remarks>On high load this should be 10 x <see cref="AcceptThreads"/></remarks>
-        /// <exception cref="InvalidOperationException">Socket is already listening!</exception>
+        /// <remarks>On high load this should be 10 x <see cref="AcceptThreads"/>.</remarks>
+        /// <exception cref="InvalidOperationException">Socket is already listening.</exception>
         public int AcceptBacklog
         {
             get => acceptBacklog;
@@ -346,7 +346,7 @@ AcceptCompletedBegin:
 
         /// <summary>Gets or sets the number of threads used to accept connections.</summary>
         /// <value>The maximum length of the pending connections queue.</value>
-        /// <exception cref="InvalidOperationException">Socket is already listening!</exception>
+        /// <exception cref="InvalidOperationException">Socket is already listening.</exception>
         public int AcceptThreads
         {
             get => acceptThreads;
@@ -363,8 +363,8 @@ AcceptCompletedBegin:
 
         /// <summary>Gets or sets the size of the buffer used when receiving data.</summary>
         /// <value>The size of the buffer.</value>
-        /// <exception cref="InvalidOperationException">Socket is already listening!</exception>
-        /// <exception cref="ArgumentOutOfRangeException">value</exception>
+        /// <exception cref="InvalidOperationException">Socket is already listening.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">value.</exception>
         public int BufferSize
         {
             get => tcpBufferSize;
@@ -459,7 +459,7 @@ AcceptCompletedBegin:
         /// <summary>
         /// Returns a string that represents the current object.
         /// </summary>
-        /// <returns>tcp://localip:port</returns>
+        /// <returns>tcp://localip:port.</returns>
         public override string ToString() => $"tcp://{LocalEndPoint}";
     }
 }

@@ -3,7 +3,7 @@
 namespace Cave.Net.Dns
 {
     /// <summary>
-    /// Provides a dns query
+    /// Provides a dns query.
     /// </summary>
     public struct DnsQuery
     {
@@ -38,21 +38,21 @@ namespace Cave.Net.Dns
             {
                 Name = DomainName.Parse(reader),
                 RecordType = (DnsRecordType)reader.ReadUInt16(),
-                RecordClass = (DnsRecordClass)reader.ReadUInt16()
+                RecordClass = (DnsRecordClass)reader.ReadUInt16(),
             };
             return result;
         }
 
-        /// <summary>The name</summary>
+        /// <summary>The name.</summary>
         public DomainName Name;
 
-        /// <summary>The record type</summary>
+        /// <summary>The record type.</summary>
         public DnsRecordType RecordType;
 
-        /// <summary>The record class</summary>
+        /// <summary>The record class.</summary>
         public DnsRecordClass RecordClass;
 
-        /// <summary>The flags</summary>
+        /// <summary>The flags.</summary>
         public DnsFlags Flags;
 
         internal void Write(DataWriter writer)

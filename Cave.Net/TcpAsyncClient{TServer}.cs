@@ -1,9 +1,9 @@
 ﻿namespace Cave.Net
 {
     /// <summary>
-    /// Provides an async tcp client implementation for typed server instances
+    /// Provides an async tcp client implementation for typed server instances.
     /// </summary>
-    /// <typeparam name="TServer">The server intance type. This is used with <see cref="TypedTcpServer{TClient}"/></typeparam>
+    /// <typeparam name="TServer">The server intance type. This is used with <see cref="TypedTcpServer{TClient}"/>.</typeparam>
     public class TcpAsyncClient<TServer> : TcpAsyncClient
         where TServer : ITcpServer
     {

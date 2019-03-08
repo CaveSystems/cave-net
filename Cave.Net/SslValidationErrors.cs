@@ -3,7 +3,7 @@ using System;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides ssl validation errors
+    /// Provides ssl validation errors.
     /// </summary>
     [Flags]
     public enum SslValidationErrors

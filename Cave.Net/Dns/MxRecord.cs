@@ -3,7 +3,7 @@
 namespace Cave.Net.Dns
 {
     /// <summary>
-    /// Provides a MaileXchange dns record
+    /// Provides a MaileXchange dns record.
     /// </summary>
     public struct MxRecord
     {
@@ -15,15 +15,15 @@ namespace Cave.Net.Dns
             var result = new MxRecord
             {
                 Preference = reader.ReadUInt16(),
-                ExchangeDomainName = DomainName.Parse(reader)
+                ExchangeDomainName = DomainName.Parse(reader),
             };
             return result;
         }
 
-        /// <summary>The preference value</summary>
+        /// <summary>The preference value.</summary>
         public ushort Preference;
 
-        /// <summary>The exchange domain name</summary>
+        /// <summary>The exchange domain name.</summary>
         public DomainName ExchangeDomainName;
 
         /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>

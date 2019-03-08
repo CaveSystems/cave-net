@@ -7,14 +7,14 @@ using Cave.IO;
 namespace Cave.Net.Dns
 {
     /// <summary>
-    /// Provides a dns record
+    /// Provides a dns record.
     /// </summary>
     public class DnsRecord
     {
         /// <summary>Parses a record from the specified reader.</summary>
         /// <param name="reader">The reader.</param>
         /// <returns>Returns the dns record found.</returns>
-        /// <exception cref="NotImplementedException">RecordType not implemented!</exception>
+        /// <exception cref="NotImplementedException">RecordType not implemented.</exception>
         public static DnsRecord Parse(DataReader reader)
         {
             long start = reader.BaseStream.Position;
@@ -24,7 +24,7 @@ namespace Cave.Net.Dns
                 Name = DomainName.Parse(reader),
                 RecordType = (DnsRecordType)reader.ReadUInt16(),
                 RecordClass = (DnsRecordClass)reader.ReadUInt16(),
-                TimeToLive = reader.ReadInt32()
+                TimeToLive = reader.ReadInt32(),
             };
 
             int length = reader.ReadUInt16();

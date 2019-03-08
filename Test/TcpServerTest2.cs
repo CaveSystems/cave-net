@@ -19,6 +19,8 @@ namespace Test
     [TestFixture]
     public class TcpServerTest2
     {
+        static int firstPort = 2148 + Environment.TickCount % 1024;
+
         public IPAddress[] GetMyAddresses(bool includeLoopback)
         {
             var interfaces = NetworkInterface.GetAllNetworkInterfaces().Where(i => i.OperationalStatus == OperationalStatus.Up);
@@ -31,9 +33,7 @@ namespace Test
         [Test]
         public void TestAccept()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer
             {
                 AcceptThreads = 10,
@@ -48,7 +48,7 @@ namespace Test
             {
                 Assert.AreEqual($"tcp://0.0.0.0:{port}", server.ToString());
             }
-            Console.WriteLine($"Test : info {id}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             var addresses = GetMyAddresses(true);
             foreach (var addr in addresses)
@@ -59,7 +59,7 @@ namespace Test
                     client.Send(new byte[1000]);
                     client.Close();
                 }
-                Console.WriteLine($"Test : info {id}: Test connect to {addr} successful.");
+                Console.WriteLine($"Test : info TP{port}: Test connect to {addr} successful.");
             }
 
             var count = 10000;
@@ -76,17 +76,15 @@ namespace Test
             });
             watch.Stop();
 
-            Console.WriteLine($"Test : info {id}: {success} connections in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {success} connections in {watch.Elapsed}");
             var cps = Math.Round(success / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info {id}: {cps} connections/s");
+            Console.WriteLine($"Test : info TP{port}: {cps} connections/s");
         }
 
         [Test]
         public void TestAccept_SingleThread()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer
             {
                 AcceptThreads = 1,
@@ -101,7 +99,7 @@ namespace Test
             {
                 Assert.AreEqual($"tcp://0.0.0.0:{port}", server.ToString());
             }
-            Console.WriteLine($"Test : info {id}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             var addresses = GetMyAddresses(true);
             foreach (var addr in addresses)
@@ -112,7 +110,7 @@ namespace Test
                     client.Send(new byte[1000]);
                     client.Close();
                 }
-                Console.WriteLine($"Test : info {id}: Test connect to {addr} successful.");
+                Console.WriteLine($"Test : info TP{port}: Test connect to {addr} successful.");
             }
 
             var count = 10000;
@@ -129,17 +127,15 @@ namespace Test
             });
             watch.Stop();
 
-            Console.WriteLine($"Test : info {id}: {success} connections in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {success} connections in {watch.Elapsed}");
             var cps = Math.Round(success / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info {id}: {cps} connections/s");
+            Console.WriteLine($"Test : info TP{port}: {cps} connections/s");
         }
 
         [Test]
         public void TestErrors()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer
             {
                 AcceptThreads = 1,
@@ -148,7 +144,7 @@ namespace Test
             Assert.AreEqual(false, server.IsListening);
             server.Listen(port);
             Assert.AreEqual(true, server.IsListening);
-            Console.WriteLine($"Test : info {id}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             try { server.AcceptBacklog = 10; }
             catch (Exception ex)
@@ -189,7 +185,7 @@ namespace Test
             void QueueError(object sender, TcpServerClientExceptionEventArgs<TcpAsyncClient> e)
             {
                 exceptions.Enqueue(e.Exception);
-                Console.WriteLine($"Test : info {id}: Client {e.Client} Error Test {e.Exception.Message}");
+                Console.WriteLine($"Test : info TP{port}: Client {e.Client} Error Test {e.Exception.Message}");
             }
             server.ClientAccepted += AcceptError;
             server.ClientException += QueueError;
@@ -203,7 +199,7 @@ namespace Test
                     catch { }
                 }
             }
-            Console.WriteLine($"Test : info {id}: Test connect to ::1 successful.");
+            Console.WriteLine($"Test : info TP{port}: Test connect to ::1 successful.");
 
             {
                 Assert.AreEqual(1, exceptions.Count);
@@ -231,7 +227,7 @@ namespace Test
                     catch { }
                 }
             }
-            Console.WriteLine($"Test : info {id}: Test connect to ::1 successful.");
+            Console.WriteLine($"Test : info TP{port}: Test connect to ::1 successful.");
 
             {
                 Assert.AreEqual(1, exceptions.Count);
@@ -250,9 +246,7 @@ namespace Test
         [Test]
         public void TestSend()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) =>
@@ -262,7 +256,7 @@ namespace Test
                     e2.Handled = true;
                 };
             };
-            Console.WriteLine($"Test : info {id}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             long bytes = 0;
             var watch = Stopwatch.StartNew();
@@ -281,21 +275,19 @@ namespace Test
                     }
                     client.Close();
                 }
-                Console.WriteLine($"Test : info {id}: Client {n + 1} {addr} completed.");
+                Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
             });
             watch.Stop();
 
-            Console.WriteLine($"Test : info {id}: {bytes.ToString("N")} bytes in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {bytes.ToString("N")} bytes in {watch.Elapsed}");
             var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info {id}: {bps.ToString("N")} bytes/s");
+            Console.WriteLine($"Test : info TP{port}: {bps.ToString("N")} bytes/s");
         }
 
         [Test]
         public void TestStreamWrite()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) =>
@@ -305,7 +297,7 @@ namespace Test
                     e1.Client.Stream.ReadBlock(e1.Client.Stream.Available);
                 };
             };
-            Console.WriteLine($"Test : info {id}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             long bytes = 0;
             var watch = Stopwatch.StartNew();
@@ -332,21 +324,19 @@ namespace Test
                     client.Stream.Flush();
                     client.Close();
                 }
-                Console.WriteLine($"Test : info {id}: Client {n + 1} {addr} completed.");
+                Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
             });
             watch.Stop();
 
-            Console.WriteLine($"Test : info {id}: {bytes.ToString("N")} bytes in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {bytes.ToString("N")} bytes in {watch.Elapsed}");
             var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info {id}: {bps.ToString("N")} bytes/s");
+            Console.WriteLine($"Test : info TP{port}: {bps.ToString("N")} bytes/s");
         }
 
         [Test]
         public void TestStreamDirectWrite()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) =>
@@ -357,7 +347,7 @@ namespace Test
                     e1.Client.Stream.ReadBlock(e1.Client.Stream.Available);
                 };
             };
-            Console.WriteLine($"Test : info {id}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             long bytes = 0;
             var watch = Stopwatch.StartNew();
@@ -377,15 +367,14 @@ namespace Test
                     }
                     client.Close();
                 }
-                Console.WriteLine($"Test : info {id}: Client {n + 1} {addr} completed.");
+                Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
             });
             watch.Stop();
 
-            Console.WriteLine($"Test : info {id}: {bytes.ToString("N")} bytes in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {bytes.ToString("N")} bytes in {watch.Elapsed}");
             var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info {id}: {bps.ToString("N")} bytes/s");
+            Console.WriteLine($"Test : info TP{port}: {bps.ToString("N")} bytes/s");
         }
-
 
         [Test]
         public void TestDisconnectAsync()
@@ -394,10 +383,7 @@ namespace Test
             var serverClientDisconnectedEventCount = 0;
             var clientConnectedEventCount = 0;
             var clientDisconnectedEventCount = 0;
-
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) =>
@@ -411,7 +397,7 @@ namespace Test
                     Interlocked.Increment(ref serverClientDisconnectedEventCount);
                 };
             };
-            Console.WriteLine($"Test : info {id}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             var clients = new ConcurrentBag<TcpAsyncClient>();
             var ip = IPAddress.Parse("127.0.0.1");
@@ -434,7 +420,7 @@ namespace Test
             //no client disconnected
             Assert.AreEqual(0, clientDisconnectedEventCount);
 
-            Console.WriteLine($"Test : info {id}: ConnectedEventCount ok.");
+            Console.WriteLine($"Test : info TP{port}: ConnectedEventCount ok.");
 
             //give the server some more time
             Task.Delay(2000).Wait();
@@ -446,7 +432,7 @@ namespace Test
             Assert.AreEqual(0, clientDisconnectedEventCount);
             Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
 
-            Console.WriteLine($"Test : info {id}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
+            Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
 
             //disconnect some
             int i = 0, disconnected = 0;
@@ -467,7 +453,7 @@ namespace Test
             Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
             Assert.AreEqual(clientConnectedEventCount - disconnected, server.Clients.Length);
 
-            Console.WriteLine($"Test : info {id}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
+            Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
 
             foreach (TcpAsyncClient client in clients)
             {
@@ -480,15 +466,13 @@ namespace Test
 
             Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
 
-            Console.WriteLine($"Test : info {id}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
+            Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
         }
 
         [Test]
         public void TestPortAlreadyInUse1()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var listen = TcpListener.Create(port);
             listen.Start();
             try
@@ -510,9 +494,7 @@ namespace Test
         [Test]
         public void TestPortAlreadyInUse2()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var listen = new TcpListener(IPAddress.Any, port);
             listen.Start();
             try
@@ -534,9 +516,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Client2TcpListener()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var listen = new TcpListener(IPAddress.Loopback, port);
             listen.Start();
             try
@@ -578,9 +558,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Client2TcpListener_DirectWrite()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var listen = new TcpListener(IPAddress.Loopback, port);
             listen.Start();
             try
@@ -623,9 +601,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Client2Server()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -668,9 +644,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Client2Server_DirectWrites()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -715,9 +689,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Client2Server_CloseBeforeRead()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -767,9 +739,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Client2Server_CloseBeforeRead_DirectWrite()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -821,9 +791,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Server2Client()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -867,9 +835,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Server2Client_DirectWrites()
         {
-            var id = MethodBase.GetCurrentMethod().Name;
-            var port = 2048 + MethodBase.GetCurrentMethod().GetHashCode() % 1024;
-
+            var port = Interlocked.Increment(ref firstPort);
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))

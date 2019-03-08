@@ -10,7 +10,7 @@ using Cave.IO;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides a simple asynchronous http fetch
+    /// Provides a simple asynchronous http fetch.
     /// </summary>
     public sealed class HttpConnection
     {
@@ -61,8 +61,8 @@ namespace Cave.Net
             Trace.WriteLine("UseUnsafeHeaderParsing <red>disabled.");
         }
 
-        /// <summary>Directly obtains the data of the file represented by the specified connectionstring</summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <param name="proxy">The proxy.</param>
         /// <returns>Returns the downloaded byte array.</returns>
         public static byte[] Get(ConnectionString connectionString, ConnectionString? proxy = null)
@@ -76,9 +76,9 @@ namespace Cave.Net
             return connection.Download(connectionString);
         }
 
-        /// <summary>Directly obtains the data of the file represented by the specified connectionstring</summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
-        /// <param name="callback">Callback to run after each block or null</param>
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <param name="callback">Callback to run after each block or null.</param>
         /// <param name="proxy">The proxy.</param>
         /// <param name="userItem">The user item.</param>
         /// <returns>Returns the downloaded byte array.</returns>
@@ -94,10 +94,10 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Directly obtains the data of the file represented by the specified connectionstring
+        /// Directly obtains the data of the file represented by the specified connectionstring.
         /// </summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
-        /// <param name="stream">Stream to copy the received content to</param>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <param name="stream">Stream to copy the received content to.</param>
         /// <param name="proxy">The proxy.</param>
         /// <returns>Returns the number of bytes copied.</returns>
         public static long Copy(ConnectionString connectionString, Stream stream, ConnectionString? proxy = null)
@@ -111,10 +111,10 @@ namespace Cave.Net
             return connection.Download(connectionString, stream);
         }
 
-        /// <summary>Directly obtains the data of the file represented by the specified connectionstring</summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
-        /// <param name="stream">Stream to copy the received content to</param>
-        /// <param name="callback">Callback to run after each block or null</param>
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <param name="stream">Stream to copy the received content to.</param>
+        /// <param name="callback">Callback to run after each block or null.</param>
         /// <param name="proxy">The proxy.</param>
         /// <param name="userItem">The user item.</param>
         /// <returns>Returns the number of bytes copied.</returns>
@@ -130,9 +130,9 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Directly obtains the data of the file represented by the specified connectionstring as string
+        /// Directly obtains the data of the file represented by the specified connectionstring as string.
         /// </summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <param name="proxy">The proxy.</param>
         /// <returns>Returns downloaded data as string (utf8).</returns>
         public static string GetString(ConnectionString connectionString, ConnectionString? proxy = null)
@@ -140,7 +140,7 @@ namespace Cave.Net
             return Encoding.UTF8.GetString(Get(connectionString, proxy));
         }
 
-        /// <summary>The headers to use</summary>
+        /// <summary>The headers to use.</summary>
         public readonly Dictionary<string, string> Headers = new Dictionary<string, string>();
 
         #region private functionality
@@ -179,7 +179,7 @@ namespace Cave.Net
             newRequest.CookieContainer = new CookieContainer();
             var credentialCache = new CredentialCache
             {
-                { connectionString.ToUri(), "plain", connectionString.GetCredentials() }
+                { connectionString.ToUri(), "plain", connectionString.GetCredentials() },
             };
             newRequest.Credentials = credentialCache;
             newRequest.KeepAlive = false;
@@ -198,7 +198,7 @@ namespace Cave.Net
         /// <value>The referer.</value>
         public string Referer;
 
-        /// <summary>The accept string</summary>
+        /// <summary>The accept string.</summary>
         public string Accept;
 
         /// <summary>Gets or sets the user agent.</summary>
@@ -224,14 +224,14 @@ namespace Cave.Net
         public IWebProxy Proxy;
 
         /// <summary>
-        /// Download Timeout
+        /// Download Timeout.
         /// </summary>
         public TimeSpan Timeout = TimeSpan.FromSeconds(5);
 
         /// <summary>
-        /// Downloads a file
+        /// Downloads a file.
         /// </summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <returns>Returns a byte array.</returns>
         public byte[] Download(ConnectionString connectionString)
         {
@@ -254,9 +254,9 @@ namespace Cave.Net
             }
         }
 
-        /// <summary>Downloads a file</summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
-        /// <param name="callback">Callback to run after each block or null</param>
+        /// <summary>Downloads a file.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <param name="callback">Callback to run after each block or null.</param>
         /// <param name="userItem">The user item.</param>
         /// <returns></returns>
         public byte[] Download(ConnectionString connectionString, ProgressCallback callback, object userItem = null)
@@ -281,9 +281,9 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Downloads a file
+        /// Downloads a file.
         /// </summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <param name="stream">Target stream to download to.</param>
         /// <returns>Returns the number of bytes downloaded.</returns>
         public long Download(ConnectionString connectionString, Stream stream)
@@ -307,10 +307,10 @@ namespace Cave.Net
             }
         }
 
-        /// <summary>Downloads a file</summary>
-        /// <param name="connectionString">The full connectionstring for the download</param>
+        /// <summary>Downloads a file.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <param name="stream">Target stream to download to.</param>
-        /// <param name="callback">Callback to run after each block or null</param>
+        /// <param name="callback">Callback to run after each block or null.</param>
         /// <param name="userItem">The user item.</param>
         /// <returns>Returns the number of bytes downloaded.</returns>
         public long Download(ConnectionString connectionString, Stream stream, ProgressCallback callback, object userItem = null)

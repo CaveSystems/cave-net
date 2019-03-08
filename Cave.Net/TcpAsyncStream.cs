@@ -8,9 +8,9 @@ using Cave.IO;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides a stream implementation for <see cref="TcpAsyncClient"/>
+    /// Provides a stream implementation for <see cref="TcpAsyncClient"/>.
     /// </summary>
-    /// <remarks>All functions of this class are threadsafe</remarks>
+    /// <remarks>All functions of this class are threadsafe.</remarks>
     public class TcpAsyncStream : Stream
     {
         readonly FifoBuffer sendBuffer = new FifoBuffer();
@@ -59,7 +59,7 @@ namespace Cave.Net
         public bool DirectWrites { get; set; }
 
         /// <summary>
-        /// Gets the number of bytes available for reading
+        /// Gets the number of bytes available for reading.
         /// </summary>
         public int Available
         {
@@ -176,11 +176,11 @@ namespace Cave.Net
         /// Reads data from the the buffers. A maximum of count bytes is read but if less is available any number of bytes may be read.
         /// If no bytes are available the read method will block until at least one byte is available, the connection is closed or the timeout is reached.
         /// </summary>
-        /// <param name="array">byte array to write data to</param>
-        /// <param name="offset">start offset at array to begin writing at</param>
-        /// <param name="count">number of bytes to read</param>
+        /// <param name="array">byte array to write data to.</param>
+        /// <param name="offset">start offset at array to begin writing at.</param>
+        /// <param name="count">number of bytes to read.</param>
         /// <returns>The total number of bytes read into the buffer. This can be less than the number of bytes requested if that many bytes are not currently available, or zero (0) if the end of the stream has been reached.</returns>
-        /// <exception cref="TimeoutException">A timeout occured while waiting for incoming data. (See <see cref="ReadTimeout"/>)</exception>
+        /// <exception cref="TimeoutException">A timeout occured while waiting for incoming data. (See <see cref="ReadTimeout"/>).</exception>
         public override int Read(byte[] array, int offset, int count)
         {
             DateTime timeout = client.ReceiveTimeout > 0 ? DateTime.UtcNow + TimeSpan.FromMilliseconds(client.ReceiveTimeout) : DateTime.MaxValue;
@@ -209,7 +209,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Not supported
+        /// Not supported.
         /// </summary>
         /// <param name="offset">A byte offset relative to the <paramref name="origin"/> parameter.</param>
         /// <param name="origin">A value of type <see cref="SeekOrigin"/> indicating the reference point used to obtain the new position.</param>
@@ -221,7 +221,7 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Not supported
+        /// Not supported.
         /// </summary>
         /// <param name="value">The desired length of the current stream in bytes.</param>
         /// <exception cref="NotSupportedException">The stream does not support both writing and seeking.</exception>
@@ -269,7 +269,7 @@ namespace Cave.Net
         }
 #else
         /// <summary>
-        /// Closes the tcp connection
+        /// Closes the tcp connection.
         /// </summary>
         public override void Close()
         {

@@ -7,7 +7,7 @@ using Cave.IO;
 namespace Cave.Net.Dns
 {
     /// <summary>
-    /// Provides a DnsAnswer
+    /// Provides a DnsAnswer.
     /// </summary>
     public class DnsResponse
     {
