@@ -37,7 +37,7 @@ steps:
       {
         Write-Host "VersionSuffix: ''"
       }
-      $var = $(git describe --tags $(git rev-list --tags --max-count=1))
+      $var = $(git describe --tags $(git rev-list --tags --max-count=1)).Trim()
       if ($var -eq '')
       {
         $ver = [Version]"0.0.1"
