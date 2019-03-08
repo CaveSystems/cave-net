@@ -70,6 +70,7 @@ steps:
   inputs:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+    testAssemblyVer2: "**\Test.exe"
 
 - task: NuGetCommand@2
   displayName: Push to nuget (release)
