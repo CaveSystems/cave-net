@@ -26,7 +26,7 @@ namespace Cave.Net.Ntp
             int length = socket.EndReceiveFrom(ar, ref client);
             byte[] copy = new byte[length];
             Buffer.BlockCopy(buffer, 0, copy, 0, length);
-            UdpPacket packet = new UdpPacket()
+            var packet = new UdpPacket()
             {
                 Data = copy,
                 Size = (ushort)length,

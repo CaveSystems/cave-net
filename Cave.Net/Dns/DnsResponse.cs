@@ -11,7 +11,7 @@ namespace Cave.Net.Dns
     /// </summary>
     public class DnsResponse
     {
-        ushort m_Flags;
+        ushort flags;
 
         /// <summary>Gets the sender.</summary>
         /// <value>The sender.</value>
@@ -39,11 +39,11 @@ namespace Cave.Net.Dns
         internal DnsResponse(IPAddress srv, byte[] data)
         {
             Sender = srv;
-            using (MemoryStream ms = new MemoryStream(data))
+            using (var ms = new MemoryStream(data))
             {
-                DataReader reader = new DataReader(ms, endian: EndianType.BigEndian);
+                var reader = new DataReader(ms, endian: EndianType.BigEndian);
                 TransactionID = reader.ReadUInt16();
-                m_Flags = reader.ReadUInt16();
+                flags = reader.ReadUInt16();
                 int queryCount = reader.ReadUInt16();
                 int answerRecordCount = reader.ReadUInt16();
                 int authorityRecordCount = reader.ReadUInt16();
@@ -53,7 +53,8 @@ namespace Cave.Net.Dns
                 Answers = LoadRecords(reader, answerRecordCount);
                 Authorities = LoadRecords(reader, authorityRecordCount);
                 AdditionalRecords = LoadRecords(reader, additionalRecordCount);
-                //TODO signature
+
+                // TODO signature
             }
         }
 
@@ -63,10 +64,10 @@ namespace Cave.Net.Dns
         /// <returns></returns>
         IList<DnsRecord> LoadRecords(DataReader reader, int recordCount)
         {
-            List<DnsRecord> result = new List<DnsRecord>(recordCount);
+            var result = new List<DnsRecord>(recordCount);
             for (int i = 0; i < recordCount; i++)
             {
-                DnsRecord item = DnsRecord.Parse(reader);
+                var item = DnsRecord.Parse(reader);
                 result.Add(item);
             }
             return result.AsReadOnly();
@@ -74,10 +75,10 @@ namespace Cave.Net.Dns
 
         IList<DnsQuery> LoadQueries(DataReader reader, int queryCount)
         {
-            List<DnsQuery> result = new List<DnsQuery>(queryCount);
+            var result = new List<DnsQuery>(queryCount);
             for (int i = 0; i < queryCount; i++)
             {
-                DnsQuery item = DnsQuery.Parse(reader);
+                var item = DnsQuery.Parse(reader);
                 result.Add(item);
             }
             return result.AsReadOnly();
@@ -89,47 +90,47 @@ namespace Cave.Net.Dns
 
         /// <summary>Gets the flags.</summary>
         /// <value>The flags.</value>
-        public DnsFlags Flags => (DnsFlags)m_Flags & DnsFlags.MaskFlags;
+        public DnsFlags Flags => (DnsFlags)flags & DnsFlags.MaskFlags;
 
         /// <summary>Gets the response code.</summary>
         /// <value>The response code.</value>
-        public DnsResponseCode ResponseCode => (DnsResponseCode)(m_Flags & (int)DnsFlags.MaskResponseCode);
+        public DnsResponseCode ResponseCode => (DnsResponseCode)(flags & (int)DnsFlags.MaskResponseCode);
 
-        /// <summary>Gets or sets a value indicating whether this instance is an authoritive answer.</summary>
+        /// <summary>Gets a value indicating whether this instance is an authoritive answer.</summary>
         /// <value>
         /// <c>true</c> if this instance is authoritive answer; otherwise, <c>false</c>.
         /// </value>
-        public bool IsAuthoritiveAnswer => 0 != ((DnsFlags)m_Flags & DnsFlags.AuthoritiveAnswer);
+        public bool IsAuthoritiveAnswer => ((DnsFlags)flags & DnsFlags.AuthoritiveAnswer) != 0;
 
-        /// <summary>Gets or sets a value indicating whether this instance is a truncated response.</summary>
+        /// <summary>Gets a value indicating whether this instance is a truncated response.</summary>
         /// <value>
         /// <c>true</c> if this instance is truncated; otherwise, <c>false</c>.
         /// </value>
-        public bool IsTruncatedResponse => 0 != ((DnsFlags)m_Flags & DnsFlags.TruncatedResponse);
+        public bool IsTruncatedResponse => ((DnsFlags)flags & DnsFlags.TruncatedResponse) != 0;
 
-        /// <summary>Gets or sets a value indicating whether recursion is desired.</summary>
+        /// <summary>Gets a value indicating whether recursion is desired.</summary>
         /// <value>
         /// <c>true</c> if this instance is recursion desired; otherwise, <c>false</c>.
         /// </value>
-        public bool IsRecursionDesired => 0 != ((DnsFlags)m_Flags & DnsFlags.RecursionDesired);
+        public bool IsRecursionDesired => ((DnsFlags)flags & DnsFlags.RecursionDesired) != 0;
 
-        /// <summary>Gets or sets a value indicating whether recursion is available.</summary>
+        /// <summary>Gets a value indicating whether recursion is available.</summary>
         /// <value>
         /// <c>true</c> if this instance is recursion allowed; otherwise, <c>false</c>.
         /// </value>
-        public bool IsRecursionAvailable => 0 != ((DnsFlags)m_Flags & DnsFlags.RecursionAvailable);
+        public bool IsRecursionAvailable => ((DnsFlags)flags & DnsFlags.RecursionAvailable) != 0;
 
         /// <summary>Gets a value indicating whether this instance is authentic data.</summary>
         /// <value>
         /// <c>true</c> if this instance is authentic data; otherwise, <c>false</c>.
         /// </value>
-        public bool IsAuthenticData => 0 != ((DnsFlags)m_Flags & DnsFlags.AuthenticData);
+        public bool IsAuthenticData => ((DnsFlags)flags & DnsFlags.AuthenticData) != 0;
 
         /// <summary>Gets a value indicating whether this instance is checking disabled.</summary>
         /// <value>
         /// <c>true</c> if this instance is checking disabled; otherwise, <c>false</c>.
         /// </value>
-        public bool IsCheckingDisabled => 0 != ((DnsFlags)m_Flags & DnsFlags.CheckingDisabled);
+        public bool IsCheckingDisabled => ((DnsFlags)flags & DnsFlags.CheckingDisabled) != 0;
 
         /// <summary>Gets the name of the log source.</summary>
         /// <value>The name of the log source.</value>

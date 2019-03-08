@@ -5,7 +5,7 @@ using System.Net.Sockets;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides a udp packet sender
+    /// Provides a udp packet client for synchronous packet sending.
     /// </summary>
     public sealed class UdpPacketClient : IDisposable
     {
@@ -19,40 +19,40 @@ namespace Cave.Net
             return endPoint.AddressFamily;
         }
 
-        readonly bool UsesServerSocket;
-        Socket m_Socket;
-        bool m_Closed;
+        readonly bool usesServerSocket;
+        Socket socket;
+        bool closed;
 
         /// <summary>
-        /// Obtains the remote endpoint this client is primarily "connected" to. Be aware that udp does not support
+        /// Gets the remote endpoint this client is primarily "connected" to. Be aware that udp does not support
         /// connections the way tcp does.
         /// </summary>
         public IPEndPoint RemoteEndPoint { get; private set; }
 
         /// <summary>
-        /// Obtains the number of bytes a package may contain maximally until it may get fragmented
+        /// Gets the number of bytes a package may contain maximally until it may get fragmented
         /// </summary>
         public readonly int MaximumPayloadSize;
 
         /// <summary>
-        /// Obtains the local IPEndPoint
+        /// Gets the local IPEndPoint
         /// </summary>
-        public IPEndPoint LocalEndPoint => (IPEndPoint)m_Socket.LocalEndPoint;
+        public IPEndPoint LocalEndPoint => (IPEndPoint)socket.LocalEndPoint;
 
         /// <summary>
-        /// Provides access to the last activity date time
+        /// Gets or sets access to the last activity date time
         /// </summary>
         public DateTime LastActivity { get; set; }
 
         /// <summary>
-        /// Sets the maximum payload size for the specified address family
+        /// Initializes a new instance of the <see cref="UdpPacketClient"/> class.
         /// </summary>
-        /// <param name="addressFamily"></param>
+        /// <param name="addressFamily">The address familiy</param>
         UdpPacketClient(AddressFamily addressFamily)
         {
             LastActivity = DateTime.UtcNow;
-            MaximumPayloadSize = 576; //see IETF RFC 1122
-            //substract package header (ip header + udp header)
+            MaximumPayloadSize = 576; // see IETF RFC 1122
+            // substract package header (ip header + udp header)
             switch (addressFamily)
             {
                 case AddressFamily.InterNetwork: MaximumPayloadSize -= 20 + 8; break;
@@ -62,30 +62,30 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Creates a new client for the specified server socket
+        /// Initializes a new instance of the <see cref="UdpPacketClient"/> class.
         /// </summary>
-        /// <param name="remoteEndPoint"></param>
-        /// <param name="serverSocket"></param>
+        /// <param name="remoteEndPoint">The remote endpoint</param>
+        /// <param name="serverSocket">The server socket instance.</param>
         internal UdpPacketClient(IPEndPoint remoteEndPoint, Socket serverSocket)
             : this(GetAddressFamily(remoteEndPoint))
         {
             RemoteEndPoint = remoteEndPoint;
-            m_Socket = serverSocket;
-            UsesServerSocket = true;
-            if (m_Socket.AddressFamily != remoteEndPoint.AddressFamily)
+            socket = serverSocket;
+            usesServerSocket = true;
+            if (socket.AddressFamily != remoteEndPoint.AddressFamily)
             {
                 throw new ArgumentException("AddressFamily does not match!");
             }
         }
 
         /// <summary>
-        /// Creates a new client
+        /// Initializes a new instance of the <see cref="UdpPacketClient"/> class.
         /// </summary>
-        /// <param name="remoteEndPoint"></param>
+        /// <param name="remoteEndPoint">Remote endpoint.</param>
         public UdpPacketClient(IPEndPoint remoteEndPoint)
             : this(GetAddressFamily(remoteEndPoint))
         {
-            m_Socket = new Socket(remoteEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp)
+            socket = new Socket(remoteEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp)
             {
                 Blocking = true
             };
@@ -93,23 +93,66 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Sends a packet to the default <see cref="RemoteEndPoint"/>
+        /// Sends a packet to the specified <paramref name="remote"/>
         /// </summary>
-        /// <param name="data"></param>
-        /// <param name="size"></param>
-        public void Send(byte[] data, int size)
+        /// <param name="remote">Remote endpoint to send packet to.</param>
+        /// <param name="data">Byte array to send</param>
+        /// <param name="offset">Offset at buffer to start sending at.</param>
+        /// <param name="size">Number of bytes to send.</param>
+        public void Send(IPEndPoint remote, byte[] data, int offset, int size)
         {
-            lock (m_Socket)
+            if (closed)
             {
-                m_Socket.SendTo(data, size, SocketFlags.None, RemoteEndPoint);
+                throw new InvalidOperationException(string.Format("Client already closed!"));
+            }
+
+            lock (socket)
+            {
+                socket.SendTo(data, offset, size, SocketFlags.None, remote);
             }
             LastActivity = DateTime.UtcNow;
         }
 
         /// <summary>
+        /// Sends a packet to the specified <paramref name="remote"/>
+        /// </summary>
+        /// <param name="remote">Remote endpoint to send packet to.</param>
+        /// <param name="data">Byte array to send</param>
+        /// <param name="size">Number of bytes to send.</param>
+        public void Send(IPEndPoint remote, byte[] data, int size) => Send(data, 0, size);
+
+        /// <summary>
+        /// Sends a packet to the specified <paramref name="remote"/>
+        /// </summary>
+        /// <param name="remote">Remote endpoint to send packet to.</param>
+        /// <param name="data">Byte array to send</param>
+        public void Send(IPEndPoint remote, byte[] data) => Send(data, 0, data.Length);
+
+        /// <summary>
+        /// Sends a packet to the default <see cref="RemoteEndPoint"/>
+        /// </summary>
+        /// <param name="data">Byte array to send</param>
+        /// <param name="offset">Offset at buffer to start sending at.</param>
+        /// <param name="size">Number of bytes to send.</param>
+        public void Send(byte[] data, int offset, int size) => Send(RemoteEndPoint, data, offset, size);
+
+        /// <summary>
+        /// Sends a packet to the default <see cref="RemoteEndPoint"/>
+        /// </summary>
+        /// <param name="data">Byte array to send</param>
+        /// <param name="size">Number of bytes to send.</param>
+        public void Send(byte[] data, int size) => Send(RemoteEndPoint, data, 0, size);
+
+        /// <summary>
+        /// Sends a packet to the default <see cref="RemoteEndPoint"/>
+        /// </summary>
+        /// <param name="data">Byte array to send</param>
+        public void Send(byte[] data) => Send(RemoteEndPoint, data, 0, data.Length);
+
+        /// <summary>
         /// Directly sends a packet
         /// </summary>
-        /// <param name="packet"></param>
+        /// <param name="packet">Packet to send.</param>
         public void Send(UdpPacket packet)
         {
             if (packet == null)
@@ -117,20 +160,7 @@ namespace Cave.Net
                 throw new ArgumentNullException("packet");
             }
 
-            if (m_Closed)
-            {
-                throw new InvalidOperationException(string.Format("Client already closed!"));
-            }
-
-            if (packet.RemoteEndPoint != RemoteEndPoint)
-            {
-                throw new ArgumentException(string.Format("Invalid remote endpoint  specified !"));
-            }
-
-            lock (m_Socket)
-            {
-                m_Socket.SendTo(packet.Data, packet.Size, SocketFlags.None, packet.RemoteEndPoint);
-            }
+            Send(packet.Data, 0, packet.Size);
             LastActivity = DateTime.UtcNow;
         }
 
@@ -142,22 +172,22 @@ namespace Cave.Net
         /// <returns>An <see cref="UdpPacket"/> or null</returns>
         public UdpPacket Read()
         {
-            if (m_Closed)
+            if (closed)
             {
                 throw new InvalidOperationException(string.Format("Client already closed!"));
             }
 
-            if (UsesServerSocket)
+            if (usesServerSocket)
             {
                 throw new InvalidOperationException(string.Format("This client is part of an UdpPacketServer."));
             }
 
-            UdpPacket packet = new UdpPacket();
-            EndPoint endPoint = m_Socket.LocalEndPoint;
-            int bufferSize = m_Socket.Available > 0 ? m_Socket.Available : MaximumPayloadSize;
+            var packet = new UdpPacket();
+            packet.LocalEndPoint = (IPEndPoint)socket.LocalEndPoint;
+            EndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+            int bufferSize = socket.Available > 0 ? socket.Available : MaximumPayloadSize;
             packet.Data = new byte[bufferSize];
-            packet.Size = (ushort)m_Socket.ReceiveFrom(packet.Data, ref endPoint);
-            packet.ReceivedBy = this;
+            packet.Size = (ushort)socket.ReceiveFrom(packet.Data, ref endPoint);
             packet.RemoteEndPoint = (IPEndPoint)endPoint;
             LastActivity = DateTime.UtcNow;
             return packet;
@@ -166,7 +196,7 @@ namespace Cave.Net
         /// <summary>
         /// Obtains whether the client was closed or not
         /// </summary>
-        public bool Closed => m_Closed;
+        public bool Closed => closed;
 
         /// <summary>
         /// Checks for equality with another client
@@ -175,7 +205,7 @@ namespace Cave.Net
         /// <returns></returns>
         public override bool Equals(object obj)
         {
-            UdpPacketClient other = obj as UdpPacketClient;
+            var other = obj as UdpPacketClient;
             if (ReferenceEquals(other, null))
             {
                 return false;
@@ -195,10 +225,10 @@ namespace Cave.Net
         /// </summary>
         public void Close()
         {
-            m_Closed = true;
-            if (!UsesServerSocket)
+            closed = true;
+            if (!usesServerSocket)
             {
-                m_Socket.Close();
+                socket.Close();
             }
         }
 
@@ -207,13 +237,13 @@ namespace Cave.Net
         /// </summary>
         public void Dispose()
         {
-            if (m_Socket != null)
+            if (socket != null)
             {
-                if (!UsesServerSocket)
+                if (!usesServerSocket)
                 {
-                    ((IDisposable)m_Socket).Dispose();
+                    ((IDisposable)socket).Dispose();
                 }
-                m_Socket = null;
+                socket = null;
             }
             GC.SuppressFinalize(this);
         }

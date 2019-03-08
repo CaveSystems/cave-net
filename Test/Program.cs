@@ -1,76 +1,81 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using Cave;
 using NUnit.Framework;
 
 namespace Test
 {
     class Program
     {
-        static readonly object consoleLock = new object();
-
-        static readonly ParallelOptions parallelOptions = new ParallelOptions()
+        static int Main(string[] args)
         {
-            MaxDegreeOfParallelism = Environment.ProcessorCount * 2,
-        };
-
-        static bool Test(MethodInfo method)
-        {
-            try
+            var errors = 0;
+            Type[] types = typeof(Program).Assembly.GetTypes();
+            foreach (Type type in types.OrderBy(t => t.Name))
             {
-                object obj = Activator.CreateInstance(method.DeclaringType);
-                method.Invoke(obj, new object[0]);
-                lock (consoleLock)
+                if (!type.GetCustomAttributes(typeof(TestFixtureAttribute), false).Any())
                 {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.Write("Success ");
-                    Console.ResetColor();
-                    Console.WriteLine($"{method.DeclaringType}.{method.Name}");
+                    continue;
                 }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                lock (consoleLock)
+
+                var instance = Activator.CreateInstance(type);
+                foreach (System.Reflection.MethodInfo method in type.GetMethods())
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Write("Error ");
+                    if (!method.GetCustomAttributes(typeof(TestAttribute), false).Any())
+                    {
+                        continue;
+                    }
+
+                    GC.Collect(999, GCCollectionMode.Default, true);
+
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.WriteLine($"{method.DeclaringType.Name}.cs: info TI0001: Start {method.Name}");
                     Console.ResetColor();
-                    Console.WriteLine($"{method.DeclaringType}.{method.Name}");
-                    Console.WriteLine(ex.ToString());
+                    try
+                    {
+                        var action = (Action)method.CreateDelegate(typeof(Action), instance);
+                        action();
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine($"{method.DeclaringType.Name}.cs: info TI0002: Success {method.Name}");
+                        Console.ResetColor();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex);
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"{method.DeclaringType.Name}.cs: error TE0001: {ex.Message}");
+                        Console.WriteLine(ex);
+                        Console.ResetColor();
+                        errors++;
+                    }
+                    Console.WriteLine("---");
                 }
-                return false;
             }
-        }
-
-
-        public static void Main()
-        {
-            System.Collections.Generic.IEnumerable<MethodInfo> methods = typeof(Program)
-                .Assembly
-                .GetTypes()
-                //.Where(t => t
-                //.HasAttribute<TestClassAttribute>())
-                .SelectMany(t => t
-                .GetMethods()
-                .Where(m => m
-                //.HasAttribute<TestMethodAttribute>()));
-                .HasAttribute<TestAttribute>()));
-#if DEBUG
-            foreach (MethodInfo method in methods)
+            if (errors == 0)
             {
-                Test(method);
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine($"---: info TI9999: All tests successfully completed.");
             }
-#else
-            Parallel.ForEach(methods, parallelOptions, (method) => Test(method));
-#endif
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"---: error TE9999: {errors} tests failed!");
+            }
+            Console.ResetColor();
             if (Debugger.IsAttached)
             {
-                Console.WriteLine("--- press enter to exit ---");
-                Console.ReadLine();
+                WaitExit();
+            }
+
+            return errors;
+        }
+
+        static void WaitExit()
+        {
+            Console.Write("--- press enter to exit ---");
+            while (Console.ReadKey(true).Key != ConsoleKey.Enter)
+            {
+                ;
             }
         }
     }

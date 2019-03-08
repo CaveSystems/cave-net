@@ -10,8 +10,8 @@ namespace Cave.Net.Ntp
         internal NtpAnswer(NtpPacket answer)
         {
             Answer = answer;
-            RoundTripDelay = (DestinationTimestamp - answer.OriginateTimestamp.DateTime) - (answer.ReceiveTimestamp.DateTime - answer.TransmitTimestamp.DateTime);
-            LocalClockOffset = new TimeSpan(((answer.ReceiveTimestamp.DateTime - answer.OriginateTimestamp.DateTime) + (answer.TransmitTimestamp.DateTime - DestinationTimestamp)).Ticks / 2);
+            RoundTripDelay = DestinationTimestamp - answer.OriginateTimestamp.DateTime - (answer.ReceiveTimestamp.DateTime - answer.TransmitTimestamp.DateTime);
+            LocalClockOffset = new TimeSpan((answer.ReceiveTimestamp.DateTime - answer.OriginateTimestamp.DateTime + (answer.TransmitTimestamp.DateTime - DestinationTimestamp)).Ticks / 2);
         }
 
         /// <summary>

@@ -18,7 +18,7 @@ namespace Cave.Net
             int reverse = 0x80;
             for (int mask = 1; mask < 256; mask <<= 1, reverse >>= 1)
             {
-                if (0 != (value & mask))
+                if ((value & mask) != 0)
                 {
                     result |= reverse;
                 }
@@ -83,10 +83,73 @@ namespace Cave.Net
             return new IPAddress(result);
         }
 
+        /// <summary>
+        /// Gets the host ordered 32 bit integer representing the specified ip v4 address.
+        /// </summary>
+        /// <param name="address">An ip v4 address to convert.</param>
+        /// <returns>Returns the host representation of the address.</returns>
+        public static int ToInt32(this IPAddress address)
+        {
+            var bytes = address.GetAddressBytes();
+            if (bytes.Length == 4)
+            {
+                return IPAddress.NetworkToHostOrder(BitConverter.ToInt32(bytes, 0));
+            }
+#if NET20 || NET35
+#else
+            if (address.IsIPv4MappedToIPv6)
+            {
+                return IPAddress.NetworkToHostOrder(BitConverter.ToInt32(bytes, 12));
+            }
+#endif
+            throw new NotSupportedException("IPv6 is not supported!");
+        }
+
+        /// <summary>
+        /// Gets the local broadcast address for the specified <see cref="UnicastIPAddressInformation"/>.
+        /// </summary>
+        /// <param name="address">Address information.</param>
+        /// <returns>Returns a local broadcast address.</returns>
+        public static IPAddress ToBroadcast(this UnicastIPAddressInformation address)
+        {
+            if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+            {
+                return ToBroadcast(address.Address, address.IPv4Mask);
+            }
+            throw new NotSupportedException($"AddressFamily {address.Address.AddressFamily} is not supported!");
+        }
+
+        /// <summary>
+        /// Gets the local broadcast address for the specified <paramref name="address"/> and <paramref name="subnet"/> size combination.
+        /// </summary>
+        /// <param name="address">Address information.</param>
+        /// <param name="subnet">The subnet size.</param>
+        /// <returns>Returns a local broadcast address.</returns>
+        public static IPAddress ToBroadcast(this IPAddress address, int subnet) => ToBroadcast(address, GetNetmask4(subnet));
+
+        /// <summary>
+        /// Gets the local  broadcast address for the specified <paramref name="address"/> and <paramref name="netmask"/> combination.
+        /// </summary>
+        /// <param name="address">Address information.</param>
+        /// <param name="netmask">Netmask.</param>
+        /// <returns>Returns a local broadcast address.</returns>
+        public static IPAddress ToBroadcast(this IPAddress address, IPAddress netmask)
+        {
+            if (address.AddressFamily == AddressFamily.InterNetwork)
+            {
+                int addr = ToInt32(address);
+                int mask = ToInt32(netmask);
+                int result = addr | ~mask;
+                var data = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(result));
+                return new IPAddress(data);
+            }
+            throw new NotSupportedException($"AddressFamily {address.AddressFamily} is not supported!");
+        }
+
         /// <summary>Gets the netmask for IPv4.</summary>
-        /// <param name="netmask">The netmask.</param>
-        /// <returns></returns>
-        public static IPAddress GetNetmask4(int netmask)
+        /// <param name="subnet">The subnet size.</param>
+        /// <returns>Returns the specified ipv4 netmask.</returns>
+        public static IPAddress GetNetmask4(int subnet)
         {
             byte[] data = new byte[4];
             for (int i = 0; i < 32; i++)
@@ -97,9 +160,9 @@ namespace Cave.Net
         }
 
         /// <summary>Gets the netmask for IPv6.</summary>
-        /// <param name="netmask">The netmask.</param>
-        /// <returns></returns>
-        public static IPAddress GetNetmask6(int netmask)
+        /// <param name="subnet">The subnet size.</param>
+        /// <returns>Returns the specified ipv6 netmask.</returns>
+        public static IPAddress GetNetmask6(int subnet)
         {
             byte[] data = new byte[16];
             for (int i = 0; i < 128; i++)
@@ -160,7 +223,7 @@ namespace Cave.Net
                 throw new ArgumentNullException(nameof(address));
             }
 
-            StringBuilder res = new StringBuilder();
+            var res = new StringBuilder();
             byte[] bytes = address.GetAddressBytes();
 
             if (address.AddressFamily == AddressFamily.InterNetwork)
@@ -204,7 +267,7 @@ namespace Cave.Net
                 throw new ArgumentNullException(nameof(address));
             }
 
-            List<string> parts = new List<string>();
+            var parts = new List<string>();
             if (address.AddressFamily == AddressFamily.InterNetwork)
             {
                 foreach (byte b in address.GetAddressBytes())

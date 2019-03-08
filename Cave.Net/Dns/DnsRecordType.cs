@@ -229,7 +229,7 @@ namespace Cave.Net.Dns
         /// <summary>EUI64</summary>
         EUI64 = 109,
 
-        //Unassigned    110-248 	
+        // Unassigned    110-248
 
         /// <summary>Transaction Key</summary>
         TKEY = 249,
@@ -262,7 +262,7 @@ namespace Cave.Net.Dns
         /// <summary>Application Visibility and Control</summary>
         AVC = 258,
 
-        //Unassigned 	259-32767
+        // Unassigned   259-32767
 
         /// <summary>DNSSEC Trust Authorities</summary>
         TA = 32768,
@@ -270,8 +270,8 @@ namespace Cave.Net.Dns
         /// <summary>DNSSEC Lookaside Validation</summary>
         DLV = 32769,
 
-        //Unassigned 	32770-65279
-        //Private use 	65280-65534
-        //Reserved 	65535 	
+        // Unassigned   32770-65279
+        // Private use  65280-65534
+        // Reserved     65535
     }
 }

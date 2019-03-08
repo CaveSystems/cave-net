@@ -8,14 +8,14 @@ namespace Cave.Net
     public class UdpPacketEventArgs : EventArgs
     {
         /// <summary>
-        /// Provides the packet
+        /// Gets the packet
         /// </summary>
         public UdpPacket Packet { get; private set; }
 
         /// <summary>
-        /// creates a new instance
+        /// Initializes a new instance of the <see cref="UdpPacketEventArgs"/> class.
         /// </summary>
-        /// <param name="packet"></param>
+        /// <param name="packet">The packet.</param>
         public UdpPacketEventArgs(UdpPacket packet)
         {
             Packet = packet;

@@ -15,10 +15,10 @@ namespace Cave.Net
         /// Directly obtains the data of the file represented by the specified connectionstring
         /// </summary>
         /// <param name="connectionString">The full connectionstring for the download</param>
-        /// <returns></returns>
+        /// <returns>Returns an array of byte.</returns>
         public static byte[] Get(ConnectionString connectionString)
         {
-            FtpConnection connection = new FtpConnection();
+            var connection = new FtpConnection();
             return connection.Download(connectionString);
         }
 
@@ -26,19 +26,18 @@ namespace Cave.Net
         /// Directly obtains the data of the specified fileName by using the specified connectionstring as string
         /// </summary>
         /// <param name="connectionString">The full connectionstring for the download</param>
-        /// <returns></returns>
+        /// <returns>Returns the downloaded data as string (utf8).</returns>
         public static string GetString(ConnectionString connectionString)
         {
             return Encoding.UTF8.GetString(Get(connectionString));
         }
 
         #region private functionality
-        bool m_EnableSSL = false;
 
-        FtpWebRequest m_CreateRequest(string method, ConnectionString connectionString)
+        FtpWebRequest CreateRequest(string method, ConnectionString connectionString)
         {
-            Uri l_Uri = connectionString.ToUri();
-            FtpWebRequest request = (FtpWebRequest)WebRequest.Create(l_Uri);
+            var l_Uri = connectionString.ToUri();
+            var request = (FtpWebRequest)WebRequest.Create(l_Uri);
             request.Credentials = connectionString.GetCredentials();
             request.EnableSsl = EnableSSL;
             request.Method = method;
@@ -47,26 +46,28 @@ namespace Cave.Net
         #endregion
 
         /// <summary>
-        /// Enable SSL for ftp access
+        /// Gets or sets a value indicating whether SSL is enabled for ftp access or not.
         /// </summary>
-        public bool EnableSSL { get => m_EnableSSL; set => m_EnableSSL = value; }
+        public bool EnableSSL { get; set; } = false;
 
         /// <summary>
-        /// Creates a new ftp connection.
+        /// Initializes a new instance of the <see cref="FtpConnection"/> class.
         /// </summary>
-        public FtpConnection() { }
+        public FtpConnection()
+        {
+        }
 
         /// <summary>
         /// Obtains a list of files and directories at the current path
         /// </summary>
         /// <param name="connectionString">The full connectionstring for the path to list</param>
-        /// <returns></returns>
+        /// <returns>Returns a new array of strings. This is may be empty but is never null.</returns>
         public string[] List(ConnectionString connectionString)
         {
             FtpWebResponse response = null;
             try
             {
-                FtpWebRequest request = m_CreateRequest(WebRequestMethods.Ftp.ListDirectory, connectionString);
+                FtpWebRequest request = CreateRequest(WebRequestMethods.Ftp.ListDirectory, connectionString);
                 response = (FtpWebResponse)request.GetResponse();
                 switch (response.StatusCode)
                 {
@@ -78,7 +79,7 @@ namespace Cave.Net
                     default:
                         throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
                 }
-                StreamReader reader = new StreamReader(response.GetResponseStream());
+                var reader = new StreamReader(response.GetResponseStream());
                 string[] result = reader.ReadToEnd().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                 reader.Close();
                 if (response.StatusCode == FtpStatusCode.ClosingData)
@@ -100,14 +101,14 @@ namespace Cave.Net
         /// Uploads a file
         /// </summary>
         /// <param name="connectionString">The full connectionstring for the upload</param>
-        /// <param name="data"></param>
+        /// <param name="data">Byte array to upload.</param>
         public void Upload(ConnectionString connectionString, byte[] data)
         {
             FtpWebResponse response = null;
             try
             {
-                FtpWebRequest request = m_CreateRequest(WebRequestMethods.Ftp.UploadFile, connectionString);
-                DataWriter writer = new DataWriter(request.GetRequestStream());
+                FtpWebRequest request = CreateRequest(WebRequestMethods.Ftp.UploadFile, connectionString);
+                var writer = new DataWriter(request.GetRequestStream());
                 writer.Write(data);
                 response = (FtpWebResponse)request.GetResponse();
                 if (response.StatusCode != FtpStatusCode.ClosingData)
@@ -128,14 +129,14 @@ namespace Cave.Net
         /// Uploads a file
         /// </summary>
         /// <param name="connectionString">The full connectionstring for the upload</param>
-        /// <param name="stream"></param>
-        /// <returns></returns>
+        /// <param name="stream">The stream to upload.</param>
+        /// <returns>Returns the number of bytes uploaded.</returns>
         public long Upload(ConnectionString connectionString, Stream stream)
         {
             FtpWebResponse response = null;
             try
             {
-                FtpWebRequest request = m_CreateRequest(WebRequestMethods.Ftp.UploadFile, connectionString);
+                FtpWebRequest request = CreateRequest(WebRequestMethods.Ftp.UploadFile, connectionString);
                 Stream requestStream = request.GetRequestStream();
                 long result = stream.CopyBlocksTo(requestStream);
                 requestStream.Close();
@@ -159,13 +160,13 @@ namespace Cave.Net
         /// Downloads a file
         /// </summary>
         /// <param name="connectionString">The full connectionstring for the download</param>
-        /// <returns></returns>
+        /// <returns>Returns an array of bytes.</returns>
         public byte[] Download(ConnectionString connectionString)
         {
             FtpWebResponse response = null;
             try
             {
-                FtpWebRequest request = m_CreateRequest(WebRequestMethods.Ftp.DownloadFile, connectionString);
+                FtpWebRequest request = CreateRequest(WebRequestMethods.Ftp.DownloadFile, connectionString);
                 response = (FtpWebResponse)request.GetResponse();
                 switch (response.StatusCode)
                 {
@@ -198,14 +199,14 @@ namespace Cave.Net
         /// Downloads a file
         /// </summary>
         /// <param name="connectionString">The full connectionstring for the download</param>
-        /// <param name="stream"></param>
-        /// <returns></returns>
+        /// <param name="stream">Target stream to download to.</param>
+        /// <returns>Returns the number of bytes downloaded.</returns>
         public long Download(ConnectionString connectionString, Stream stream)
         {
             FtpWebResponse response = null;
             try
             {
-                FtpWebRequest request = m_CreateRequest(WebRequestMethods.Ftp.DownloadFile, connectionString);
+                FtpWebRequest request = CreateRequest(WebRequestMethods.Ftp.DownloadFile, connectionString);
                 response = (FtpWebResponse)request.GetResponse();
                 switch (response.StatusCode)
                 {

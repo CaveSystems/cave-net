@@ -20,14 +20,17 @@ namespace Cave.Net
         /// Protocol Unreachable
         /// </summary>
         Protocol,
+
         /// <summary>
         /// Port Unreachable
         /// </summary>
         Port,
+
         /// <summary>
         /// Fragmentation Needed and Don't Fragment was Set
         /// </summary>
         Fragmentation,
+
         /// <summary>
         /// Source Route Failed
         /// </summary>
@@ -37,6 +40,7 @@ namespace Cave.Net
         /// Destination Network Unknown
         /// </summary>
         DestinationNetworkUnknown,
+
         /// <summary>
         /// Destination Host Unknown
         /// </summary>
@@ -51,6 +55,7 @@ namespace Cave.Net
         /// Communication with Destination Network is Administratively Prohibited
         /// </summary>
         NetworkProhibited,
+
         /// <summary>
         /// Communication with Destination Host is Administratively Prohibited
         /// </summary>
@@ -67,7 +72,7 @@ namespace Cave.Net
         ServiceHostUnreachable,
 
         /// <summary>
-        /// Communication Administratively Prohibited 
+        /// Communication Administratively Prohibited
         /// </summary>
         CommunicationProhibited,
 

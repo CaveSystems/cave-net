@@ -1,0 +1,84 @@
+# .NET Desktop
+# Build and run tests for .NET Desktop or Windows classic desktop solutions.
+# Add steps that publish symbols, save build artifacts, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/apps/windows/dot-net
+
+trigger:
+- master
+- refs/tags/*
+
+pool:
+  vmImage: 'VS2017-Win2016'
+
+variables:
+  solution: '**/*.sln'
+  buildPlatform: 'Any CPU'
+  buildConfiguration: 'Release'
+
+steps:
+- script: set
+  displayName: Show Variables
+
+- task: PowerShell@2
+  displayName: Set git variables
+  env:
+    BUILD_BUILDNUMBER: $(Build.BuildNumber)
+  inputs:
+    targetType: inline
+    script: |
+      $var = "$(git tag -l --points-at HEAD)".Trim()
+      if ($var -eq '')
+      {
+        $semver = "ci-$env:BUILD_BUILDNUMBER".Replace('.', '-')
+        Write-Host "$("##vso[task.setvariable variable=VersionSuffix]")$semver"
+        Write-Host "VersionSuffix: '$semver'"
+      }
+      else
+      {
+        Write-Host "VersionSuffix: ''"
+      }
+      $var = $(git describe --tags $(git rev-list --tags --max-count=1))
+      if ($var -eq '')
+      {
+        $ver = [Version]"0.0.1"
+      }
+      else
+      {
+        $ver = [Version]$var
+        $ver = [Version]"$($ver.Major).$($ver.Minor).$($ver.Build+1)"
+      }
+      Write-Host "$("##vso[task.setvariable variable=VersionPrefix]")$ver"
+      Write-Host "VersionPrefix: '$ver'"
+
+- task: NuGetToolInstaller@0
+  inputs:
+    versionSpec: '>=4.9.0'
+
+- task: NuGetCommand@2
+  displayName: Restore nuget packages
+  inputs:
+    restoreSolution: '$(solution)'
+
+- task: VSBuild@1
+  displayName: Build solution
+  inputs:
+    solution: '$(solution)'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+
+- task: VSTest@2
+  inputs:
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+
+- task: NuGetCommand@2
+  displayName: Push to nuget (release)
+  #condition: ne(variables['GIT_TAG'], '')
+  inputs:
+    command: push
+    packagesToPush: '$(Build.SourcesDirectory)/**/*.nupkg'
+    nuGetFeedType: external
+    publishFeedCredentials: 'nuget-default'
+    versioningScheme: byEnvVar
+    versionEnvVar: GIT_TAG
+    includeSymbols: true
