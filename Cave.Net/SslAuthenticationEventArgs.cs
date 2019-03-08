@@ -1,52 +1,54 @@
 using System;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
-using Cave.Net;
 
-namespace Cave.IO
+namespace Cave.Net
 {
     /// <summary>
     /// Provides <see cref="EventArgs"/> for <see cref="SslServer.Authenticate"/> events
     /// </summary>
     public class SslAuthenticationEventArgs : EventArgs
     {
+        bool validated = true;
+
         /// <summary>
-        /// The local <see cref="SslClient"/> receiving the event
+        /// Gets the local <see cref="SslClient"/> receiving the event
         /// </summary>
         public SslClient SslClient { get; private set; }
 
         /// <summary>
-        /// The remote certificate to be authorized
+        /// Gets the remote certificate to be authorized
         /// </summary>
         public X509Certificate2 Certificate { get; private set; }
 
         /// <summary>
-        /// The remote certificate chain to be authorized
+        /// Gets the remote certificate chain to be authorized
         /// </summary>
         public X509Chain Chain { get; private set; }
 
         /// <summary>
-        /// The detected <see cref="SslPolicyErrors"/>
+        /// Gets the detected <see cref="SslPolicyErrors"/>
         /// </summary>
         public SslPolicyErrors SslPolicyErrors { get; private set; }
 
         /// <summary>
-        /// The SSL validation errors
+        /// Gets the SSL validation errors
         /// </summary>
         public SslValidationErrors SslValidationErrors { get; private set; }
 
-        bool m_Validated = true;
-
         /// <summary>
-        /// Set this value to false to prohibit authorization. Setting this value to false does not allow to set it to true again!
+        /// Gets or sets a value indicating whether authorization if successful or not.
+        /// Setting this value to false does not allow to set it to true again!
         /// </summary>
         public bool Validated
         {
-            get => m_Validated;
-            set => m_Validated = m_Validated & value;
+            get => validated;
+            set => validated = validated & value;
         }
 
-        /// <summary>Creates a new SslAuthenticationEventArgs instance</summary>
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SslAuthenticationEventArgs"/> class.
+        /// </summary>
         /// <param name="sslClient">The local <see cref="SslClient" /> receiving the event</param>
         /// <param name="certificate">The remote certificate to be authorized</param>
         /// <param name="chain">The remote certificate chain to be authorized</param>

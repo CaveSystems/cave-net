@@ -9,14 +9,14 @@ namespace Cave.Net
     public class IPEndPointEventArgs : EventArgs
     {
         /// <summary>
-        /// provides the packet incoming
+        /// Gets the endpoint.
         /// </summary>
         public IPEndPoint EndPoint { get; private set; }
 
         /// <summary>
-        /// creates a new csPacketIncomingEventArgs object
+        /// Initializes a new instance of the <see cref="IPEndPointEventArgs"/> class.
         /// </summary>
-        /// <param name="endPoint"></param>
+        /// <param name="endPoint">IP endpoint</param>
         public IPEndPointEventArgs(IPEndPoint endPoint)
         {
             EndPoint = endPoint;

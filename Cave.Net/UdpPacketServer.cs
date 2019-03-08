@@ -1,4 +1,3 @@
-using Cave.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Cave.IO;
 
 namespace Cave.Net
 {
@@ -15,7 +15,7 @@ namespace Cave.Net
     public class UdpPacketServer
     {
         /// <summary>
-        /// Gets / sets the timeout <see cref="TimeSpan"/>. 
+        /// Gets or sets the timeout <see cref="TimeSpan"/>.
         /// Connections without any activity for the specified timeout <see cref="TimeSpan"/> will be considered dead.
         /// </summary>
         public TimeSpan Timeout { get; set; }
@@ -26,24 +26,21 @@ namespace Cave.Net
         public const int MaximumPayloadSize = 576 - 40 - 8;
 
         #region Eventhandling
+
         /// <summary>
         /// Will be called whenever a timeout occured in a background thread.
         /// If you override this function do not forget to call the base method!
         /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnTimeout(IPEndPointEventArgs e)
+        /// <param name="remoteEndPoint">Remote endpoint.</param>
+        protected virtual void OnTimeout(IPEndPoint remoteEndPoint)
         {
-            EventHandler<IPEndPointEventArgs> evt = TimeoutEvent;
-            if (evt != null)
+            try
             {
-                try
-                {
-                    evt.Invoke(this, e);
-                }
-                catch (Exception ex)
-                {
-                    OnException(new ExceptionEventArgs(ex));
-                }
+                TimeoutEvent?.Invoke(this, new IPEndPointEventArgs(remoteEndPoint));
+            }
+            catch (Exception ex)
+            {
+                OnException(ex);
             }
         }
 
@@ -51,20 +48,16 @@ namespace Cave.Net
         /// Will be called whenever a new packet was received.
         /// If you override this function do not forget to call the base method!
         /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnPacketIncoming(UdpPacketEventArgs e)
+        /// <param name="packet">Incoming packet.</param>
+        protected virtual void OnPacketIncoming(UdpPacket packet)
         {
-            EventHandler<UdpPacketEventArgs> evt = PacketIncomingEvent;
-            if (evt != null)
+            try
             {
-                try
-                {
-                    evt.Invoke(this, e);
-                }
-                catch (Exception ex)
-                {
-                    OnException(new ExceptionEventArgs(ex));
-                }
+                PacketIncomingEvent?.Invoke(this, new UdpPacketEventArgs(packet));
+            }
+            catch (Exception ex)
+            {
+                OnException(ex);
             }
         }
 
@@ -72,20 +65,16 @@ namespace Cave.Net
         /// Will be called whenever a new connection was established.
         /// If you override this function do not forget to call the base method!
         /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnNewConnection(IPEndPointEventArgs e)
+        /// <param name="remoteEndPoint">Remote endpoint.</param>
+        protected virtual void OnNewConnection(IPEndPoint remoteEndPoint)
         {
-            EventHandler<IPEndPointEventArgs> evt = NewConnectionEvent;
-            if (evt != null)
+            try
             {
-                try
-                {
-                    evt.Invoke(this, e);
-                }
-                catch (Exception ex)
-                {
-                    OnException(new ExceptionEventArgs(ex));
-                }
+                NewConnectionEvent?.Invoke(this, new IPEndPointEventArgs(remoteEndPoint));
+            }
+            catch (Exception ex)
+            {
+                OnException(ex);
             }
         }
 
@@ -93,20 +82,16 @@ namespace Cave.Net
         /// Will be called whenever an exception occurs in an background thread.
         /// If you override this function do not forget to call the base method!
         /// </summary>
-        /// <param name="e"></param>
-        protected virtual void OnException(ExceptionEventArgs e)
+        /// <param name="ex">Exception</param>
+        protected virtual void OnException(Exception ex)
         {
-            EventHandler<ExceptionEventArgs> evt = ExceptionEvent;
-            if (evt != null)
+            try
             {
-                try
-                {
-                    evt.Invoke(this, e);
-                }
-                catch
-                {
-                    //ignore exceptions during exception handling...
-                }
+                ExceptionEvent?.Invoke(this, new ExceptionEventArgs(ex));
+            }
+            catch
+            {
+                // ignore exceptions during exception handling...
             }
         }
 
@@ -131,31 +116,30 @@ namespace Cave.Net
         public event EventHandler<ExceptionEventArgs> ExceptionEvent;
         #endregion
 
-        readonly Dictionary<IPEndPoint, UdpPacketClient> m_Clients = new Dictionary<IPEndPoint, UdpPacketClient>();
-        readonly List<Socket> m_Sockets = new List<Socket>();
-
-        volatile bool m_Closed = false;
+        readonly Dictionary<IPEndPoint, UdpPacketClient> clients = new Dictionary<IPEndPoint, UdpPacketClient>();
+        readonly List<Socket> sockets = new List<Socket>();
+        volatile bool closed = false;
 
         void ListenThread_ReadPackets(object socketObject)
         {
-            Socket socket = (Socket)socketObject;
+            var socket = (Socket)socketObject;
             Thread.CurrentThread.IsBackground = true;
-            while (!m_Closed)
+            while (!closed)
             {
                 try
                 {
-                    UdpPacket packet = new UdpPacket();
-                    EndPoint l_EndPoint = socket.LocalEndPoint;
+                    var packet = new UdpPacket();
+                    packet.LocalEndPoint = (IPEndPoint)socket.LocalEndPoint;
+                    EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
                     int bufferSize = socket.Available > 0 ? socket.Available : MaximumPayloadSize;
                     packet.Data = new byte[bufferSize];
-                    packet.Size = (ushort)socket.ReceiveFrom(packet.Data, ref l_EndPoint);
-                    packet.RemoteEndPoint = (IPEndPoint)l_EndPoint;
-                    packet.ReceivedBy = new UdpPacketClient(packet.RemoteEndPoint, socket);
-                    Task.Factory.StartNew((p) => NewPacket((UdpPacket)p), packet);
+                    packet.Size = (ushort)socket.ReceiveFrom(packet.Data, ref remoteEndPoint);
+                    packet.RemoteEndPoint = (IPEndPoint)remoteEndPoint;
+                    Task.Factory.StartNew((p) => NewPacket((UdpPacket)p, socket), packet);
                 }
                 catch (Exception ex)
                 {
-                    OnException(new ExceptionEventArgs(ex));
+                    OnException(ex);
                 }
             }
             socket.Close();
@@ -163,18 +147,18 @@ namespace Cave.Net
 
         void TimeoutCheckThread()
         {
-            while (!m_Closed)
+            while (!closed)
             {
                 Thread.CurrentThread.IsBackground = true;
-                List<IPEndPoint> timeoutClients = new List<IPEndPoint>();
-                lock (m_Clients)
+                var timeoutClients = new List<IPEndPoint>();
+                lock (clients)
                 {
                     foreach (UdpPacketClient client in Clients)
                     {
                         if (client.LastActivity + Timeout > DateTime.UtcNow)
                         {
                             timeoutClients.Add(client.RemoteEndPoint);
-                            if (!m_Clients.Remove(client.RemoteEndPoint))
+                            if (!clients.Remove(client.RemoteEndPoint))
                             {
                                 throw new KeyNotFoundException();
                             }
@@ -189,11 +173,11 @@ namespace Cave.Net
                     {
                         try
                         {
-                            OnTimeout(new IPEndPointEventArgs(client));
+                            OnTimeout(client);
                         }
                         catch (Exception ex)
                         {
-                            OnException(new ExceptionEventArgs(ex));
+                            OnException(ex);
                         }
                     }
                 }
@@ -204,50 +188,52 @@ namespace Cave.Net
             }
         }
 
-        void NewPacket(object packet)
+        void NewPacket(UdpPacket packet, Socket socket)
         {
-            UdpPacket p = (UdpPacket)packet;
             bool newConnection = false;
-            //checl all present clients
-            lock (m_Clients)
+
+            // checl all present clients
+            lock (clients)
             {
-                if (!m_Clients.ContainsKey(p.RemoteEndPoint))
+                if (!clients.ContainsKey(packet.RemoteEndPoint))
                 {
                     newConnection = true;
-                    m_Clients.Add(p.RemoteEndPoint, p.ReceivedBy);
+                    clients.Add(packet.RemoteEndPoint, new UdpPacketClient(packet.RemoteEndPoint, socket));
                 }
                 else
                 {
-                    m_Clients[p.RemoteEndPoint].LastActivity = DateTime.UtcNow;
+                    clients[packet.RemoteEndPoint].LastActivity = DateTime.UtcNow;
                 }
             }
-            //is new connection
+
+            // is new connection
             if (newConnection)
             {
                 try
                 {
-                    OnNewConnection(new IPEndPointEventArgs(p.RemoteEndPoint));
+                    OnNewConnection(packet.RemoteEndPoint);
                 }
                 catch (Exception ex)
                 {
-                    OnException(new ExceptionEventArgs(ex));
+                    OnException(ex);
                 }
             }
-            //call event
+
+            // call event
             try
             {
-                OnPacketIncoming(new UdpPacketEventArgs(p));
+                OnPacketIncoming(packet);
             }
             catch (Exception ex)
             {
-                OnException(new ExceptionEventArgs(ex));
+                OnException(ex);
             }
         }
 
         #region IPacketServer Member
 
         /// <summary>
-        /// Creates a new <see cref="UdpPacketServer"/>
+        /// Initializes a new instance of the <see cref="UdpPacketServer"/> class.
         /// </summary>
         public UdpPacketServer()
         {
@@ -257,30 +243,30 @@ namespace Cave.Net
         /// <summary>
         /// Starts listening at the specified <see cref="IPEndPoint"/>
         /// </summary>
-        /// <param name="iPEndPoint"></param>
-        public void Listen(EndPoint iPEndPoint)
+        /// <param name="ipEndPoint">Ip endpoint to listen at.</param>
+        public void Listen(EndPoint ipEndPoint)
         {
-            if (iPEndPoint == null)
+            if (ipEndPoint == null)
             {
                 throw new ArgumentNullException("iPEndPoint");
             }
 
-            Socket l_Socket = new Socket(iPEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-            l_Socket.Bind(iPEndPoint);
-            l_Socket.Blocking = true;
-            lock (m_Sockets)
+            var socket = new Socket(ipEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+            socket.Bind(ipEndPoint);
+            socket.Blocking = true;
+            lock (sockets)
             {
-                m_Sockets.Add(l_Socket);
+                sockets.Add(socket);
             }
 
-            new Thread(ListenThread_ReadPackets).Start(l_Socket);
+            new Thread(ListenThread_ReadPackets).Start(socket);
         }
 
         /// <summary>
         /// Starts listening at the specified hostname and port
         /// </summary>
-        /// <param name="hostName"></param>
-        /// <param name="port"></param>
+        /// <param name="hostName">Hostname to listen at.</param>
+        /// <param name="port">Port to listen at.</param>
         public void Listen(string hostName, int port)
         {
             foreach (IPAddress address in System.Net.Dns.GetHostAddresses(hostName))
@@ -292,8 +278,8 @@ namespace Cave.Net
         /// <summary>
         /// Starts listening at the specified ipaddress and port
         /// </summary>
-        /// <param name="address"></param>
-        /// <param name="port"></param>
+        /// <param name="address">Local address to listen at.</param>
+        /// <param name="port">Port to listen at.</param>
         public void Listen(IPAddress address, int port)
         {
             Listen(new IPEndPoint(address, port));
@@ -302,7 +288,7 @@ namespace Cave.Net
         /// <summary>
         /// Listens at any ipv6 and ipv4 interfaces at the specified port
         /// </summary>
-        /// <param name="port"></param>
+        /// <param name="port">Port to listen at.</param>
         public void Listen(int port)
         {
             Listen(IPAddress.IPv6Any, port);
@@ -310,19 +296,19 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Obtains the local <see cref="IPEndPoint"/>s currently connected
+        /// Gets the local <see cref="IPEndPoint"/>s currently connected
         /// </summary>
         public IPEndPoint[] LocalEndPoints
         {
             get
             {
                 IPEndPoint[] result;
-                lock (m_Sockets)
+                lock (sockets)
                 {
-                    result = new IPEndPoint[m_Sockets.Count];
+                    result = new IPEndPoint[sockets.Count];
                     for (int i = 0; i < result.Length; i++)
                     {
-                        result[i] = (IPEndPoint)m_Sockets[i].LocalEndPoint;
+                        result[i] = (IPEndPoint)sockets[i].LocalEndPoint;
                     }
                 }
                 return result;
@@ -330,15 +316,15 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Obtains the remote <see cref="IPEndPoint"/>s currently connected
+        /// Gets the remote <see cref="IPEndPoint"/>s currently connected
         /// </summary>
         public IPEndPoint[] RemoteEndPoints
         {
             get
             {
-                lock (m_Clients)
+                lock (clients)
                 {
-                    return m_Clients.Keys.ToArray();
+                    return clients.Keys.ToArray();
                 }
             }
         }
@@ -350,9 +336,9 @@ namespace Cave.Net
         {
             get
             {
-                lock (m_Clients)
+                lock (clients)
                 {
-                    return m_Clients.Values.ToArray();
+                    return clients.Values.ToArray();
                 }
             }
         }
@@ -368,14 +354,14 @@ namespace Cave.Net
                 throw new ArgumentNullException("packet");
             }
 
-            lock (m_Clients)
+            lock (clients)
             {
-                if (!m_Clients.ContainsKey(packet.RemoteEndPoint))
+                if (!clients.ContainsKey(packet.RemoteEndPoint))
                 {
                     throw new ArgumentException("No client found with the specified remote end point!");
                 }
 
-                UdpPacketClient client = m_Clients[packet.RemoteEndPoint];
+                UdpPacketClient client = clients[packet.RemoteEndPoint];
                 client.Send(packet);
             }
         }
@@ -383,22 +369,42 @@ namespace Cave.Net
         /// <summary>
         /// Sends a packet via the client connected to the specified destination
         /// </summary>
-        /// <param name="destination"></param>
-        /// <param name="data"></param>
-        public void Send(IPEndPoint destination, byte[] data)
+        /// <param name="destination">Remote endpoint to send data to.</param>
+        /// <param name="data">Byte array to send</param>
+        public void Send(IPEndPoint destination, byte[] data) => Send(destination, data, 0, data.Length);
+
+        /// <summary>
+        /// Sends a packet via the client connected to the specified destination
+        /// </summary>
+        /// <param name="destination">Remote endpoint to send data to.</param>
+        /// <param name="data">Byte array to send</param>
+        /// <param name="size">Number of bytes to send.</param>
+        public void Send(IPEndPoint destination, byte[] data, int size) => Send(destination, data, 0, size);
+
+        /// <summary>
+        /// Sends a packet via the client connected to the specified destination
+        /// </summary>
+        /// <param name="destination">Remote endpoint to send data to.</param>
+        /// <param name="data">Byte array to send</param>
+        /// <param name="offset">Offset at buffer to start sending at.</param>
+        /// <param name="size">Number of bytes to send.</param>
+        public void Send(IPEndPoint destination, byte[] data, int offset, int size)
         {
             if (data == null)
             {
                 throw new ArgumentNullException("data");
             }
 
-            UdpPacket packet = new UdpPacket
+            lock (clients)
             {
-                RemoteEndPoint = destination,
-                Data = data,
-                Size = (ushort)data.Length
-            };
-            Send(packet);
+                if (!clients.ContainsKey(destination))
+                {
+                    throw new ArgumentException("No client found with the specified remote end point!");
+                }
+
+                UdpPacketClient client = clients[destination];
+                client.Send(data, offset, size);
+            }
         }
 
         /// <summary>
@@ -415,13 +421,13 @@ namespace Cave.Net
         /// </summary>
         public virtual void Close()
         {
-            //do not try to close multiple times
-            if (m_Closed)
+            // do not try to close multiple times
+            if (closed)
             {
                 return;
             }
 
-            m_Closed = true;
+            closed = true;
         }
 
         #endregion

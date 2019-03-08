@@ -178,7 +178,7 @@ namespace Cave.Net
         /// <summary>
         /// Third Party Connect Protocol [Stuart_A_Friedberg]
         /// </summary>
-        _3PC,
+        TCPC,
 
         /// <summary>
         /// Inter-Domain Policy Routing Protocol [Martha_Steenstrup]

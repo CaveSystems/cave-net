@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using Cave.Collections.Generic;
 
 namespace Cave.Net
 {
@@ -12,7 +11,7 @@ namespace Cave.Net
     /// </summary>
     public static class NetTools
     {
-        static string s_HostName = null;
+        static string myHostName = null;
 
         /// <summary>Determines whether the specified address is localhost.</summary>
         /// <param name="address">The address.</param>
@@ -22,14 +21,14 @@ namespace Cave.Net
             string stringAddress = address.ToString();
             switch (address.AddressFamily)
             {
-                case AddressFamily.InterNetwork: return (stringAddress.StartsWith("127."));
+                case AddressFamily.InterNetwork: return stringAddress.StartsWith("127.");
                 case AddressFamily.InterNetworkV6: return stringAddress.StartsWith("::ffff:127.") || stringAddress == "::1";
             }
             return false;
         }
 
         /// <summary>
-        /// Parses a string for a valid IPAddress[:Port] or DnsName[:Port] combination and retrieves all 
+        /// Parses a string for a valid IPAddress[:Port] or DnsName[:Port] combination and retrieves all
         /// matching <see cref="IPEndPoint"/>s. If no port is specified DefaultPort will be returned.
         /// </summary>
         /// <param name="text">The string containing the ip endpoint (server[:port] or ipaddress[:port])</param>
@@ -66,7 +65,7 @@ namespace Cave.Net
                 return new IPEndPoint[] { new IPEndPoint(a, port) };
             }
 
-            List<IPEndPoint> result = new List<IPEndPoint>();
+            var result = new List<IPEndPoint>();
             foreach (IPAddress address in System.Net.Dns.GetHostEntry(text).AddressList)
             {
                 result.Add(new IPEndPoint(address, port));
@@ -79,13 +78,13 @@ namespace Cave.Net
         /// </summary>
         public static UnicastIPAddressInformation[] GetLocalAddresses()
         {
-            Set<UnicastIPAddressInformation> result = new Set<UnicastIPAddressInformation>();
+            var result = new List<UnicastIPAddressInformation>();
             foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
             {
                 IPInterfaceProperties p = ni.GetIPProperties();
                 foreach (UnicastIPAddressInformation ip in p.UnicastAddresses)
                 {
-                    result.Include(ip);
+                    result.Add(ip);
                 }
             }
             return result.ToArray();
@@ -96,7 +95,7 @@ namespace Cave.Net
         /// </summary>
         public static IPAddress[] GetLocalAddresses(AddressFamily addressFamily)
         {
-            List<IPAddress> result = new List<IPAddress>();
+            var result = new List<IPAddress>();
             foreach (IPAddress addr in System.Net.Dns.GetHostAddresses(System.Net.Dns.GetHostName()))
             {
                 if (addr.AddressFamily == addressFamily)
@@ -135,7 +134,7 @@ namespace Cave.Net
         /// <returns></returns>
         public static IPAddress[] GetAddresses(string hostName, AddressFamily addressFamily)
         {
-            List<IPAddress> addresses = new List<IPAddress>();
+            var addresses = new List<IPAddress>();
             foreach (IPAddress address in System.Net.Dns.GetHostAddresses(hostName))
             {
                 if (address.AddressFamily == addressFamily)
@@ -155,11 +154,11 @@ namespace Cave.Net
             int port = defaultPort;
             try
             {
-#if NET45 || NET46 || NET471 || NETSTANDARD20
+#if NET45 || NET46 || NET47 || NETSTANDARD20
                 TcpListener listener = TcpListener.Create(port);
 #elif NET20 || NET35 || NET40
 #pragma warning disable CS0618
-				TcpListener listener = new TcpListener(IPAddress.Any, port);
+                var listener = new TcpListener(IPAddress.Any, port);
 #pragma warning restore CS0618
 #else
 #error No code defined for the current framework or NETXX version define missing!
@@ -173,7 +172,7 @@ namespace Cave.Net
             {
                 try
                 {
-                    TcpListener listener = new TcpListener(IPAddress.Any, 0);
+                    var listener = new TcpListener(IPAddress.Any, 0);
                     listener.Start();
                     port = ((IPEndPoint)listener.LocalEndpoint).Port;
                     listener.Stop();
@@ -250,12 +249,13 @@ namespace Cave.Net
                 try
                 {
                     IPHostEntry entry = System.Net.Dns.GetHostEntry(str);
-                    s_HostName = entry.HostName;
-                    return s_HostName;
+                    myHostName = entry.HostName;
+                    return myHostName;
                 }
                 catch { }
             }
-            //no network fallback
+
+            // no network fallback
             return hostName + "." + domainName;
         }
 
@@ -266,13 +266,13 @@ namespace Cave.Net
         {
             get
             {
-                if (s_HostName != null)
+                if (myHostName != null)
                 {
-                    return s_HostName;
+                    return myHostName;
                 }
 
-                s_HostName = GetHostName();
-                return s_HostName;
+                myHostName = GetHostName();
+                return myHostName;
             }
         }
     }

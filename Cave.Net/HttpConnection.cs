@@ -16,23 +16,32 @@ namespace Cave.Net
     {
         static HttpConnection()
         {
-            //Get the assembly that contains the internal class
-            Type outerType = AppDom.FindType("System.Net.Configuration.SettingsSection", AppDom.LoadMode.NoException);
-            if (outerType != null)
+#if !NETSTANDARD20
+            try
             {
-                Assembly asm = Assembly.GetAssembly(outerType);
+                new System.Net.Configuration.HttpWebRequestElement().UseUnsafeHeaderParsing = true;
+                return;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex);
+            }
+            try
+            {
+                var outerType = typeof(System.Net.Configuration.SettingsSection);
+                var asm = Assembly.GetAssembly(outerType);
                 if (asm != null)
                 {
-                    //Use the assembly in order to get the internal type for the internal class
+                    // Use the assembly in order to get the internal type for the internal class
                     Type type = asm.GetType("System.Net.Configuration.SettingsSectionInternal");
                     if (type != null)
                     {
-                        //Use the internal static property to get an instance of the internal settings class.
-                        //If the static instance isn't created allready the property will create it for us.
+                        // Use the internal static property to get an instance of the internal settings class.
+                        // If the static instance isn't created allready the property will create it for us.
                         object obj = type.InvokeMember("Section", BindingFlags.Static | BindingFlags.GetProperty | BindingFlags.NonPublic, null, null, new object[] { });
                         if (obj != null)
                         {
-                            //Locate the private bool field that tells the framework is unsafe header parsing should be allowed or not
+                            // Locate the private bool field that tells the framework is unsafe header parsing should be allowed or not
                             FieldInfo field = type.GetField("useUnsafeHeaderParsing", BindingFlags.NonPublic | BindingFlags.Instance);
                             if (field != null)
                             {
@@ -44,16 +53,21 @@ namespace Cave.Net
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex);
+            }
+#endif
             Trace.WriteLine("UseUnsafeHeaderParsing <red>disabled.");
         }
 
         /// <summary>Directly obtains the data of the file represented by the specified connectionstring</summary>
         /// <param name="connectionString">The full connectionstring for the download</param>
         /// <param name="proxy">The proxy.</param>
-        /// <returns></returns>
+        /// <returns>Returns the downloaded byte array.</returns>
         public static byte[] Get(ConnectionString connectionString, ConnectionString? proxy = null)
         {
-            HttpConnection connection = new HttpConnection();
+            var connection = new HttpConnection();
             if (proxy.HasValue)
             {
                 connection.SetProxy(proxy.Value);
@@ -67,10 +81,10 @@ namespace Cave.Net
         /// <param name="callback">Callback to run after each block or null</param>
         /// <param name="proxy">The proxy.</param>
         /// <param name="userItem">The user item.</param>
-        /// <returns></returns>
+        /// <returns>Returns the downloaded byte array.</returns>
         public static byte[] Get(ConnectionString connectionString, ProgressCallback callback, ConnectionString? proxy = null, object userItem = null)
         {
-            HttpConnection connection = new HttpConnection();
+            var connection = new HttpConnection();
             if (proxy.HasValue)
             {
                 connection.SetProxy(proxy.Value);
@@ -85,28 +99,28 @@ namespace Cave.Net
         /// <param name="connectionString">The full connectionstring for the download</param>
         /// <param name="stream">Stream to copy the received content to</param>
         /// <param name="proxy">The proxy.</param>
-        /// <returns></returns>
+        /// <returns>Returns the number of bytes copied.</returns>
         public static long Copy(ConnectionString connectionString, Stream stream, ConnectionString? proxy = null)
         {
-            HttpConnection connection = new HttpConnection();
+            var connection = new HttpConnection();
             if (proxy.HasValue)
             {
                 connection.SetProxy(proxy.Value);
             }
 
             return connection.Download(connectionString, stream);
-
         }
+
         /// <summary>Directly obtains the data of the file represented by the specified connectionstring</summary>
         /// <param name="connectionString">The full connectionstring for the download</param>
         /// <param name="stream">Stream to copy the received content to</param>
         /// <param name="callback">Callback to run after each block or null</param>
         /// <param name="proxy">The proxy.</param>
         /// <param name="userItem">The user item.</param>
-        /// <returns></returns>
+        /// <returns>Returns the number of bytes copied.</returns>
         public static long Copy(ConnectionString connectionString, Stream stream, ProgressCallback callback, ConnectionString? proxy = null, object userItem = null)
         {
-            HttpConnection connection = new HttpConnection();
+            var connection = new HttpConnection();
             if (proxy.HasValue)
             {
                 connection.SetProxy(proxy.Value);
@@ -120,7 +134,7 @@ namespace Cave.Net
         /// </summary>
         /// <param name="connectionString">The full connectionstring for the download</param>
         /// <param name="proxy">The proxy.</param>
-        /// <returns></returns>
+        /// <returns>Returns downloaded data as string (utf8).</returns>
         public static string GetString(ConnectionString connectionString, ConnectionString? proxy = null)
         {
             return Encoding.UTF8.GetString(Get(connectionString, proxy));
@@ -132,14 +146,15 @@ namespace Cave.Net
         #region private functionality
         HttpWebRequest CreateRequest(ConnectionString connectionString)
         {
-            Uri target = connectionString.ToUri();
+            var target = connectionString.ToUri();
             HttpWebRequest newRequest;
             newRequest = (HttpWebRequest)WebRequest.Create(target);
             if (Proxy != null)
             {
                 newRequest.Proxy = Proxy;
             }
-            //set defaults
+
+            // set defaults
             newRequest.ProtocolVersion = ProtocolVersion;
             if (UserAgent != null)
             {
@@ -162,7 +177,7 @@ namespace Cave.Net
             }
             newRequest.AllowAutoRedirect = true;
             newRequest.CookieContainer = new CookieContainer();
-            CredentialCache credentialCache = new CredentialCache
+            var credentialCache = new CredentialCache
             {
                 { connectionString.ToUri(), "plain", connectionString.GetCredentials() }
             };
@@ -198,9 +213,11 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Creates a new http connection.
+        /// Initializes a new instance of the <see cref="HttpConnection"/> class.
         /// </summary>
-        public HttpConnection() { }
+        public HttpConnection()
+        {
+        }
 
         /// <summary>Gets or sets the proxy.</summary>
         /// <value>The proxy.</value>
@@ -215,7 +232,7 @@ namespace Cave.Net
         /// Downloads a file
         /// </summary>
         /// <param name="connectionString">The full connectionstring for the download</param>
-        /// <returns></returns>
+        /// <returns>Returns a byte array.</returns>
         public byte[] Download(ConnectionString connectionString)
         {
             HttpWebResponse response = null;
@@ -267,8 +284,8 @@ namespace Cave.Net
         /// Downloads a file
         /// </summary>
         /// <param name="connectionString">The full connectionstring for the download</param>
-        /// <param name="stream"></param>
-        /// <returns></returns>
+        /// <param name="stream">Target stream to download to.</param>
+        /// <returns>Returns the number of bytes downloaded.</returns>
         public long Download(ConnectionString connectionString, Stream stream)
         {
             HttpWebResponse response = null;
@@ -292,10 +309,10 @@ namespace Cave.Net
 
         /// <summary>Downloads a file</summary>
         /// <param name="connectionString">The full connectionstring for the download</param>
-        /// <param name="stream">The stream.</param>
+        /// <param name="stream">Target stream to download to.</param>
         /// <param name="callback">Callback to run after each block or null</param>
         /// <param name="userItem">The user item.</param>
-        /// <returns></returns>
+        /// <returns>Returns the number of bytes downloaded.</returns>
         public long Download(ConnectionString connectionString, Stream stream, ProgressCallback callback, object userItem = null)
         {
             HttpWebResponse response = null;

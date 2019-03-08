@@ -12,7 +12,7 @@ namespace Cave.Net.Dns
         /// <summary>The mask for the response code (bit 0-3)</summary>
         MaskResponseCode = 0xf,
 
-        //3 bits zero (bit 4-6)        
+        // 3 bits zero (bit 4-6)
 
         /// <summary>The checking disabled flag (bit 5)</summary>
         CheckingDisabled = 1 << 4,

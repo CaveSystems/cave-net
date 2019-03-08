@@ -6,77 +6,21 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using Cave.Collections.Generic;
 using Cave.IO;
 
 namespace Cave.Net.Dns
 {
     /// <summary>
-    ///   Provides a client for querying dns records
+    /// Provides a client for querying dns records
     /// </summary>
     public class DnsClient
     {
         #region static class
-        static DnsClient m_DefaultClient;
+        static DnsClient DefaultClient;
 
-        /// <summary>
-        ///   Returns a default instance of the DnsClient, which uses the configured dns servers of the executing computer and a
-        ///   query timeout of 10 seconds.
-        /// </summary>
-        public static DnsClient Default
+        static void LoadEtcResolvConf(List<IPAddress> result)
         {
-            get
-            {
-                if (m_DefaultClient == null)
-                {
-                    m_DefaultClient = new DnsClient
-                    {
-                        Servers = GetDefaultDnsServers()
-                    };
-                }
-                return m_DefaultClient;
-            }
-        }
-
-        /// <summary>
-        ///   Returns a default instance of the DnsClient, which uses the configured dns servers of the executing computer and a
-        ///   query timeout of 10 seconds.
-        /// </summary>
-        public static DnsClient Google
-        {
-            get
-            {
-                if (m_DefaultClient == null)
-                {
-                    m_DefaultClient = new DnsClient();
-                    long ip = BitConverter.IsLittleEndian ? 0x04040808 : 0x08080404;
-                    m_DefaultClient.Servers = new IPAddress[] { new IPAddress(0x08080808), new IPAddress(ip) };
-                }
-                return m_DefaultClient;
-            }
-        }
-
-        /// <summary>Returns a list of the local configured DNS servers.</summary>
-        /// <returns>Returns a array of <see cref="IPAddress"/> instances</returns>
-        public static IPAddress[] GetDefaultDnsServers()
-        {
-            Set<IPAddress> result = new Set<IPAddress>();
-            try
-            {
-                foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
-                {
-                    if ((nic.OperationalStatus == OperationalStatus.Up) && (nic.NetworkInterfaceType != NetworkInterfaceType.Loopback))
-                    {
-                        result.IncludeRange(nic.GetIPProperties().DnsAddresses);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceWarning("Error reading nameserver configuration.", ex);
-            }
-
-            if (!Platform.IsMicrosoft && File.Exists("/etc/resolv.conf"))
+            if (File.Exists("/etc/resolv.conf"))
             {
                 try
                 {
@@ -101,10 +45,9 @@ namespace Cave.Net.Dns
                             {
                                 if (IPAddress.TryParse(parts[n], out IPAddress addr))
                                 {
-                                    result.Include(addr);
+                                    result.Add(addr);
                                 }
                             }
-
                         }
                     }
                 }
@@ -112,6 +55,76 @@ namespace Cave.Net.Dns
                 {
                     Trace.TraceWarning("Error reading nameserver configuration.", ex);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Gets a default instance of the DnsClient, which uses the configured dns servers of the executing computer and a
+        /// query timeout of 10 seconds.
+        /// </summary>
+        public static DnsClient Default
+        {
+            get
+            {
+                if (DefaultClient == null)
+                {
+                    DefaultClient = new DnsClient
+                    {
+                        Servers = GetDefaultDnsServers()
+                    };
+                }
+                return DefaultClient;
+            }
+        }
+
+        /// <summary>
+        /// Gets a default instance of the DnsClient, which uses the configured dns servers of the executing computer and a
+        /// query timeout of 10 seconds.
+        /// </summary>
+        public static DnsClient Google
+        {
+            get
+            {
+                if (DefaultClient == null)
+                {
+                    DefaultClient = new DnsClient();
+                    long ip = BitConverter.IsLittleEndian ? 0x04040808 : 0x08080404;
+                    DefaultClient.Servers = new IPAddress[] { new IPAddress(0x08080808), new IPAddress(ip) };
+                }
+                return DefaultClient;
+            }
+        }
+
+        /// <summary>Gets a list of the local configured DNS servers.</summary>
+        /// <returns>Returns a array of <see cref="IPAddress"/> instances</returns>
+        public static IPAddress[] GetDefaultDnsServers()
+        {
+            var result = new List<IPAddress>();
+            try
+            {
+                foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if ((nic.OperationalStatus == OperationalStatus.Up) && (nic.NetworkInterfaceType != NetworkInterfaceType.Loopback))
+                    {
+                        result.AddRange(nic.GetIPProperties().DnsAddresses);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning("Error reading nameserver configuration.", ex);
+            }
+
+            switch (Environment.OSVersion.Platform)
+            {
+                case PlatformID.Win32NT:
+                case PlatformID.Win32S:
+                case PlatformID.Win32Windows:
+                case PlatformID.WinCE:
+                    break;
+                default:
+                    LoadEtcResolvConf(result);
+                    break;
             }
 
             if (result.Count == 0)
@@ -124,15 +137,16 @@ namespace Cave.Net.Dns
             }
             return result.ToArray();
         }
+
         #endregion
 
         /// <summary>
-        ///   Gets or sets a value indicationg whether queries can be sent using UDP.
+        /// Gets or sets a value indicating whether queries can be sent using UDP.
         /// </summary>
         public bool UseUdp { get; set; }
 
         /// <summary>
-        ///   Gets or sets a value indicationg whether queries can be sent using TCP.
+        /// Gets or sets a value indicating whether queries can be sent using TCP.
         /// </summary>
         public bool UseTcp { get; set; }
 
@@ -191,7 +205,6 @@ namespace Cave.Net.Dns
         /// <exception cref="ArgumentNullException">Name must be provided</exception>
         /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp!</exception>
         /// <exception cref="AggregateException"></exception>
-        /// <exception cref="ArgumentNullException">Name must be provided</exception>
         public DnsResponse Resolve(DnsQuery query)
         {
             if (Servers == null)
@@ -205,18 +218,18 @@ namespace Cave.Net.Dns
             }
 
             ushort messageID = DefaultRNG.UInt16;
-            //question = name, recordtype, recordclass
 
+            // question = name, recordtype, recordclass
             byte[] message;
-            using (MemoryStream stream = new MemoryStream())
+            using (var stream = new MemoryStream())
             {
-                DataWriter writer = new DataWriter(stream, StringEncoding.ASCII, endian: EndianType.BigEndian);
-                writer.Write(messageID);//transaction id
-                writer.Write((ushort)query.Flags);//flags
-                writer.Write((ushort)1);//question records
-                writer.Write((ushort)0);//answer records
-                writer.Write((ushort)0);//authority records
-                writer.Write((ushort)0);//additional records
+                var writer = new DataWriter(stream, StringEncoding.ASCII, endian: EndianType.BigEndian);
+                writer.Write(messageID); // transaction id
+                writer.Write((ushort)query.Flags); // flags
+                writer.Write((ushort)1); // question records
+                writer.Write((ushort)0); // answer records
+                writer.Write((ushort)0); // authority records
+                writer.Write((ushort)0); // additional records
 
                 if (UseRandomCase)
                 {
@@ -239,60 +252,82 @@ namespace Cave.Net.Dns
             }
 
             IStopWatch stopWatch = StopWatch.StartNew();
-            List<Task> tasks = new List<Task>();
-            List<Exception> exceptions = new List<Exception>();
+            var tasks = new List<Task>();
+            var exceptions = new List<Exception>();
             DnsResponse response = null;
 
             foreach (IPAddress server in Servers)
             {
-                response = DoQuery(useTcp, query, server, messageID, message);
-                if (response != null)
+                try
                 {
-                    break;
+                    response = DoQuery(useTcp, query, server, messageID, message);
+                    if (response != null)
+                    {
+                        break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
                 }
             }
             if (response == null)
             {
-                throw new AggregateException(exceptions.ToArray());
+                throw new AggregateException("Could not reach any dns server!", exceptions);
             }
 
             return response;
         }
 
-        private DnsResponse DoQuery(bool useTcp, DnsQuery query, IPAddress server, ushort messageID, byte[] message)
+        DnsResponse DoQuery(bool useTcp, DnsQuery query, IPAddress server, ushort messageID, byte[] message)
         {
-            try
+            while (true)
             {
-                while (true)
+                DnsResponse r;
+                try
                 {
-                    DnsResponse r = useTcp ? QueryTcp(server, message) : QueryUdp(server, message);
-                    if (r.TransactionID != messageID)
+                    r = useTcp ? QueryTcp(server, message) : QueryUdp(server, message);
+                    if (r.IsTruncatedResponse && !useTcp)
                     {
-                        throw new InvalidDataException("Invalid message ID received!");
+                        useTcp = true;
+                        continue;
                     }
-
-                    if (r.Queries.Count != 1)
-                    {
-                        throw new InvalidDataException("Invalid answer received!");
-                    }
-
-                    if (r.Queries[0] != query)
-                    {
-                        throw new InvalidDataException("Invalid answer received!");
-                    }
-
-                    if (r.IsTruncatedResponse && !useTcp) { useTcp = true; continue; }
-                    return r;
                 }
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceWarning("Error during query.", ex);
-                return null;
+                catch
+                {
+                    if (useTcp)
+                    {
+                        throw;
+                    }
+
+                    useTcp = true;
+                    continue;
+                }
+
+                if (r.TransactionID != messageID)
+                {
+                    throw new InvalidDataException("Invalid message ID received!");
+                }
+
+                if (r.Queries.Count != 1)
+                {
+                    throw new InvalidDataException("Invalid answer received!");
+                }
+
+                if (r.Queries[0] != query)
+                {
+                    throw new InvalidDataException("Invalid answer received!");
+                }
+
+                if (r.IsTruncatedResponse)
+                {
+                    throw new InvalidDataException("Truncated answer received!");
+                }
+                return r;
             }
         }
 
-        private DnsResponse QueryUdp(IPAddress srv, byte[] query)
+        DnsResponse QueryUdp(IPAddress srv, byte[] query)
         {
             int timeout = Math.Max(100, (int)QueryTimeout.TotalMilliseconds);
             UdpClient udp = null;
@@ -303,15 +338,15 @@ namespace Cave.Net.Dns
                 udp.Client.SendTimeout = timeout;
                 udp.Client.ReceiveTimeout = timeout;
                 udp.Send(query, query.Length);
-                IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
+                var remote = new IPEndPoint(IPAddress.Any, 0);
                 byte[] data = udp.Receive(ref remote);
-                DnsResponse response = new DnsResponse(srv, data);
+                var response = new DnsResponse(srv, data);
                 return response;
             }
             finally { udp?.Close(); }
         }
 
-        private DnsResponse QueryTcp(IPAddress srv, byte[] query)
+        DnsResponse QueryTcp(IPAddress srv, byte[] query)
         {
             int timeout = Math.Max(100, (int)QueryTimeout.TotalMilliseconds);
             TcpClient tcp = null;
@@ -324,11 +359,11 @@ namespace Cave.Net.Dns
                 tcp.Connect(srv, 53);
                 using (Stream stream = tcp.GetStream())
                 {
-                    DataWriter writer = new DataWriter(stream, endian: EndianType.BigEndian);
+                    var writer = new DataWriter(stream, endian: EndianType.BigEndian);
                     writer.Write((ushort)query.Length);
                     writer.Write(query);
                     writer.Flush();
-                    DataReader reader = new DataReader(stream);
+                    var reader = new DataReader(stream);
                     int length = reader.ReadUInt16();
                     return new DnsResponse(srv, reader.ReadBytes(length));
                 }

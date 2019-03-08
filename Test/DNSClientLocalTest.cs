@@ -8,7 +8,8 @@ namespace Tests
     /// <summary>
     /// Test require a local dns server with the zone file provided in zone.txt
     /// </summary>
-    class DNSClientLocalTest
+    [TestFixture]
+    public class DNSClientLocalTest
     {
         IPAddress ServerAddress = new IPAddress(new byte[] { 127, 0, 0, 1 });
 

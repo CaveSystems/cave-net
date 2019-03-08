@@ -17,7 +17,7 @@ namespace Cave.Net.Dns
         /// <returns></returns>
         public static SoaRecord Parse(DataReader reader)
         {
-            SoaRecord result = new SoaRecord
+            var result = new SoaRecord
             {
                 MasterName = DomainName.Parse(reader),
                 ResponsibleName = ParseEmailAddress(reader),
@@ -33,7 +33,7 @@ namespace Cave.Net.Dns
         private static MailAddress ParseEmailAddress(DataReader reader)
         {
             long endposition = -1;
-            List<string> parts = new List<string>();
+            var parts = new List<string>();
             while (true)
             {
                 byte b = reader.ReadByte();
@@ -54,8 +54,9 @@ namespace Cave.Net.Dns
                 if (b >= 192)
                 {
                     // Pointer, RFC1035
-                    int pointer = (b - 192) * 256 + reader.ReadByte();
-                    //save position
+                    int pointer = ((b - 192) * 256) + reader.ReadByte();
+
+                    // save position
                     if (endposition < 0)
                     {
                         endposition = reader.BaseStream.Position;
@@ -73,7 +74,7 @@ namespace Cave.Net.Dns
                         length = 256;
                     }
 
-                    StringBuilder sb = new StringBuilder();
+                    var sb = new StringBuilder();
                     sb.Append(@"\[x");
                     string suffix = "/" + length + "]";
                     do
@@ -85,7 +86,8 @@ namespace Cave.Net.Dns
                         }
                         sb.Append(b.ToString("x2"));
                         length = length - 8;
-                    } while (length > 0);
+                    }
+                    while (length > 0);
                     sb.Append(suffix);
                     parts.Add(sb.ToString());
                     continue;
@@ -120,8 +122,8 @@ namespace Cave.Net.Dns
         /// <summary>The negative caching TTL (seconds)</summary>
         public int NegativeCachingTTL;
 
-        /// <summary>Returns a <see cref="System.String" /> that represents this instance.</summary>
-        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
+        /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
+        /// <returns>A <see cref="string" /> that represents this instance.</returns>
         public override string ToString()
         {
             return string.Format(

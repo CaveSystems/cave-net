@@ -5,7 +5,8 @@ using System.Net;
 
 namespace Tests
 {
-    class DNSClientRemoteTest
+    [TestFixture]
+    public class DNSClientRemoteTest
     {
 
         [Test]

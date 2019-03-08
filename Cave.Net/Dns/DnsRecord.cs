@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Net;
 using System.Text;
 using Cave.IO;
@@ -12,13 +13,13 @@ namespace Cave.Net.Dns
     {
         /// <summary>Parses a record from the specified reader.</summary>
         /// <param name="reader">The reader.</param>
-        /// <returns></returns>
-        /// <exception cref="System.NotImplementedException"></exception>
+        /// <returns>Returns the dns record found.</returns>
+        /// <exception cref="NotImplementedException">RecordType not implemented!</exception>
         public static DnsRecord Parse(DataReader reader)
         {
             long start = reader.BaseStream.Position;
 
-            DnsRecord result = new DnsRecord
+            var result = new DnsRecord
             {
                 Name = DomainName.Parse(reader),
                 RecordType = (DnsRecordType)reader.ReadUInt16(),
@@ -29,7 +30,7 @@ namespace Cave.Net.Dns
             int length = reader.ReadUInt16();
             if (length > reader.Available)
             {
-
+                Trace.WriteLine("Additional data after dns answer.");
             }
             switch (result.RecordType)
             {
@@ -40,7 +41,7 @@ namespace Cave.Net.Dns
                 case DnsRecordType.MX: result.Value = MxRecord.Parse(reader); break;
                 case DnsRecordType.TXT: result.Value = TxtRecord.Parse(reader, length); break;
                 case DnsRecordType.CNAME: result.Value = DomainName.Parse(reader); break;
-                default: throw new NotImplementedException();
+                default: throw new NotImplementedException($"RecordType {result.RecordType} not implemented!");
             }
             return result;
         }
@@ -65,11 +66,11 @@ namespace Cave.Net.Dns
         /// <value>The value.</value>
         public object Value { get; private set; }
 
-        /// <summary>Returns a <see cref="System.String" /> that represents this instance.</summary>
-        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
+        /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
+        /// <returns>A <see cref="string" /> that represents this instance.</returns>
         public override string ToString()
         {
-            StringBuilder result = new StringBuilder();
+            var result = new StringBuilder();
             result.Append(Name);
             result.Append(" ");
             result.Append(RecordClass);

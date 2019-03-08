@@ -13,7 +13,7 @@ namespace Cave.Net
         public SslClient Client { get; private set; }
 
         /// <summary>
-        /// Creates a new instance for the specified client
+        /// Initializes a new instance of the <see cref="SslClientEventArgs"/> class.
         /// </summary>
         /// <param name="client">The SslClient</param>
         public SslClientEventArgs(SslClient client)

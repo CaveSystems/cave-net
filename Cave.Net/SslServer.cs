@@ -15,30 +15,31 @@ namespace Cave.Net
     public class SslServer
     {
         #region private implementation
-        readonly List<TcpListener> m_Listeners = new List<TcpListener>();
-        bool m_Closed = false;
+        readonly List<TcpListener> listeners = new List<TcpListener>();
+        bool isClosed = false;
 
-        void m_Listen(object obj)
+        void Listen(object obj)
         {
-            TcpListener listener = obj as TcpListener;
+            var listener = obj as TcpListener;
             listener.Start();
-            while (!m_Closed)
+            while (!isClosed)
             {
-                //stop if listener closed
-                lock (m_Listeners)
+                // stop if listener closed
+                lock (listeners)
                 {
-                    if (!m_Listeners.Contains(listener))
+                    if (!listeners.Contains(listener))
                     {
                         break;
                     }
                 }
-                //accept client
+
+                // accept client
                 TcpClient tcpClient = null;
                 try
                 {
                     tcpClient = listener.AcceptTcpClient();
-                    SslClient l_SslClient = new SslClient(tcpClient);
-                    l_SslClient.Authenticate += new EventHandler<SslAuthenticationEventArgs>(m_ClientAuthenticate);
+                    var l_SslClient = new SslClient(tcpClient);
+                    l_SslClient.Authenticate += new EventHandler<SslAuthenticationEventArgs>(ClientAuthenticate);
                     l_SslClient.DoServerTLS(Certificate);
                     OnConnected(l_SslClient);
                 }
@@ -57,7 +58,7 @@ namespace Cave.Net
             }
         }
 
-        void m_ClientAuthenticate(object sender, SslAuthenticationEventArgs e)
+        void ClientAuthenticate(object sender, SslAuthenticationEventArgs e)
         {
             OnAuthenticate(e);
         }
@@ -73,7 +74,8 @@ namespace Cave.Net
         protected virtual void OnConnected(SslClient client)
         {
             EventHandler<SslClientEventArgs> evt = Connected;
-            //return if event not used
+
+            // return if event not used
             try
             {
                 evt?.Invoke(this, new SslClientEventArgs(client));
@@ -104,6 +106,7 @@ namespace Cave.Net
         #endregion
 
         #region public events
+
         /// <summary>
         /// Event to be executed on each new incoming connection
         /// </summary>
@@ -117,13 +120,14 @@ namespace Cave.Net
         #endregion
 
         #region public functionality
+
         /// <summary>
-        /// The certificate the server uses
+        /// Gets the certificate the server uses
         /// </summary>
         public X509Certificate2 Certificate { get; private set; }
 
         /// <summary>
-        /// Creates a new SslServer with the specified certificate
+        /// Initializes a new instance of the <see cref="SslServer"/> class.
         /// </summary>
         /// <param name="certificate">The certificate</param>
         public SslServer(X509Certificate2 certificate)
@@ -142,17 +146,17 @@ namespace Cave.Net
         /// <param name="port">The port (1..65534) to listen at</param>
         public void Listen(IPAddress address, int port)
         {
-            if (m_Closed)
+            if (isClosed)
             {
                 throw new ObjectDisposedException("SslServer");
             }
 
-            TcpListener listener = new TcpListener(address, port)
+            var listener = new TcpListener(address, port)
             {
                 ExclusiveAddressUse = true
             };
-            Task.Factory.StartNew(new Action<object>(m_Listen), listener);
-            m_Listeners.Add(listener);
+            Task.Factory.StartNew(new Action<object>(Listen), listener);
+            listeners.Add(listener);
         }
 
         /// <summary>
@@ -161,17 +165,17 @@ namespace Cave.Net
         /// <param name="iPEndPoint">The local IPEndPoint to listen at</param>
         public void Listen(IPEndPoint iPEndPoint)
         {
-            if (m_Closed)
+            if (isClosed)
             {
                 throw new ObjectDisposedException("SslServer");
             }
 
-            TcpListener listener = new TcpListener(iPEndPoint)
+            var listener = new TcpListener(iPEndPoint)
             {
                 ExclusiveAddressUse = true
             };
-            Task.Factory.StartNew(new Action<object>(m_Listen), listener);
-            m_Listeners.Add(listener);
+            Task.Factory.StartNew(new Action<object>(Listen), listener);
+            listeners.Add(listener);
         }
 
         /// <summary>
@@ -182,8 +186,8 @@ namespace Cave.Net
             get
             {
                 int i = 0;
-                IPEndPoint[] result = new IPEndPoint[m_Listeners.Count];
-                foreach (TcpListener listener in m_Listeners)
+                IPEndPoint[] result = new IPEndPoint[listeners.Count];
+                foreach (TcpListener listener in listeners)
                 {
                     result[i++] = (IPEndPoint)listener.LocalEndpoint;
                 }
@@ -200,19 +204,19 @@ namespace Cave.Net
         /// </summary>
         public void Close()
         {
-            if (m_Closed)
+            if (isClosed)
             {
                 throw new ObjectDisposedException("SslServer");
             }
 
-            m_Closed = true;
-            lock (m_Listeners)
+            isClosed = true;
+            lock (listeners)
             {
-                foreach (TcpListener listener in m_Listeners)
+                foreach (TcpListener listener in listeners)
                 {
                     listener.Stop();
                 }
-                m_Listeners.Clear();
+                listeners.Clear();
             }
         }
         #endregion

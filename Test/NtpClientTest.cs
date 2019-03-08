@@ -5,6 +5,7 @@ using NUnit.Framework;
 
 namespace Tests
 {
+    [TestFixture]
     public class NtpClientTest
     {
         [Test]

@@ -12,7 +12,7 @@ namespace Cave.Net.Dns
         /// <returns></returns>
         public static MxRecord Parse(DataReader reader)
         {
-            MxRecord result = new MxRecord
+            var result = new MxRecord
             {
                 Preference = reader.ReadUInt16(),
                 ExchangeDomainName = DomainName.Parse(reader)
@@ -26,8 +26,8 @@ namespace Cave.Net.Dns
         /// <summary>The exchange domain name</summary>
         public DomainName ExchangeDomainName;
 
-        /// <summary>Returns a <see cref="System.String" /> that represents this instance.</summary>
-        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
+        /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
+        /// <returns>A <see cref="string" /> that represents this instance.</returns>
         public override string ToString()
         {
             return string.Format("{0}, {1}", Preference, ExchangeDomainName);

@@ -10,26 +10,33 @@ namespace Cave.Net
         /// <summary>
         /// The source this packet was received from (may be null)
         /// </summary>
-        public UdpPacketClient ReceivedBy;
+        public IPEndPoint LocalEndPoint { get; internal protected set; }
 
         /// <summary>
         /// The source or destination of this packet
         /// </summary>
-        public IPEndPoint RemoteEndPoint;
+        public IPEndPoint RemoteEndPoint { get; internal protected set; }
 
         /// <summary>
         /// Data of the packet (without udp/ip header)
         /// </summary>
-        public byte[] Data;
+        public byte[] Data { get; internal protected set; }
+
+        /// <summary>
+        /// Offset the data starts.
+        /// </summary>
+        public ushort Offset { get; internal protected set; }
 
         /// <summary>
         /// Size of the packet (without udp/ip header)
         /// </summary>
-        public ushort Size;
+        public ushort Size { get; internal protected set; }
 
         /// <summary>
-        /// Creates an empty udp packet 
+        /// Initializes a new instance of the <see cref="UdpPacket"/> class.
         /// </summary>
-        public UdpPacket() { }
+        public UdpPacket()
+        {
+        }
     }
 }

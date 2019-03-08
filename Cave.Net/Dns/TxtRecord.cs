@@ -16,8 +16,8 @@ namespace Cave.Net.Dns
         public static TxtRecord Parse(DataReader reader, int length)
         {
             long end = reader.BaseStream.Position + length;
-            TxtRecord result = new TxtRecord();
-            List<string> parts = new List<string>();
+            var result = new TxtRecord();
+            var parts = new List<string>();
             while (reader.BaseStream.Position < end)
             {
                 int len = reader.ReadByte();
@@ -31,11 +31,11 @@ namespace Cave.Net.Dns
         /// <value>The parts.</value>
         public string[] Parts { get; private set; }
 
-        /// <summary>Returns a <see cref="System.String" /> that represents this instance.</summary>
-        /// <returns>A <see cref="System.String" /> that represents this instance.</returns>
+        /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
+        /// <returns>A <see cref="string" /> that represents this instance.</returns>
         public override string ToString()
         {
-            StringBuilder result = new StringBuilder();
+            var result = new StringBuilder();
             foreach (string part in Parts)
             {
                 if (result.Length > 0)
