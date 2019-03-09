@@ -346,7 +346,7 @@ namespace Cave.Net
         /// <summary>
         /// Sends a packet via the client connected to the packets destination.
         /// </summary>
-        /// <param name="packet"></param>
+        /// <param name="packet">Packet to send.</param>
         public virtual void Send(UdpPacket packet)
         {
             if (packet == null)
@@ -410,7 +410,7 @@ namespace Cave.Net
         /// <summary>
         /// Obtains the string "UcpPacketServer&lt;LocalEndPoint[s]&gt;.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A string that represents the current object.</returns>
         public override string ToString()
         {
             return string.Format("UcpPacketServer<{0}>", StringExtensions.Join(LocalEndPoints, ","));
