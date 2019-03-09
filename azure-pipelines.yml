@@ -27,11 +27,13 @@ steps:
     targetType: inline
     script: |
       $var = "$(git tag -l --points-at HEAD)".Trim()
+      $incRev = $false
       if ($var -eq '')
       {
         $semver = "ci-$env:BUILD_BUILDNUMBER".Replace('.', '-')
         Write-Host "$("##vso[task.setvariable variable=VersionSuffix]")$semver"
         Write-Host "VersionSuffix: '$semver'"
+        $incRev = $true
       }
       else
       {
@@ -40,12 +42,15 @@ steps:
       $var = $(git describe --tags $(git rev-list --tags --max-count=1)).Trim()
       if ($var -eq '')
       {
-        $ver = [Version]"0.0.1"
+        $ver = [Version]"1.0.0"
       }
       else
       {
         $ver = [Version]$var
-        $ver = [Version]"$($ver.Major).$($ver.Minor).$($ver.Build+1)"
+        if ($incRev -eq $true)
+        {
+          $ver = [Version]"$($ver.Major).$($ver.Minor).$($ver.Build+1)"
+        }
       }
       Write-Host "$("##vso[task.setvariable variable=VersionPrefix]")$ver"
       Write-Host "VersionPrefix: '$ver'"

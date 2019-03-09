@@ -200,10 +200,10 @@ namespace Cave.Net
         public bool Closed => closed;
 
         /// <summary>
-        /// Checks for equality with another client.
+        /// Determines whether two object instances are equal.
         /// </summary>
-        /// <param name="obj"></param>
-        /// <returns></returns>
+        /// <param name="obj">The object to compare with the current object.</param>
+        /// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
         public override bool Equals(object obj)
         {
             var other = obj as UdpPacketClient;
