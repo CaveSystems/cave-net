@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 
 namespace Cave.Net
@@ -37,6 +38,23 @@ namespace Cave.Net
         /// </summary>
         public UdpPacket()
         {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="UdpPacket"/> class.
+        /// </summary>
+        /// <param name="local">Local endpoint.</param>
+        /// <param name="remote">Remote endpoint.</param>
+        /// <param name="data">Data.</param>
+        /// <param name="offset">Offset.</param>
+        /// <param name="size">Size of data.</param>
+        public UdpPacket(IPEndPoint local, IPEndPoint remote, byte[] data, ushort offset, ushort size)
+        {
+            LocalEndPoint = local ?? throw new ArgumentNullException(nameof(local));
+            RemoteEndPoint = remote ?? throw new ArgumentNullException(nameof(remote));
+            Data = data ?? throw new ArgumentNullException(nameof(data));
+            Offset = offset;
+            Size = size;
         }
     }
 }
