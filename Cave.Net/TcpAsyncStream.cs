@@ -30,7 +30,7 @@ namespace Cave.Net
                         Monitor.Pulse(sendBuffer);
                         return;
                     }
-                    buffer = sendBuffer.Dequeue(Math.Min(client.BufferSize, sendBuffer.Length));
+                    buffer = sendBuffer.Dequeue(sendBuffer.Length);
                 }
                 client.SendAsync(buffer, AsyncSendNext);
             }
@@ -39,6 +39,7 @@ namespace Cave.Net
                 Debug.WriteLine(ex);
                 asyncSendInProgress = false;
                 client.OnError(ex);
+                client.Close();
             }
         }
 
