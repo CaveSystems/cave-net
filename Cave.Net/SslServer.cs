@@ -72,7 +72,7 @@ namespace Cave.Net
         /// <summary>
         /// Handles the incoming connection and calls the <see cref="Connected"/> event.
         /// </summary>
-        /// <param name="client"></param>
+        /// <param name="client">The client.</param>
         protected virtual void OnConnected(SslClient client)
         {
             EventHandler<SslClientEventArgs> evt = Connected;

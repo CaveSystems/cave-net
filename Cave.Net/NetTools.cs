@@ -93,7 +93,8 @@ namespace Cave.Net
         /// <summary>
         /// Retrieves local addresses with the specified addresfamily.
         /// </summary>
-        /// <returns></returns>
+        /// <param name="addressFamily">Address family used to lookup local addresses.</param>
+        /// <returns>Returns a list of local ip addresses.</returns>
         public static IPAddress[] GetLocalAddresses(AddressFamily addressFamily)
         {
             var result = new List<IPAddress>();
@@ -111,9 +112,9 @@ namespace Cave.Net
         /// Obtains the first available <see cref="IPAddress"/> for the specified hostname with the
         /// specified <see cref="AddressFamily"/>.
         /// </summary>
-        /// <param name="hostName"></param>
-        /// <param name="addressFamily"></param>
-        /// <returns></returns>
+        /// <param name="hostName">Hostname to get addresses for.</param>
+        /// <param name="addressFamily">Address family to lookup.</param>
+        /// <returns>Returns the first matching ip address.</returns>
         public static IPAddress GetAddress(string hostName, AddressFamily addressFamily)
         {
             foreach (IPAddress address in System.Net.Dns.GetHostAddresses(hostName))
@@ -130,9 +131,9 @@ namespace Cave.Net
         /// Obtains all available <see cref="IPAddress"/> for the specified hostname with the
         /// specified <see cref="AddressFamily"/>.
         /// </summary>
-        /// <param name="hostName"></param>
-        /// <param name="addressFamily"></param>
-        /// <returns></returns>
+        /// <param name="hostName">Hostname to get addresses for.</param>
+        /// <param name="addressFamily">Address family to lookup.</param>
+        /// <returns>Returns a new array of matching ip addresses.</returns>
         public static IPAddress[] GetAddresses(string hostName, AddressFamily addressFamily)
         {
             var addresses = new List<IPAddress>();
@@ -149,14 +150,14 @@ namespace Cave.Net
         /// <summary>Tries to find a free tcp port.</summary>
         /// <param name="defaultPort">The default port.</param>
         /// <param name="maximumTries">The maximum tries.</param>
-        /// <returns></returns>
+        /// <returns>Returns a free tcp port.</returns>
         public static ushort GetFreeTcpPort(int defaultPort, int maximumTries = 10)
         {
             int port = defaultPort;
             try
             {
 #if NET45 || NET46 || NET47 || NETSTANDARD20
-                TcpListener listener = TcpListener.Create(port);
+                var listener = TcpListener.Create(port);
 #elif NET20 || NET35 || NET40
 #pragma warning disable CS0618
                 var listener = new TcpListener(IPAddress.Any, port);
