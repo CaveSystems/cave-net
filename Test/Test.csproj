@@ -3,10 +3,6 @@
     <TargetFramework>net45</TargetFramework>
     <IsPackable>false</IsPackable>
     <StartupObject>Test.Program</StartupObject>
-    <Version>1.0.2</Version>
-    <AssemblyVersion>1.0.2</AssemblyVersion>
-    <FileVersion>2019.126.1438.515</FileVersion>
-    <ApplicationIcon />
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
