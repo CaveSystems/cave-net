@@ -6,6 +6,9 @@
     <Copyright>(c) 2003-$([System.DateTime]::UtcNow.Year) Andreas Rohleder</Copyright>
     <PackageIconUrl>https://www.cavesystems.de/favicon.ico</PackageIconUrl>
     <PackageLicenseExpression>LGPL-3.0-only</PackageLicenseExpression>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <FileVersion>$([System.DateTime]::UtcNow.Year).$([System.DateTime]::UtcNow.ToString("MMdd")).$([System.DateTime]::UtcNow.ToString("HHmm")).$([System.DateTime]::UtcNow.ToString("ssfff"))</FileVersion>
+    <LangVersion>latest</LangVersion>
     <!--project-->
     <RootNamespace>Cave.Net</RootNamespace>
     <AssemblyOriginatorKeyFile>cave-net.snk</AssemblyOriginatorKeyFile>
@@ -13,7 +16,7 @@
     <PackageTags>CaveSystems Networking TcpServer TcpAsyncClient UdpServer UdpAsyncClient DNS NTP</PackageTags>
     <Description>CaveSystems Networking Bibliothek</Description>
     <PackageProjectUrl>https://github.com/CaveSystems/cave-net</PackageProjectUrl>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Cave.Net.xml</DocumentationFile>
+    <RepositoryUrl>https://github.com/CaveSystems/cave-net</RepositoryUrl>
     <!--settings-->
     <PackageReleaseNotes />
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -32,7 +35,6 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <Deterministic>true</Deterministic>
     <DeterministicSourcePaths>false</DeterministicSourcePaths>
-    <FileVersion>$([System.DateTime]::UtcNow.Year).$([System.DateTime]::UtcNow.ToString("MMdd")).$([System.DateTime]::UtcNow.ToString("HHmm")).$([System.DateTime]::UtcNow.ToString("ssfff"))</FileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
   </PropertyGroup>

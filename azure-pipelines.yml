@@ -39,17 +39,18 @@ steps:
       {
         Write-Host "VersionSuffix: ''"
       }
-      $var = $(git describe --tags $(git rev-list --tags --max-count=1)).Trim()
-      if ($var -eq '')
+      $ver = [Version]"1.0.0"
+      $var = "$(git rev-list --tags --max-count=1)".Trim()
+      if ($var -ne '')
       {
-        $ver = [Version]"1.0.0"
-      }
-      else
-      {
-        $ver = [Version]$var
-        if ($incRev -eq $true)
+        $var = $(git describe --tags $var).Trim()
+        if ($var -ne '')
         {
-          $ver = [Version]"$($ver.Major).$($ver.Minor).$($ver.Build+1)"
+          $ver = [Version]$var
+          if ($incRev -eq $true)
+          {
+            $ver = [Version]"$($ver.Major).$($ver.Minor).$($ver.Build+1)"
+          }
         }
       }
       Write-Host "$("##vso[task.setvariable variable=VersionPrefix]")$ver"
@@ -75,14 +76,14 @@ steps:
   inputs:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
-    testAssemblyVer2: '**\Test.exe'
+    testAssemblyVer2: '**\bin\Release\**\Test.exe'
 
 - task: NuGetCommand@2
   displayName: Push to nuget (release)
   #condition: ne(variables['GIT_TAG'], '')
   inputs:
     command: push
-    packagesToPush: '$(Build.SourcesDirectory)/**/*.nupkg'
+    packagesToPush: '$(Build.SourcesDirectory)/**/bin/Release/*.nupkg'
     nuGetFeedType: external
     publishFeedCredentials: 'nuget-default'
     versioningScheme: byEnvVar
