@@ -14,7 +14,7 @@ namespace Cave.Net.Dns
     {
         /// <summary>Parses the record using the specified reader.</summary>
         /// <param name="reader">The reader.</param>
-        /// <returns></returns>
+        /// <returns>Returns a new <see cref="SoaRecord"/> structure.</returns>
         public static SoaRecord Parse(DataReader reader)
         {
             var result = new SoaRecord
@@ -45,11 +45,9 @@ namespace Cave.Net.Dns
                         reader.BaseStream.Position = endposition;
                     }
 
-                    if (parts.Any(p => p.Contains("@")))
-                    {
-                        return new MailAddress(parts.Join("."));
-                    }
-                    return new MailAddress(parts[0] + "@" + parts.SubRange(1).Join("."));
+                    return parts.Any(p => p.Contains("@"))
+                        ? new MailAddress(parts.Join("."))
+                        : new MailAddress(parts[0] + "@" + parts.SubRange(1).Join("."));
                 }
                 if (b >= 192)
                 {
@@ -85,7 +83,7 @@ namespace Cave.Net.Dns
                             b &= (byte)(0xff >> (8 - length));
                         }
                         sb.Append(b.ToString("x2"));
-                        length = length - 8;
+                        length -= 8;
                     }
                     while (length > 0);
                     sb.Append(suffix);

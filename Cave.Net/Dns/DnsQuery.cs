@@ -31,7 +31,7 @@ namespace Cave.Net.Dns
 
         /// <summary>Parses the specified reader.</summary>
         /// <param name="reader">The reader.</param>
-        /// <returns></returns>
+        /// <returns>Returns a new <see cref="DnsQuery"/> structure.</returns>
         public static DnsQuery Parse(DataReader reader)
         {
             var result = new DnsQuery
@@ -81,11 +81,7 @@ namespace Cave.Net.Dns
         /// </returns>
         public override bool Equals(object obj)
         {
-            if (obj is DnsQuery)
-            {
-                return this == (DnsQuery)obj;
-            }
-            return false;
+            return obj is DnsQuery other ? this == other : false;
         }
 
         /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>

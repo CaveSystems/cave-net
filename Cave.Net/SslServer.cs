@@ -101,15 +101,9 @@ namespace Cave.Net
         /// <summary>
         /// Calls the <see cref="Authenticate"/> event.
         /// </summary>
-        /// <param name="eventArgs"></param>
-        protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs)
-        {
-            EventHandler<SslAuthenticationEventArgs> evt = Authenticate;
-            if (evt != null)
-            {
-                evt.Invoke(this, eventArgs);
-            }
-        }
+        /// <param name="eventArgs">Event arguments.</param>
+        protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs) => Authenticate?.Invoke(this, eventArgs);
+
         #endregion
 
         #region public events

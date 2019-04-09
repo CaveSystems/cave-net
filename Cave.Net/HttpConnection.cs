@@ -258,7 +258,7 @@ namespace Cave.Net
         /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <param name="callback">Callback to run after each block or null.</param>
         /// <param name="userItem">The user item.</param>
-        /// <returns></returns>
+        /// <returns>Returns a byte array.</returns>
         public byte[] Download(ConnectionString connectionString, ProgressCallback callback, object userItem = null)
         {
             HttpWebResponse response = null;
