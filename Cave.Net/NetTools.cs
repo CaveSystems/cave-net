@@ -33,6 +33,7 @@ namespace Cave.Net
         /// </summary>
         /// <param name="text">The string containing the ip endpoint (server[:port] or ipaddress[:port]).</param>
         /// <param name="defaultPort">The default port used if no port was given.</param>
+        /// <returns>Returns an array of <see cref="IPEndPoint"/>s.</returns>
         public static IPEndPoint[] GetIPEndPoints(string text, int defaultPort)
         {
             if (string.IsNullOrEmpty(text))
@@ -76,6 +77,7 @@ namespace Cave.Net
         /// <summary>
         /// Retrieves all local addresses.
         /// </summary>
+        /// <returns>Returns <see cref="UnicastIPAddressInformation"/> instances for all local network interfaces.</returns>
         public static UnicastIPAddressInformation[] GetLocalAddresses()
         {
             var result = new List<UnicastIPAddressInformation>();

@@ -12,20 +12,6 @@ namespace Cave.Net
     /// </summary>
     public static class IPAddressExtensions
     {
-        private static byte ReverseBits(byte value)
-        {
-            int result = 0;
-            int reverse = 0x80;
-            for (int mask = 1; mask < 256; mask <<= 1, reverse >>= 1)
-            {
-                if ((value & mask) != 0)
-                {
-                    result |= reverse;
-                }
-            }
-            return (byte)result;
-        }
-
         /// <summary>The ipv4 multicast address.</summary>
         public static readonly IPAddress IPv4MulticastAddress = IPAddress.Parse("224.0.0.0");
 
@@ -52,7 +38,7 @@ namespace Cave.Net
         /// <summary>Returns a new address with the specified netmask.</summary>
         /// <param name="address">The address.</param>
         /// <param name="netmask">The netmask.</param>
-        /// <returns></returns>
+        /// <returns>Returns an <see cref="IPAddress"/> instance.</returns>
         /// <exception cref="ArgumentNullException">
         /// address or netmask.
         /// </exception>
@@ -176,7 +162,7 @@ namespace Cave.Net
         /// <summary>Returns a new address with the specified netmask.</summary>
         /// <param name="address">The address.</param>
         /// <param name="netmask">The netmask.</param>
-        /// <returns></returns>
+        /// <returns>Returns a new <see cref="IPAddress"/> instance.</returns>
         /// <exception cref="ArgumentNullException">address.</exception>
         /// <exception cref="ArgumentException">
         /// Netmask has to be in range of 0 to 32 on IPv4 addresses
@@ -325,7 +311,7 @@ namespace Cave.Net
 
         /// <summary>Gets the broadcast address.</summary>
         /// <param name="unicastAddress">The unicast address.</param>
-        /// <returns></returns>
+        /// <returns>Returns a new <see cref="IPAddress"/> instance.</returns>
         public static IPAddress GetBroadcastAddress(this UnicastIPAddressInformation unicastAddress)
         {
             uint ipAddress = BitConverter.ToUInt32(unicastAddress.Address.GetAddressBytes(), 0);

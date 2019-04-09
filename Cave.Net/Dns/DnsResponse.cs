@@ -11,7 +11,7 @@ namespace Cave.Net.Dns
     /// </summary>
     public class DnsResponse
     {
-        ushort flags;
+        readonly ushort flags;
 
         /// <summary>Gets the sender.</summary>
         /// <value>The sender.</value>
@@ -61,7 +61,7 @@ namespace Cave.Net.Dns
         /// <summary>Loads the records.</summary>
         /// <param name="reader">The reader.</param>
         /// <param name="recordCount">The record count.</param>
-        /// <returns></returns>
+        /// <returns>Returns a list of <see cref="DnsRecord"/>s.</returns>
         IList<DnsRecord> LoadRecords(DataReader reader, int recordCount)
         {
             var result = new List<DnsRecord>(recordCount);

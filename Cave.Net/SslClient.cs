@@ -28,7 +28,7 @@ namespace Cave.Net
         /// <param name="localCertificates">The local certificates.</param>
         /// <param name="remoteCertificate">The remote certificate.</param>
         /// <param name="acceptableIssuers">The acceptable issuers.</param>
-        /// <returns></returns>
+        /// <returns>Returns the selected <see cref="X509Certificate"/> instance.</returns>
         protected virtual X509Certificate OnSelectLocalCert(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
         {
             foreach (X509Certificate cert in localCertificates)
@@ -44,7 +44,7 @@ namespace Cave.Net
         /// <param name="certificate">The certificate.</param>
         /// <param name="chain">The chain.</param>
         /// <param name="sslPolicyErrors">The SSL policy errors.</param>
-        /// <returns></returns>
+        /// <returns>Returns true if the remote certificate was validated or false otherwise.</returns>
         protected virtual bool OnValidateRemoteCert(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             if (PolicyErrors == 0)
@@ -148,12 +148,7 @@ namespace Cave.Net
         /// <param name="client">Client to use.</param>
         public SslClient(TcpClient client)
         {
-            if (client == null)
-            {
-                throw new ArgumentNullException("client");
-            }
-
-            this.client = client;
+            this.client = client ?? throw new ArgumentNullException("client");
             RemoteEndPoint = (IPEndPoint)this.client.Client.RemoteEndPoint;
         }
 
@@ -332,12 +327,7 @@ namespace Cave.Net
         {
             get
             {
-                if (Connected)
-                {
-                    return "SslClient <" + RemoteEndPoint + ">";
-                }
-
-                return "SslClient <not connected>";
+                return Connected ? $"SslClient <{RemoteEndPoint}>" : "SslClient <not connected>";
             }
         }
 
@@ -361,7 +351,7 @@ namespace Cave.Net
         /// <summary>
         /// Obtains an identification string for the object.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>SSL://{RemoteEndPoint}.</returns>
         public override string ToString()
         {
             var result = new StringBuilder();
@@ -384,7 +374,7 @@ namespace Cave.Net
         /// <summary>
         /// Obtains a hashcode for this instance.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Returns the hashcode for the remote endpoint.</returns>
         public override int GetHashCode()
         {
             return RemoteEndPoint.GetHashCode();

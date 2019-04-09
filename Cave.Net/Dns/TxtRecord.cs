@@ -12,7 +12,7 @@ namespace Cave.Net.Dns
         /// <summary>Parses the record using the specified reader.</summary>
         /// <param name="reader">The reader.</param>
         /// <param name="length">The length.</param>
-        /// <returns></returns>
+        /// <returns>Returns a new <see cref="TxtRecord"/> instance.</returns>
         public static TxtRecord Parse(DataReader reader, int length)
         {
             long end = reader.BaseStream.Position + length;

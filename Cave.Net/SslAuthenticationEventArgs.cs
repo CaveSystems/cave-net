@@ -43,7 +43,7 @@ namespace Cave.Net
         public bool Validated
         {
             get => validated;
-            set => validated = validated & value;
+            set => validated &= value;
         }
 
         /// <summary>

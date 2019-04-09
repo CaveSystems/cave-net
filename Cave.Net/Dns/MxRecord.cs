@@ -9,7 +9,7 @@ namespace Cave.Net.Dns
     {
         /// <summary>Parses a record using the specified reader.</summary>
         /// <param name="reader">The reader.</param>
-        /// <returns></returns>
+        /// <returns>Returns a new <see cref="MxRecord"/> structure.</returns>
         public static MxRecord Parse(DataReader reader)
         {
             var result = new MxRecord
