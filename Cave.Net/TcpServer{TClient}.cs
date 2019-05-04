@@ -57,7 +57,7 @@ namespace Cave.Net
                 clients.Remove(client);
             }
         }
-        IEnumerable<TClient> ClientList => clients;
+
         IEnumerable<SocketAsyncEventArgs> PendingAcceptList => pendingAccepts;
 #endif
 
@@ -291,7 +291,7 @@ AcceptCompletedBegin:
         {
             lock (clients)
             {
-                foreach (TClient c in ClientList)
+                foreach (TClient c in Clients)
                 {
                     c.Close();
                 }
@@ -425,7 +425,7 @@ AcceptCompletedBegin:
             {
                 lock (clients)
                 {
-                    return ClientList.ToArray();
+                    return clients.ToArray();
                 }
             }
         }
