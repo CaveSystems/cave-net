@@ -37,6 +37,7 @@ namespace Cave.Net
         IEnumerable<TClient> ClientList => clients.Keys;
         IEnumerable<SocketAsyncEventArgs> PendingAcceptList => pendingAccepts.Keys;
 #else
+        IEnumerable<TClient> ClientList => clients;
         readonly HashSet<SocketAsyncEventArgs> pendingAccepts = new HashSet<SocketAsyncEventArgs>();
         readonly HashSet<TClient> clients = new HashSet<TClient>();
 
@@ -425,7 +426,7 @@ AcceptCompletedBegin:
             {
                 lock (clients)
                 {
-                    return clients.ToArray();
+                    return ClientList.ToArray();
                 }
             }
         }
