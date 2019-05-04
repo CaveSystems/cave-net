@@ -54,7 +54,10 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <None Remove="stylecop.json" />
+    <AdditionalFiles Include="stylecop.json" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)'=='net20' OR '$(TargetFramework)'=='net35' OR '$(TargetFramework)'=='netstandard1.3'">
+    <PackageReference Include="Cave.Backports" Version="1.0.5" />
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="stylecop.json" />
