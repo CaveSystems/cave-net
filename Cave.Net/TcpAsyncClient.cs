@@ -993,6 +993,12 @@ ReadCompletedBegin:
         /// Gets the server instance this client belongs to. May be <c>null</c>.
         /// </summary>
         public ITcpServer Server { get; private set; }
+        
+        /// <summary>
+        /// Gets or sets an user defined object.
+        /// </summary>
+        public object State { get; set; }
+
         #endregion
 
         /// <summary>
