@@ -19,8 +19,6 @@ namespace Test
     [TestFixture]
     public class TcpServerTest2
     {
-        static int firstPort = 2148 + Environment.TickCount % 1024;
-
         public IPAddress[] GetMyAddresses(bool includeLoopback)
         {
             var interfaces = NetworkInterface.GetAllNetworkInterfaces().Where(i => i.OperationalStatus == OperationalStatus.Up);
@@ -33,7 +31,7 @@ namespace Test
         [Test]
         public void TestAccept()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer
             {
                 AcceptThreads = 10,
@@ -84,7 +82,7 @@ namespace Test
         [Test]
         public void TestAccept_SingleThread()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer
             {
                 AcceptThreads = 1,
@@ -135,7 +133,7 @@ namespace Test
         [Test]
         public void TestErrors()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer
             {
                 AcceptThreads = 1,
@@ -245,7 +243,7 @@ namespace Test
         [Test]
         public void TestSend()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) =>
@@ -286,7 +284,7 @@ namespace Test
         [Test]
         public void TestStreamWrite()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) =>
@@ -335,7 +333,7 @@ namespace Test
         [Test]
         public void TestStreamDirectWrite()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) =>
@@ -382,7 +380,7 @@ namespace Test
             var serverClientDisconnectedEventCount = 0;
             var clientConnectedEventCount = 0;
             var clientDisconnectedEventCount = 0;
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) =>
@@ -471,7 +469,7 @@ namespace Test
         [Test]
         public void TestPortAlreadyInUse1()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var listen = new TcpListener(port);
             listen.Start();
             try
@@ -493,7 +491,7 @@ namespace Test
         [Test]
         public void TestPortAlreadyInUse2()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var listen = new TcpListener(IPAddress.Any, port);
             listen.Start();
             try
@@ -515,7 +513,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Client2TcpListener()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var listen = new TcpListener(IPAddress.Loopback, port);
             listen.Start();
             try
@@ -557,7 +555,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Client2TcpListener_DirectWrite()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var listen = new TcpListener(IPAddress.Loopback, port);
             listen.Start();
             try
@@ -600,7 +598,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Client2Server()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -643,7 +641,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Client2Server_DirectWrites()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -688,7 +686,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Client2Server_CloseBeforeRead()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -738,7 +736,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Client2Server_CloseBeforeRead_DirectWrite()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -790,7 +788,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Server2Client()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -834,7 +832,7 @@ namespace Test
         [Test]
         public void TestSendAllBeforeClose_Server2Client_DirectWrites()
         {
-            var port = Interlocked.Increment(ref firstPort);
+            var port = Program.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))

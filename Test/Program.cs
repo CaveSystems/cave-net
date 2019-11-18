@@ -1,12 +1,51 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Net.Sockets;
+using System.Threading;
 using NUnit.Framework;
 
 namespace Test
 {
     class Program
     {
+        static int firstPort = 32768 + Environment.TickCount % 1024;
+        
+        public static int GetPort()
+        {
+            while (true)
+            {
+                try
+                {
+                    var port = Interlocked.Increment(ref firstPort);
+                    var listen = new TcpListener(port);
+                    listen.Start();
+                    listen.Stop();
+                    return port;
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        public static TcpListener OpenPort(out int port)
+        {
+            while (true)
+            {
+                try
+                {
+                    port = Interlocked.Increment(ref firstPort);
+                    var listen = new TcpListener(port);
+                    listen.Start();
+                    return listen;
+                }
+                catch
+                {
+                }
+            }
+        }
+
         static int Main(string[] args)
         {
             var errors = 0;
