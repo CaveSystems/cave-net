@@ -410,7 +410,7 @@ namespace Test
                     Interlocked.Increment(ref clientDisconnectedEventCount);
                 };
                 client.Connect(ip, port);
-                clients.Add(client);
+                lock(clients) clients.Add(client);
             });
             //all clients connected
             Assert.AreEqual(1000, clientConnectedEventCount);
@@ -433,12 +433,15 @@ namespace Test
 
             //disconnect some
             int i = 0, disconnected = 0;
-            foreach (TcpAsyncClient client in clients)
+            lock (clients)
             {
-                if (i++ % 3 == 0)
+                foreach (TcpAsyncClient client in clients)
                 {
-                    disconnected++;
-                    client.Close();
+                    if (i++ % 3 == 0)
+                    {
+                        disconnected++;
+                        client?.Close();
+                    }
                 }
             }
 
@@ -452,9 +455,12 @@ namespace Test
 
             Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
 
-            foreach (TcpAsyncClient client in clients)
+            lock (clients)
             {
-                client.Close();
+                foreach (TcpAsyncClient client in clients)
+                {
+                    client?.Close();
+                }
             }
             Assert.AreEqual(clientConnectedEventCount, serverClientConnectedEventCount);
 
