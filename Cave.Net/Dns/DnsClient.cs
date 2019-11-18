@@ -127,14 +127,16 @@ namespace Cave.Net.Dns
                     break;
             }
 
-            if (result.Count == 0)
+            // public dns as fallback
             {
                 Trace.TraceWarning("Cannot use the default DNS servers of this system. Using google.");
+                result.Add(IPAddress.Parse("1.1.1.1"));
                 result.Add(IPAddress.Parse("8.8.4.4"));
                 result.Add(IPAddress.Parse("8.8.8.8"));
                 result.Add(IPAddress.Parse("2001:4860:4860::8844"));
                 result.Add(IPAddress.Parse("2001:4860:4860::8888"));
             }
+
             return result.ToArray();
         }
 
