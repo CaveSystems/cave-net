@@ -82,7 +82,7 @@ namespace Cave.Net
             {
                 return IPAddress.NetworkToHostOrder(BitConverter.ToInt32(bytes, 0));
             }
-#if NET20 || NET35
+#if NET20 || NET35 || NET40
 #else
             if (address.IsIPv4MappedToIPv6)
             {

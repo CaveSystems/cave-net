@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net20;net35;net45;net46;net47</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net20;net35;net40;net45;net46;net47</TargetFrameworks>
     <Authors>Andreas Rohleder</Authors>
     <Company>CaveSystems GmbH, Andreas Rohleder</Company>
     <Copyright>(c) 2003-$([System.DateTime]::UtcNow.Year) Andreas Rohleder</Copyright>
-    <PackageIconUrl>https://www.cavesystems.de/favicon.ico</PackageIconUrl>
+    <PackageIcon>cavesystems.jpg</PackageIcon>
     <PackageLicenseExpression>LGPL-3.0-only</PackageLicenseExpression>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <FileVersion>$([System.DateTime]::UtcNow.Year).$([System.DateTime]::UtcNow.ToString("MMdd")).$([System.DateTime]::UtcNow.ToString("HHmm")).$([System.DateTime]::UtcNow.ToString("ssfff"))</FileVersion>
@@ -53,23 +53,24 @@
   <ItemGroup Condition="'$(TargetFramework)'=='net20' OR '$(TargetFramework)'=='net35'">
     <Reference Include="System" />
   </ItemGroup>
-  <ItemGroup>
-    <AdditionalFiles Include="stylecop.json" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)'=='net20' OR '$(TargetFramework)'=='net35' OR '$(TargetFramework)'=='netstandard1.3'">
-    <PackageReference Include="Cave.Backports" Version="1.0.5" />
+    <PackageReference Include="Cave.Backports" Version="1.0.7" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="stylecop.json" />
+    <None Include="cavesystems.jpg" Pack="true" PackagePath="\" />
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="stylecop.json" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Cave.Extensions" Version="1.0.7" />
-    <PackageReference Include="Cave.IO" Version="1.0.5" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-18618-05">
+    <PackageReference Include="Cave.Extensions" Version="1.0.9" />
+    <PackageReference Include="Cave.IO" Version="1.0.7" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0-beta2-19554-01">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="StyleCop.Analyzers" Version="1.1.1-rc.114">
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
