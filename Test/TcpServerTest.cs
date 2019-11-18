@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
@@ -53,7 +54,7 @@ namespace Test
             var success = 0;
 
             var ip = IPAddress.Parse("127.0.0.1");
-            Parallel.For(0, count, new ParallelOptions() { MaxDegreeOfParallelism = 10 }, (n) =>
+            Parallel.For(0, count, (n) =>
             {
                 using (var client = new TcpAsyncClient())
                 {
@@ -102,7 +103,7 @@ namespace Test
             var success = 0;
 
             var ip = IPAddress.Parse("127.0.0.1");
-            Parallel.For(0, count, new ParallelOptions() { MaxDegreeOfParallelism = 10 }, (n) =>
+            Parallel.For(0, count, (n) =>
             {
                 using (var client = new TcpAsyncClient())
                 {
@@ -165,11 +166,11 @@ namespace Test
             server.ReceiveTimeout = 10000;
             server.SendTimeout = 10000;
 
-            var exceptions = new ConcurrentQueue<Exception>();
+            var exceptions = new List<Exception>();
             void AcceptError(object sender, EventArgs e) => throw new Exception("AcceptError");
             void QueueError(object sender, TcpServerClientExceptionEventArgs<TcpAsyncClient> e)
             {
-                exceptions.Enqueue(e.Exception);
+                lock(exceptions) exceptions.Add(e.Exception);
                 Console.WriteLine($"Test : info TP{port}: Client {e.Client} Error Test {e.Exception.Message}");
             }
             server.ClientAccepted += AcceptError;
@@ -188,9 +189,9 @@ namespace Test
 
             {
                 Assert.AreEqual(1, exceptions.Count);
-                Assert.AreEqual(true, exceptions.TryDequeue(out Exception ex));
-                Assert.AreEqual("AcceptError", ex.Message);
+                Assert.AreEqual("AcceptError", exceptions[0].Message);
             }
+            exceptions.Clear();
 
             server.ClientAccepted -= AcceptError;
             server.ClientException -= QueueError;
@@ -199,7 +200,7 @@ namespace Test
                 Assert.AreEqual(server.ReceiveTimeout, e.Client.ReceiveTimeout);
                 Assert.AreEqual(server.SendTimeout, e.Client.SendTimeout);
                 e.Client.Buffered += (s1, e1) => throw new Exception("ClientAcceptedBufferError");
-                e.Client.Error += (s2, e2) => exceptions.Enqueue(e2.Exception);
+                e.Client.Error += (s2, e2) => { lock (exceptions) exceptions.Add(e2.Exception); };
             }
             server.ClientAccepted += ClientAcceptedBufferError;
 
@@ -216,8 +217,7 @@ namespace Test
 
             {
                 Assert.AreEqual(1, exceptions.Count);
-                Assert.AreEqual(true, exceptions.TryDequeue(out Exception ex));
-                Assert.AreEqual("ClientAcceptedBufferError", ex.Message);
+                Assert.AreEqual("ClientAcceptedBufferError", exceptions[0].Message);
             }
 
             server.Close();
@@ -291,9 +291,9 @@ namespace Test
             };
             Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
-            var clients = new ConcurrentBag<TcpAsyncClient>();
+            var clients = new List<TcpAsyncClient>();
             var ip = IPAddress.Parse("127.0.0.1");
-            Parallel.For(0, 1000, new ParallelOptions() { MaxDegreeOfParallelism = 10 }, (n) =>
+            Parallel.For(0, 1000, (n) =>
             {
                 var client = new TcpAsyncClient();
                 client.Connected += (s1, e1) =>
@@ -305,7 +305,7 @@ namespace Test
                     Interlocked.Increment(ref clientDisconnectedEventCount);
                 };
                 client.Connect(ip, port);
-                clients.Add(client);
+                lock(clients) clients.Add(client);
             });
             //all clients connected
             Assert.AreEqual(1000, clientConnectedEventCount);
@@ -315,7 +315,7 @@ namespace Test
             Console.WriteLine($"Test : info TP{port}: ConnectedEventCount ok.");
 
             //give the server some more time
-            Task.Delay(2000).Wait();
+            Thread.Sleep(2000);
 
             //all clients connected
             Assert.AreEqual(clientConnectedEventCount, serverClientConnectedEventCount);
@@ -340,7 +340,7 @@ namespace Test
             Assert.AreEqual(disconnected, clientDisconnectedEventCount);
 
             //give the server some more time
-            Task.Delay(2000).Wait();
+            Thread.Sleep(2000);
 
             Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
             Assert.AreEqual(clientConnectedEventCount - disconnected, server.Clients.Length);
@@ -354,7 +354,7 @@ namespace Test
             Assert.AreEqual(clientConnectedEventCount, serverClientConnectedEventCount);
 
             //give the server some more time
-            Task.Delay(2000).Wait();
+            Thread.Sleep(2000);
 
             Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
 
@@ -365,7 +365,7 @@ namespace Test
         public void TestPortAlreadyInUse1()
         {
             var port = Interlocked.Increment(ref firstPort);
-            var listen = TcpListener.Create(port);
+            var listen = new TcpListener(port);
             listen.Start();
             try
             {

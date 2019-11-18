@@ -77,7 +77,7 @@ namespace Cave.Net
             {
                 throw new ObjectDisposedException(nameof(TcpAsyncClient));
             }
-#if NETSTANDARD13 || NET20 || NET35
+#if NETSTANDARD13 || NET20 || NET35 || NET40
             uncheckedSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 #else
             uncheckedSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
@@ -234,7 +234,7 @@ ReadCompletedBegin:
             var isPending = CheckedSocket.ReceiveAsync(socketAsync);
             if (!isPending)
             {
-#if NET20 || NET35
+#if NET20 || NET35 || NET40
                 ThreadPool.QueueUserWorkItem((e) =>
                 {
                     ReadCompleted(this, (SocketAsyncEventArgs)e);
@@ -993,7 +993,7 @@ ReadCompletedBegin:
         /// Gets the server instance this client belongs to. May be <c>null</c>.
         /// </summary>
         public ITcpServer Server { get; private set; }
-        
+
         /// <summary>
         /// Gets or sets an user defined object.
         /// </summary>
