@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -89,14 +90,26 @@ namespace Cave.Net
                 // accept async or sync, call AcceptCompleted in any case
                 Interlocked.Increment(ref acceptWaiting);
                 asyncAccept.Completed += AcceptCompleted;
-                if (!socket.AcceptAsync(asyncAccept))
+
+                bool pending;
+                try
                 {
+                    pending = socket?.AcceptAsync(asyncAccept) == true;
+                }
+                catch (ObjectDisposedException)
+                {
+                    // shutdown
+                    Trace.WriteLine("TcpServer socket shutdown.");
+                    return;
+                }
+
+                if (!pending)
+                {
+                    void AcceptCompletedAction(object o) => AcceptCompleted(this, (SocketAsyncEventArgs)o);
 #if NET20 || NET35
-                    void AcceptCompletedAction(object o) => AcceptCompleted(this, asyncAccept);
-                    ThreadPool.QueueUserWorkItem(AcceptCompletedAction);
+                    ThreadPool.QueueUserWorkItem(AcceptCompletedAction, asyncAccept);
 #else
-                    void AcceptCompletedAction() => AcceptCompleted(this, asyncAccept);
-                    System.Threading.Tasks.Task.Factory.StartNew(AcceptCompletedAction);
+                    System.Threading.Tasks.Task.Factory.StartNew(AcceptCompletedAction, asyncAccept);
 #endif
                 }
             }
@@ -113,8 +126,8 @@ AcceptCompletedBegin:
 
             // handle accepted socket
             {
-                Socket socket = e.AcceptSocket;
-                while (socket?.Connected == true)
+                Socket acceptedSocket = e.AcceptSocket;
+                if (acceptedSocket?.Connected == true)
                 {
                     // create client
                     var client = new TClient();
@@ -128,7 +141,7 @@ AcceptCompletedBegin:
                         }
 
                         // initialize client instance with server and socket
-                        client.InitializeServer(this, socket);
+                        client.InitializeServer(this, acceptedSocket);
 
                         // call client accepted event
                         OnClientAccepted(client);
@@ -140,9 +153,7 @@ AcceptCompletedBegin:
                     {
                         OnClientException(client, ex);
                         client.Close();
-                        break;
                     }
-                    break;
                 }
             }
 
@@ -152,7 +163,17 @@ AcceptCompletedBegin:
                 // accept next
                 Interlocked.Increment(ref acceptWaiting);
                 e.AcceptSocket = null;
-                var pending = socket?.AcceptAsync(e) == true;
+                bool pending;
+                try
+                {
+                    pending = socket?.AcceptAsync(e) == true;
+                }
+                catch (ObjectDisposedException)
+                {
+                    // shutdown
+                    Trace.WriteLine("TcpServer socket shutdown.");
+                    return;
+                }
                 if (!pending)
                 {
                     // AcceptCompleted(this, e);
