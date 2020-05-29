@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using Cave.Net;
 using NUnit.Framework;
 
-namespace Test
+namespace Test.TCP
 {
     [TestFixture]
     public class TcpServerTest
@@ -577,5 +577,71 @@ namespace Test
                 }
             }
         }
+
+        [Test]
+        public void TestBuffering()
+        {
+            var port = Program.GetPort();
+            var server = new TcpServer();
+            server.Listen(port);
+            using (var completed = new ManualResetEvent(false))
+            {
+                try
+                {
+                    server.ClientAccepted += (sender, eventArgs) => Task.Factory.StartNew((c) =>
+                    {
+                        var client = eventArgs.Client;
+                        client.Send(new byte[] { 2, 1, 0, 1 });
+                        client.Close();
+                        completed.Set();
+                    }, eventArgs.Client);
+                    using (var client = new TcpAsyncClient())
+                    using (var waitEvent = new ManualResetEvent(false))
+                    {
+                        client.Connect(IPAddress.Loopback, port);
+                        void Client_Buffered(object sender, EventArgs e)
+                        {
+                            if (client.ReceiveBuffer.Available < 4) return;
+                            Assert.AreEqual(4, client.ReceiveBuffer.Available);
+                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(3));
+                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(2));
+                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(1));
+                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(0));
+                            Assert.AreEqual(2, client.ReceiveBuffer.ReadByte());
+
+                            Assert.AreEqual(3, client.ReceiveBuffer.Available);
+                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(3));
+                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(2));
+                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(1));
+                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(0));
+                            Assert.AreEqual(1, client.ReceiveBuffer.ReadByte());
+
+                            Assert.AreEqual(2, client.ReceiveBuffer.Available);
+                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(3));
+                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(2));
+                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(1));
+                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(0));
+                            Assert.AreEqual(0, client.ReceiveBuffer.ReadByte());
+
+                            Assert.AreEqual(1, client.ReceiveBuffer.Available);
+                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(3));
+                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(2));
+                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(1));
+                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(0));
+                            Assert.AreEqual(1, client.ReceiveBuffer.ReadByte());
+                            waitEvent.Set();
+                        }
+                        client.Buffered += Client_Buffered;
+                        if (!waitEvent.WaitOne(5000)) throw new TimeoutException();
+                    }
+                    if (!completed.WaitOne(5000)) throw new TimeoutException();
+                }
+                finally
+                {
+                    server.Close();
+                }
+            }
+        }
+       
     }
 }

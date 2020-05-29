@@ -6,7 +6,7 @@ using System.Net;
 // TODO START LOCAL DNS SERVER IN TEST
 #if false
 
-namespace Tests
+namespace Test.DNS
 {
     /// <summary>
     /// Test require a local dns server with the zone file provided in zone.txt
