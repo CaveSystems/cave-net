@@ -114,7 +114,7 @@ AcceptCompletedBegin:
             // handle accepted socket
             {
                 Socket socket = e.AcceptSocket;
-                while (socket != null && socket.Connected)
+                while (socket?.Connected == true)
                 {
                     // create client
                     var client = new TClient();
@@ -147,12 +147,13 @@ AcceptCompletedBegin:
             }
 
             // start next socket accept
-            if (!shutdown)
+            if (!shutdown && !disposed)
             {
                 // accept next
                 Interlocked.Increment(ref acceptWaiting);
                 e.AcceptSocket = null;
-                if (!socket.AcceptAsync(e))
+                var pending = socket?.AcceptAsync(e) == true;
+                if (!pending)
                 {
                     // AcceptCompleted(this, e);
                     goto AcceptCompletedBegin;
