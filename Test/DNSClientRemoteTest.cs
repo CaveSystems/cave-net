@@ -3,7 +3,7 @@ using Cave.Net.Dns;
 using NUnit.Framework;
 using System.Net;
 
-namespace Tests
+namespace Test.DNS
 {
     [TestFixture]
     public class DNSClientRemoteTest

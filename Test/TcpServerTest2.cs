@@ -14,7 +14,7 @@ using Cave;
 using Cave.Net;
 using NUnit.Framework;
 
-namespace Test
+namespace Test.TCP
 {
     [TestFixture]
     public class TcpServerTest2

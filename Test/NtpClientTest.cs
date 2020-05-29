@@ -3,7 +3,7 @@ using Cave.IO;
 using Cave.Net.Ntp;
 using NUnit.Framework;
 
-namespace Tests
+namespace Test.NTP
 {
     [TestFixture]
     public class NtpClientTest
@@ -64,7 +64,19 @@ namespace Tests
             Assert.AreEqual(16384, pack.PollInterval.Seconds);
             Assert.AreEqual(TimeSpan.FromSeconds(16384), (TimeSpan)pack.PollInterval);
 
-            NtpAnswer answer = NtpClient.Query("pool.ntp.org");
+            for (int i = 1; i < 5; i++)
+            {
+                try
+                {
+                    NtpAnswer answer = NtpClient.Query($"{i}.pool.ntp.org");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"{i}.pool.ntp.org - {ex}");
+                }
+            }
+            Assert.Fail("Could not connect to any x.pool.ntp.org!");
         }
     }
 }
