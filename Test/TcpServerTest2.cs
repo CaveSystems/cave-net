@@ -175,8 +175,8 @@ namespace Test.TCP
                 Assert.AreEqual("value", ((ArgumentOutOfRangeException)ex).ParamName);
             }
 
-            server.ReceiveTimeout = 10000;
-            server.SendTimeout = 10000;
+            server.ReceiveTimeout = Settings.Timeout;
+            server.SendTimeout = Settings.Timeout;
 
             var exceptions = new List<Exception>();
             void AcceptError(object sender, EventArgs e) => throw new Exception("AcceptError");
@@ -635,7 +635,7 @@ namespace Test.TCP
                             }
                         }
                     }
-                    if (!completed.WaitOne(5000)) throw new TimeoutException();
+                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
                 }
                 finally
                 {
@@ -680,7 +680,7 @@ namespace Test.TCP
                             }
                         }
                     }
-                    if (!completed.WaitOne(5000)) throw new TimeoutException();
+                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
                 }
                 finally
                 {
@@ -729,7 +729,7 @@ namespace Test.TCP
                         }
                         client.Close();
                     }
-                    if (!completed.WaitOne(500000)) throw new TimeoutException();
+                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
                     Assert.AreEqual(null, t?.Exception, $"{t.Exception}");
                 }
                 finally
@@ -781,7 +781,7 @@ namespace Test.TCP
                         }
                         client.Close();
                     }
-                    if (!completed.WaitOne(500000)) throw new TimeoutException();
+                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
                     Assert.AreEqual(null, t?.Exception, $"{t.Exception}");
                 }
                 finally
@@ -826,7 +826,7 @@ namespace Test.TCP
                             }
                         }
                     }
-                    if (!completed.WaitOne(5000)) throw new TimeoutException();
+                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
                 }
                 finally
                 {
@@ -872,7 +872,7 @@ namespace Test.TCP
                             }
                         }
                     }
-                    if (!completed.WaitOne(5000)) throw new TimeoutException();
+                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
                 }
                 finally
                 {
