@@ -581,67 +581,68 @@ namespace Test.TCP
         [Test]
         public void TestBuffering()
         {
-            var port = Program.GetPort();
-            var server = new TcpServer();
-            server.Listen(port);
-            using (var completed = new ManualResetEvent(false))
+            for (int i = 0; i < 100; i++)
             {
-                try
+                var port = Program.GetPort();
+                using (var server = new TcpServer())
+                using (var sendEvent = new ManualResetEvent(false))
+                using (var testClient = new TcpAsyncClient())
+                using (var bufferedEvent = new ManualResetEvent(false))
                 {
+                    // on client accept send buffer
                     server.ClientAccepted += (sender, eventArgs) => Task.Factory.StartNew((c) =>
                     {
-                        var client = eventArgs.Client;
-                        client.Send(new byte[] { 2, 1, 0, 1 });
-                        client.Close();
-                        completed.Set();
+                        var serverClient = eventArgs.Client;
+                        serverClient.Send(new byte[] { 2, 1, 0, 1 });
+                        serverClient.Close();
+                        sendEvent.Set();
                     }, eventArgs.Client);
-                    using (var client = new TcpAsyncClient())
-                    using (var waitEvent = new ManualResetEvent(false))
+
+                    // open server port
+                    server.Listen(port);
+
+                    // on client buffered, test receivebuffer
+                    testClient.Buffered += (s, e) =>
                     {
-                        client.Connect(IPAddress.Loopback, port);
-                        void Client_Buffered(object sender, EventArgs e)
-                        {
-                            if (client.ReceiveBuffer.Available < 4) return;
-                            Assert.AreEqual(4, client.ReceiveBuffer.Available);
-                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(3));
-                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(2));
-                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(1));
-                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(0));
-                            Assert.AreEqual(2, client.ReceiveBuffer.ReadByte());
+                        if (testClient.ReceiveBuffer.Available < 4) return;
+                        Assert.AreEqual(4, testClient.ReceiveBuffer.Available);
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(2));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(0));
+                        Assert.AreEqual(2, testClient.ReceiveBuffer.ReadByte());
 
-                            Assert.AreEqual(3, client.ReceiveBuffer.Available);
-                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(3));
-                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(2));
-                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(1));
-                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(0));
-                            Assert.AreEqual(1, client.ReceiveBuffer.ReadByte());
+                        Assert.AreEqual(3, testClient.ReceiveBuffer.Available);
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(2));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(0));
+                        Assert.AreEqual(1, testClient.ReceiveBuffer.ReadByte());
 
-                            Assert.AreEqual(2, client.ReceiveBuffer.Available);
-                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(3));
-                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(2));
-                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(1));
-                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(0));
-                            Assert.AreEqual(0, client.ReceiveBuffer.ReadByte());
+                        Assert.AreEqual(2, testClient.ReceiveBuffer.Available);
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(2));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(0));
+                        Assert.AreEqual(0, testClient.ReceiveBuffer.ReadByte());
 
-                            Assert.AreEqual(1, client.ReceiveBuffer.Available);
-                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(3));
-                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(2));
-                            Assert.AreEqual(true, client.ReceiveBuffer.Contains(1));
-                            Assert.AreEqual(false, client.ReceiveBuffer.Contains(0));
-                            Assert.AreEqual(1, client.ReceiveBuffer.ReadByte());
-                            waitEvent.Set();
-                        }
-                        client.Buffered += Client_Buffered;
-                        if (!waitEvent.WaitOne(Settings.Timeout)) throw new TimeoutException();
-                    }
-                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
-                }
-                finally
-                {
-                    server.Close();
+                        Assert.AreEqual(1, testClient.ReceiveBuffer.Available);
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(2));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(0));
+                        Assert.AreEqual(1, testClient.ReceiveBuffer.ReadByte());
+                        bufferedEvent.Set();
+                    };
+
+                    // connect to server
+                    testClient.Connect(IPAddress.Loopback, port);
+
+                    //wait for completion
+                    if (!sendEvent.WaitOne(Settings.Timeout)) throw new TimeoutException("Send event not completed!");
+                    if (!bufferedEvent.WaitOne(Settings.Timeout)) throw new TimeoutException("Buffered event not completed!");
                 }
             }
         }
-       
     }
 }
