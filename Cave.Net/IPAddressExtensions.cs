@@ -12,12 +12,6 @@ namespace Cave.Net
     /// </summary>
     public static class IPAddressExtensions
     {
-        /// <summary>The ipv4 multicast address.</summary>
-        public static readonly IPAddress IPv4MulticastAddress = IPAddress.Parse("224.0.0.0");
-
-        /// <summary>The ipv6 multicast address.</summary>
-        public static readonly IPAddress IPv6MulticastAddress = IPAddress.Parse("FF00::");
-
         /// <summary>
         /// Reverses the order of the bytes of an address.
         /// </summary>
@@ -297,11 +291,11 @@ namespace Cave.Net
 
             if (address.AddressFamily == AddressFamily.InterNetwork)
             {
-                return address.GetAddress(4).Equals(IPv4MulticastAddress);
+                return address.GetAddress(4).Equals(IPAddresses.IPv4MulticastAddress);
             }
             else if (address.AddressFamily == AddressFamily.InterNetworkV6)
             {
-                return address.GetAddress(8).Equals(IPv6MulticastAddress);
+                return address.GetAddress(8).Equals(IPAddresses.IPv6MulticastAddress);
             }
             else
             {
