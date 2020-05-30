@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using Cave.Net;
 using NUnit.Framework;
 
-namespace Test
+namespace Test.TCP
 {
     [TestFixture]
     public class TcpServerTest
@@ -161,8 +161,8 @@ namespace Test
                 Assert.AreEqual("value", ((ArgumentOutOfRangeException)ex).ParamName);
             }
 
-            server.ReceiveTimeout = 10000;
-            server.SendTimeout = 10000;
+            server.ReceiveTimeout = Settings.Timeout;
+            server.SendTimeout = Settings.Timeout;
 
             var exceptions = new List<Exception>();
             void AcceptError(object sender, EventArgs e) => throw new Exception("AcceptError");
@@ -475,7 +475,7 @@ namespace Test
                             }
                         }
                     }
-                    if (!completed.WaitOne(5000)) throw new TimeoutException();
+                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
                 }
                 finally
                 {
@@ -524,7 +524,7 @@ namespace Test
                         }
                         client.Close();
                     }
-                    if (!completed.WaitOne(500000)) throw new TimeoutException();
+                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
                     Assert.AreEqual(null, t?.Exception, $"{t.Exception}");
                 }
                 finally
@@ -569,11 +569,78 @@ namespace Test
                             }
                         }
                     }
-                    if (!completed.WaitOne(5000)) throw new TimeoutException();
+                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
                 }
                 finally
                 {
                     server.Close();
+                }
+            }
+        }
+
+        [Test]
+        public void TestBuffering()
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                var port = Program.GetPort();
+                using (var server = new TcpServer())
+                using (var sendEvent = new ManualResetEvent(false))
+                using (var testClient = new TcpAsyncClient())
+                using (var bufferedEvent = new ManualResetEvent(false))
+                {
+                    // on client accept send buffer
+                    server.ClientAccepted += (sender, eventArgs) => Task.Factory.StartNew((c) =>
+                    {
+                        var serverClient = eventArgs.Client;
+                        serverClient.Send(new byte[] { 2, 1, 0, 1 });
+                        serverClient.Close();
+                        sendEvent.Set();
+                    }, eventArgs.Client);
+
+                    // open server port
+                    server.Listen(port);
+
+                    // on client buffered, test receivebuffer
+                    testClient.Buffered += (s, e) =>
+                    {
+                        if (testClient.ReceiveBuffer.Available < 4) return;
+                        Assert.AreEqual(4, testClient.ReceiveBuffer.Available);
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(2));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(0));
+                        Assert.AreEqual(2, testClient.ReceiveBuffer.ReadByte());
+
+                        Assert.AreEqual(3, testClient.ReceiveBuffer.Available);
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(2));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(0));
+                        Assert.AreEqual(1, testClient.ReceiveBuffer.ReadByte());
+
+                        Assert.AreEqual(2, testClient.ReceiveBuffer.Available);
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(2));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(0));
+                        Assert.AreEqual(0, testClient.ReceiveBuffer.ReadByte());
+
+                        Assert.AreEqual(1, testClient.ReceiveBuffer.Available);
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(2));
+                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
+                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(0));
+                        Assert.AreEqual(1, testClient.ReceiveBuffer.ReadByte());
+                        bufferedEvent.Set();
+                    };
+
+                    // connect to server
+                    testClient.Connect(IPAddress.Loopback, port);
+
+                    //wait for completion
+                    if (!sendEvent.WaitOne(Settings.Timeout)) throw new TimeoutException("Send event not completed!");
+                    if (!bufferedEvent.WaitOne(Settings.Timeout)) throw new TimeoutException("Buffered event not completed!");
                 }
             }
         }
