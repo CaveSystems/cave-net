@@ -33,16 +33,16 @@ namespace Cave.Net.Ntp
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8)]
     public struct NtpTimestamp
     {
-        const long fullEpoch = 1L << 32;
-        const long quarterEpoch = fullEpoch >> 2;
-        static readonly DateTime ntpEpoch = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        const long FullEpoch = 1L << 32;
+        const long QuarterEpoch = FullEpoch >> 2;
+        static readonly DateTime NtpEpoch = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         static Func<DateTime> localReferenceTimeFunction = () => DateTime.UtcNow;
 
         /// <summary>
         /// Gets a timestamp with Seconds and Fraction set to 0.
         /// </summary>
-        public static NtpTimestamp Zero => default(NtpTimestamp);
+        public static NtpTimestamp Zero => default;
 
         /// <summary>
         /// Gets or sets a function to retrieve the local reference time. This is needed after the original ntp timestamp overflows in 2036.
@@ -58,19 +58,19 @@ namespace Cave.Net.Ntp
         void GetBaseEpoch(out DateTime baseEpoch, out long secondsOffset)
         {
             // split into quarters and move base fordward until we are sure we got the correct timeframe based on the current year. This works as long as we do not exceed a difference of more than (1 << 30) seconds.
-            baseEpoch = ntpEpoch;
+            baseEpoch = NtpEpoch;
             var currentSeconds = (LocalReferenceTimeFunction() - baseEpoch).Ticks / TimeSpan.TicksPerSecond;
             var i = 0;
-            while (currentSeconds > quarterEpoch)
+            while (currentSeconds > QuarterEpoch)
             {
-                currentSeconds -= quarterEpoch;
+                currentSeconds -= QuarterEpoch;
                 i++;
             }
 
-            baseEpoch += new TimeSpan(quarterEpoch * i * TimeSpan.TicksPerSecond);
+            baseEpoch += new TimeSpan(QuarterEpoch * i * TimeSpan.TicksPerSecond);
 
             // calculate seconds offset for start at base epoch
-            secondsOffset = -(quarterEpoch * (uint)(i % 4));
+            secondsOffset = -(QuarterEpoch * (uint)(i % 4));
         }
 
         /// <summary>
@@ -80,25 +80,22 @@ namespace Cave.Net.Ntp
         {
             get
             {
-                GetBaseEpoch(out DateTime baseEpoch, out var secondsOffset);
+                GetBaseEpoch(out var baseEpoch, out var secondsOffset);
 
                 // check range
                 var secondsSinceBaseEpoch = Seconds + secondsOffset;
-                if (secondsSinceBaseEpoch < -quarterEpoch || secondsSinceBaseEpoch > quarterEpoch)
-                {
-                    throw new Exception($"Local clock is more than {quarterEpoch / 86400} days out of sync!");
-                }
-
-                return baseEpoch + new TimeSpan((TimeSpan.TicksPerSecond * secondsSinceBaseEpoch) + (TimeSpan.TicksPerSecond * Fraction / fullEpoch));
+                return secondsSinceBaseEpoch < -QuarterEpoch || secondsSinceBaseEpoch > QuarterEpoch
+                    ? throw new Exception($"Local clock is more than {QuarterEpoch / 86400} days out of sync!")
+                    : baseEpoch + new TimeSpan((TimeSpan.TicksPerSecond * secondsSinceBaseEpoch) + (TimeSpan.TicksPerSecond * Fraction / FullEpoch));
             }
             set
             {
-                DateTime baseEpoch = ntpEpoch;
+                var baseEpoch = NtpEpoch;
                 var secondsSinceEpoch = (value - baseEpoch).Ticks / TimeSpan.TicksPerSecond;
-                Fraction = (uint)((value.Ticks % TimeSpan.TicksPerSecond) * fullEpoch / TimeSpan.TicksPerSecond);
-                while (secondsSinceEpoch >= fullEpoch)
+                Fraction = (uint)((value.Ticks % TimeSpan.TicksPerSecond) * FullEpoch / TimeSpan.TicksPerSecond);
+                while (secondsSinceEpoch >= FullEpoch)
                 {
-                    secondsSinceEpoch -= fullEpoch;
+                    secondsSinceEpoch -= FullEpoch;
                 }
 
                 Seconds = (uint)secondsSinceEpoch;

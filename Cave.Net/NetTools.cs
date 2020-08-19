@@ -18,7 +18,7 @@ namespace Cave.Net
         /// <returns><c>true</c> if the specified address is localhost; otherwise, <c>false</c>.</returns>
         public static bool IsLocalhost(this IPAddress address)
         {
-            string stringAddress = address.ToString();
+            var stringAddress = address.ToString();
             switch (address.AddressFamily)
             {
                 case AddressFamily.InterNetwork: return stringAddress.StartsWith("127.");
@@ -41,11 +41,11 @@ namespace Cave.Net
                 return null;
             }
 
-            int port = defaultPort;
-            int portIndex = text.LastIndexOf(':');
+            var port = defaultPort;
+            var portIndex = text.LastIndexOf(':');
             if (portIndex > -1)
             {
-                string portString = text.Substring(portIndex + 1);
+                var portString = text.Substring(portIndex + 1);
                 if (int.TryParse(portString, out port))
                 {
                     text = text.Substring(0, portIndex);
@@ -61,13 +61,13 @@ namespace Cave.Net
                 };
             }
 
-            if (IPAddress.TryParse(text, out IPAddress a))
+            if (IPAddress.TryParse(text, out var a))
             {
                 return new IPEndPoint[] { new IPEndPoint(a, port) };
             }
 
             var result = new List<IPEndPoint>();
-            foreach (IPAddress address in System.Net.Dns.GetHostEntry(text).AddressList)
+            foreach (var address in System.Net.Dns.GetHostEntry(text).AddressList)
             {
                 result.Add(new IPEndPoint(address, port));
             }
@@ -81,10 +81,10 @@ namespace Cave.Net
         public static UnicastIPAddressInformation[] GetLocalAddresses()
         {
             var result = new List<UnicastIPAddressInformation>();
-            foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
+            foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
             {
-                IPInterfaceProperties p = ni.GetIPProperties();
-                foreach (UnicastIPAddressInformation ip in p.UnicastAddresses)
+                var p = ni.GetIPProperties();
+                foreach (var ip in p.UnicastAddresses)
                 {
                     result.Add(ip);
                 }
@@ -100,7 +100,7 @@ namespace Cave.Net
         public static IPAddress[] GetLocalAddresses(AddressFamily addressFamily)
         {
             var result = new List<IPAddress>();
-            foreach (IPAddress addr in System.Net.Dns.GetHostAddresses(System.Net.Dns.GetHostName()))
+            foreach (var addr in System.Net.Dns.GetHostAddresses(System.Net.Dns.GetHostName()))
             {
                 if (addr.AddressFamily == addressFamily)
                 {
@@ -119,7 +119,7 @@ namespace Cave.Net
         /// <returns>Returns the first matching ip address.</returns>
         public static IPAddress GetAddress(string hostName, AddressFamily addressFamily)
         {
-            foreach (IPAddress address in System.Net.Dns.GetHostAddresses(hostName))
+            foreach (var address in System.Net.Dns.GetHostAddresses(hostName))
             {
                 if (address.AddressFamily == addressFamily)
                 {
@@ -139,7 +139,7 @@ namespace Cave.Net
         public static IPAddress[] GetAddresses(string hostName, AddressFamily addressFamily)
         {
             var addresses = new List<IPAddress>();
-            foreach (IPAddress address in System.Net.Dns.GetHostAddresses(hostName))
+            foreach (var address in System.Net.Dns.GetHostAddresses(hostName))
             {
                 if (address.AddressFamily == addressFamily)
                 {
@@ -155,7 +155,7 @@ namespace Cave.Net
         /// <returns>Returns a free tcp port.</returns>
         public static ushort GetFreeTcpPort(int defaultPort, int maximumTries = 10)
         {
-            int port = defaultPort;
+            var port = defaultPort;
             try
             {
 #if NET45 || NET46 || NET47 || NETSTANDARD20
@@ -174,7 +174,7 @@ namespace Cave.Net
             catch
             {
             }
-            for (int i = 0; ; i++)
+            for (var i = 0; ; i++)
             {
                 try
                 {
@@ -279,17 +279,17 @@ namespace Cave.Net
                 domainName = "localdomain";
             }
 
-            string[] names = new string[]
+            var names = new string[]
                 {
                     hostName + "." + domainName,
                     hostName,
                 };
 
-            foreach (string str in names)
+            foreach (var str in names)
             {
                 try
                 {
-                    IPHostEntry entry = System.Net.Dns.GetHostEntry(str);
+                    var entry = System.Net.Dns.GetHostEntry(str);
                     myHostName = entry.HostName;
                     return myHostName;
                 }

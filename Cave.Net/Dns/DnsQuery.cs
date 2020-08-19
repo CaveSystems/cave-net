@@ -57,7 +57,7 @@ namespace Cave.Net.Dns
 
         internal void Write(DataWriter writer)
         {
-            DomainName name = Name;
+            var name = Name;
             while (name != DomainName.Root)
             {
                 writer.WritePrefixed(name.Parts[0]);
@@ -69,35 +69,23 @@ namespace Cave.Net.Dns
         }
 
         /// <summary>Randomizes the case.</summary>
-        public void RandomizeCase()
-        {
-            Name = Name.RandomCase();
-        }
+        public void RandomizeCase() => Name = Name.RandomCase();
 
         /// <summary>Determines whether the specified <see cref="object" />, is equal to this instance.</summary>
         /// <param name="obj">The <see cref="object" /> to compare with this instance.</param>
         /// <returns>
         /// <c>true</c> if the specified <see cref="object" /> is equal to this instance; otherwise, <c>false</c>.
         /// </returns>
-        public override bool Equals(object obj)
-        {
-            return obj is DnsQuery other ? this == other : false;
-        }
+        public override bool Equals(object obj) => obj is DnsQuery other && this == other;
 
         /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
         /// <returns>A <see cref="string" /> that represents this instance.</returns>
-        public override string ToString()
-        {
-            return RecordClass + " " + RecordType + " " + Name;
-        }
+        public override string ToString() => RecordClass + " " + RecordType + " " + Name;
 
         /// <summary>Returns a hash code for this instance.</summary>
         /// <returns>
         /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
         /// </returns>
-        public override int GetHashCode()
-        {
-            return RecordClass.GetHashCode() ^ RecordType.GetHashCode() ^ Name.GetHashCode() ^ Flags.GetHashCode();
-        }
+        public override int GetHashCode() => RecordClass.GetHashCode() ^ RecordType.GetHashCode() ^ Name.GetHashCode() ^ Flags.GetHashCode();
     }
 }

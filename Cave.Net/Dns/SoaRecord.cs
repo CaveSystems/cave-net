@@ -36,7 +36,7 @@ namespace Cave.Net.Dns
             var parts = new List<string>();
             while (true)
             {
-                byte b = reader.ReadByte();
+                var b = reader.ReadByte();
                 if (b == 0)
                 {
                     // end of domain, RFC1035
@@ -52,7 +52,7 @@ namespace Cave.Net.Dns
                 if (b >= 192)
                 {
                     // Pointer, RFC1035
-                    int pointer = ((b - 192) * 256) + reader.ReadByte();
+                    var pointer = ((b - 192) * 256) + reader.ReadByte();
 
                     // save position
                     if (endposition < 0)
@@ -74,7 +74,7 @@ namespace Cave.Net.Dns
 
                     var sb = new StringBuilder();
                     sb.Append(@"\[x");
-                    string suffix = "/" + length + "]";
+                    var suffix = "/" + length + "]";
                     do
                     {
                         b = reader.ReadByte();

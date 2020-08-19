@@ -31,7 +31,7 @@ namespace Cave.Net
         /// <returns>Returns the selected <see cref="X509Certificate"/> instance.</returns>
         protected virtual X509Certificate OnSelectLocalCert(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
         {
-            foreach (X509Certificate cert in localCertificates)
+            foreach (var cert in localCertificates)
             {
                 return cert;
             }
@@ -57,11 +57,11 @@ namespace Cave.Net
             {
                 try
                 {
-                    string notAfterString = certificate.GetExpirationDateString();
+                    var notAfterString = certificate.GetExpirationDateString();
                     var notAfter = DateTime.Parse(notAfterString);
 
                     // DateTimeParser.ParseDateTime(notAfterString, out notAfter);
-                    string notBeforeString = certificate.GetEffectiveDateString();
+                    var notBeforeString = certificate.GetEffectiveDateString();
                     var notBefore = DateTime.Parse(notBeforeString);
 
                     // DateTimeParser.ParseDateTime(notBeforeString, out notBefore);
@@ -105,7 +105,7 @@ namespace Cave.Net
                 throw new ArgumentNullException("eventArgs");
             }
 
-            EventHandler<SslAuthenticationEventArgs> auth = Authenticate;
+            var auth = Authenticate;
             if (auth != null)
             {
                 auth.Invoke(this, eventArgs);
@@ -219,10 +219,7 @@ namespace Cave.Net
         /// By default SslPolicyErrors will be ignored.
         /// </summary>
         /// <param name="serverCN">Server common name (has to be present at the server certificate).</param>
-        public void DoClientTLS(string serverCN)
-        {
-            DoClientTLS(serverCN, null);
-        }
+        public void DoClientTLS(string serverCN) => DoClientTLS(serverCN, null);
 
         /// <summary>
         /// Starts TLS negotiation and authenticates as client. Use the Authenticate event to implement user defined policy checking!
@@ -299,18 +296,7 @@ namespace Cave.Net
         /// <summary>
         /// Gets the <see cref="Stream"/> instance for the client.
         /// </summary>
-        public Stream Stream
-        {
-            get
-            {
-                if (stream == null)
-                {
-                    throw new InvalidOperationException(string.Format("TLS negotiation not jet started!"));
-                }
-
-                return stream;
-            }
-        }
+        public Stream Stream => stream ?? throw new InvalidOperationException(string.Format("TLS negotiation not jet started!"));
 
         /// <summary>Gets the validation errors.</summary>
         /// <value>The validation errors.</value>
@@ -323,13 +309,7 @@ namespace Cave.Net
 
         /// <summary>Gets the name of the log source.</summary>
         /// <value>The name of the log source.</value>
-        public string LogSourceName
-        {
-            get
-            {
-                return Connected ? $"SslClient <{RemoteEndPoint}>" : "SslClient <not connected>";
-            }
-        }
+        public string LogSourceName => Connected ? $"SslClient <{RemoteEndPoint}>" : "SslClient <not connected>";
 
         /// <summary>
         /// Closes the connection.
@@ -375,10 +355,7 @@ namespace Cave.Net
         /// Obtains a hashcode for this instance.
         /// </summary>
         /// <returns>Returns the hashcode for the remote endpoint.</returns>
-        public override int GetHashCode()
-        {
-            return RemoteEndPoint.GetHashCode();
-        }
+        public override int GetHashCode() => RemoteEndPoint.GetHashCode();
 
         /// <summary>Releases the unmanaged resources used by this instance and optionally releases the managed resources.</summary>
         /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>

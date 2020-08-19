@@ -16,9 +16,6 @@ namespace Cave.Net
         /// Initializes a new instance of the <see cref="UdpPacketEventArgs"/> class.
         /// </summary>
         /// <param name="packet">The packet.</param>
-        public UdpPacketEventArgs(UdpPacket packet)
-        {
-            Packet = packet;
-        }
+        public UdpPacketEventArgs(UdpPacket packet) => Packet = packet;
     }
 }

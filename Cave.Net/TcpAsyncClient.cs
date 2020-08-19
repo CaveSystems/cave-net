@@ -48,18 +48,11 @@ namespace Cave.Net
 
         Socket CheckedSocket
         {
-            get
-            {
-                if (uncheckedSocket == null)
-                {
-                    throw new InvalidOperationException("Not connected!");
-                }
-                if (closing)
-                {
-                    throw new ObjectDisposedException(nameof(TcpAsyncClient));
-                }
-                return uncheckedSocket;
-            }
+            get => uncheckedSocket == null
+                ? throw new InvalidOperationException("Not connected!")
+                : closing
+                ? throw new ObjectDisposedException(nameof(TcpAsyncClient))
+                : uncheckedSocket;
         }
 
         T CachedValue<T>(ref T field, Func<T> func)
@@ -71,14 +64,18 @@ namespace Cave.Net
             return field;
         }
 
+#if NETSTANDARD13 || NET20 || NET35 || NET40
+        Socket CreateSocket(AddressFamily family)
+#else
         Socket CreateSocket()
+#endif
         {
             if (closing)
             {
                 throw new ObjectDisposedException(nameof(TcpAsyncClient));
             }
 #if NETSTANDARD13 || NET20 || NET35 || NET40
-            uncheckedSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            uncheckedSocket = new Socket(family, SocketType.Stream, ProtocolType.Tcp);
 #else
             uncheckedSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
 #endif
@@ -94,7 +91,7 @@ namespace Cave.Net
             {
                 throw new InvalidOperationException("Already initialized!");
             }
-            this.uncheckedSocket = socket ?? throw new ArgumentNullException(nameof(socket));
+            uncheckedSocket = socket ?? throw new ArgumentNullException(nameof(socket));
             RemoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
             LocalEndPoint = (IPEndPoint)socket.LocalEndPoint;
             initialized = true;
@@ -105,7 +102,7 @@ namespace Cave.Net
         /// <param name="e">The <see cref="SocketAsyncEventArgs"/> instance containing the event data.</param>
         void ReadCompleted(object sender, SocketAsyncEventArgs e)
         {
-ReadCompletedBegin:
+        ReadCompletedBegin:
             if (closing)
             {
                 return;
@@ -134,7 +131,7 @@ ReadCompletedBegin:
                     Interlocked.Add(ref bytesReceived, bytesTransferred);
 
                     // call event
-                    OnReceived(e.Buffer, e.Offset, bytesTransferred, out bool handled);
+                    OnReceived(e.Buffer, e.Offset, bytesTransferred, out var handled);
                     if (!handled)
                     {
                         // cleanup read buffers and add new data
@@ -235,15 +232,9 @@ ReadCompletedBegin:
             if (!isPending)
             {
 #if NET20 || NET35 || NET40
-                ThreadPool.QueueUserWorkItem((e) =>
-                {
-                    ReadCompleted(this, (SocketAsyncEventArgs)e);
-                }, socketAsync);
+                ThreadPool.QueueUserWorkItem((e) => ReadCompleted(this, (SocketAsyncEventArgs)e), socketAsync);
 #else
-                Task.Factory.StartNew((e) =>
-                {
-                    ReadCompleted(this, (SocketAsyncEventArgs)e);
-                }, socketAsync);
+                Task.Factory.StartNew((e) => ReadCompleted(this, (SocketAsyncEventArgs)e), socketAsync);
 #endif
             }
         }
@@ -306,10 +297,7 @@ ReadCompletedBegin:
         /// <summary>
         /// Calls the <see cref="Buffered"/> event (if set).
         /// </summary>
-        protected virtual void OnBuffered()
-        {
-            Buffered?.Invoke(this, new EventArgs());
-        }
+        protected virtual void OnBuffered() => Buffered?.Invoke(this, new EventArgs());
 
         /// <summary>Calls the Error event (if set) and closes the connection.</summary>
         /// <param name="ex">The exception (most of the time this will be a <see cref="SocketException"/>.</param>
@@ -501,11 +489,26 @@ ReadCompletedBegin:
             {
                 throw new InvalidOperationException("Client already connected!");
             }
+#if NETSTANDARD13
             var socket = CreateSocket();
             var parameters = new AsyncParameters(socket, bufferSize);
-#if NETSTANDARD13
             Connect(parameters, socket.ConnectAsync(hostname, port));
+#elif NET20 || NET35 || NET40
+            try
+            {
+                var socket = CreateSocket(AddressFamily.InterNetwork);
+                var parameters = new AsyncParameters(socket, bufferSize);
+                Connect(parameters, socket.BeginConnect(hostname, port, null, null));
+            }
+            catch
+            {
+                var socket = CreateSocket(AddressFamily.InterNetworkV6);
+                var parameters = new AsyncParameters(socket, bufferSize);
+                Connect(parameters, socket.BeginConnect(hostname, port, null, null));
+            }
 #else
+            var socket = CreateSocket();
+            var parameters = new AsyncParameters(socket, bufferSize);
             Connect(parameters, socket.BeginConnect(hostname, port, null, null));
 #endif
         }
@@ -529,8 +532,26 @@ ReadCompletedBegin:
             }
 
 #if NET20 || NET35
-            var socket = CreateSocket();
-            socket.BeginConnect(hostname, port, ConnectAsyncCallback, new AsyncParameters(socket, bufferSize));
+            Exception e = null;
+            foreach (var addr in System.Net.Dns.GetHostAddresses(hostname))
+            {
+                var socket = CreateSocket(addr.AddressFamily);
+                try
+                {
+                    socket.BeginConnect(hostname, port, ConnectAsyncCallback, new AsyncParameters(socket, bufferSize));
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    e = ex;
+                }
+            }
+            if (e != null)
+            {
+                throw e;
+            }
+
+            throw new Exception("No target address found at dns!");
 #else
             ConnectAsync(new DnsEndPoint(hostname, port), bufferSize);
 #endif
@@ -555,11 +576,18 @@ ReadCompletedBegin:
             }
 
             RemoteEndPoint = new IPEndPoint(address, port);
+
+#if NETSTANDARD13
             var socket = CreateSocket();
             var parameters = new AsyncParameters(socket, bufferSize);
-#if NETSTANDARD13
             Connect(parameters, socket.ConnectAsync(address, port));
+#elif NET20 || NET35 || NET40
+            var socket = CreateSocket(address.AddressFamily);
+            var parameters = new AsyncParameters(socket, bufferSize);
+            Connect(parameters, socket.BeginConnect(address, port, null, null));
 #else
+            var socket = CreateSocket();
+            var parameters = new AsyncParameters(socket, bufferSize);
             Connect(parameters, socket.BeginConnect(address, port, null, null));
 #endif
         }
@@ -595,10 +623,7 @@ ReadCompletedBegin:
         /// </summary>
         /// <param name="endPoint">ip endpoint to connect to.</param>
         /// <param name="bufferSize">tcp buffer size in bytes.</param>
-        public void Connect(IPEndPoint endPoint, int bufferSize = 64 * 1024)
-        {
-            Connect(endPoint.Address, endPoint.Port, bufferSize);
-        }
+        public void Connect(IPEndPoint endPoint, int bufferSize = 64 * 1024) => Connect(endPoint.Address, endPoint.Port, bufferSize);
 
         /// <summary>
         /// Performs an asynchonous connect to the specified address and port.
@@ -615,7 +640,11 @@ ReadCompletedBegin:
             try
             {
                 RemoteEndPoint = endPoint as IPEndPoint;
+#if NET20 || NET35 || NET40
+                var socket = CreateSocket(endPoint.AddressFamily);
+#else
                 var socket = CreateSocket();
+#endif
                 var e = new SocketAsyncEventArgs()
                 {
                     RemoteEndPoint = endPoint,
@@ -691,7 +720,7 @@ ReadCompletedBegin:
         /// <param name="callback">Callback method to be called after completion.</param>
         /// <param name="state">State to pass to the callback.</param>
         /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
-        public void SendAsync<T>(byte[] buffer, Action<T> callback = null, T state = default(T)) => SendAsync(buffer, 0, buffer.Length, callback, state);
+        public void SendAsync<T>(byte[] buffer, Action<T> callback = null, T state = default) => SendAsync(buffer, 0, buffer.Length, callback, state);
 
         /// <summary>
         /// Sends data asynchronously to a connected remote.
@@ -705,7 +734,7 @@ ReadCompletedBegin:
         /// <param name="callback">Callback method to be called after completion.</param>
         /// <param name="state">State to pass to the callback.</param>
         /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
-        public void SendAsync<T>(byte[] buffer, int length, Action<T> callback = null, T state = default(T)) => SendAsync(buffer, 0, length, callback, state);
+        public void SendAsync<T>(byte[] buffer, int length, Action<T> callback = null, T state = default) => SendAsync(buffer, 0, length, callback, state);
 
         /// <summary>
         /// Sends data asynchronously to a connected remote.
@@ -720,7 +749,7 @@ ReadCompletedBegin:
         /// <param name="callback">Callback method to be called after completion.</param>
         /// <param name="state">State to pass to the callback.</param>
         /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
-        public void SendAsync<T>(byte[] buffer, int offset, int length, Action<T> callback = null, T state = default(T))
+        public void SendAsync<T>(byte[] buffer, int offset, int length, Action<T> callback = null, T state = default)
         {
             void Completed(object s, SocketAsyncEventArgs e)
             {
@@ -1001,12 +1030,19 @@ ReadCompletedBegin:
 
         #endregion
 
-        /// <summary>
-        /// Returns a string that represents the current object.
-        /// </summary>
-        /// <returns>tcp://remoteip:port.</returns>
+        /// <inheritdoc/>
         public override string ToString()
         {
+            if (RemoteEndPoint.AddressFamily == AddressFamily.InterNetworkV6)
+            {
+#if !NET20 && !NET35 && !NET40
+                if (RemoteEndPoint.Address.IsIPv4MappedToIPv6)
+                {
+                    return $"tcp://{RemoteEndPoint.Address.MapToIPv4()}:{RemoteEndPoint.Port}";
+                }
+#endif
+                return $"tcp://[{RemoteEndPoint.Address}]:{RemoteEndPoint.Port}";
+            }
             return $"tcp://{RemoteEndPoint}";
         }
     }

@@ -10,7 +10,7 @@ namespace Cave.Net.Ntp
     /// </summary>
     public class UdpServer : IDisposable
     {
-        const SocketOptionName ipv6only = (SocketOptionName)27;
+        const SocketOptionName Ipv6only = (SocketOptionName)27;
 
         Socket socket;
         byte[] buffer = new byte[2048];
@@ -23,8 +23,8 @@ namespace Cave.Net.Ntp
                 return;
             }
 
-            int length = socket.EndReceiveFrom(ar, ref client);
-            byte[] copy = new byte[length];
+            var length = socket.EndReceiveFrom(ar, ref client);
+            var copy = new byte[length];
             Buffer.BlockCopy(buffer, 0, copy, 0, length);
             var packet = new UdpPacket()
             {
@@ -49,19 +49,13 @@ namespace Cave.Net.Ntp
         /// Calls the <see cref="Received"/> event.
         /// </summary>
         /// <param name="packet">The received udp packet.</param>
-        protected virtual void OnReceived(UdpPacket packet)
-        {
-            Received?.Invoke(this, new UdpPacketEventArgs(packet));
-        }
+        protected virtual void OnReceived(UdpPacket packet) => Received?.Invoke(this, new UdpPacketEventArgs(packet));
 
         /// <summary>
         /// Calls the <see cref="Sent"/> event after the package has been sent.
         /// </summary>
         /// <param name="packet">The sent udp packet.</param>
-        protected virtual void OnSent(UdpPacket packet)
-        {
-            Sent?.Invoke(this, new UdpPacketEventArgs(packet));
-        }
+        protected virtual void OnSent(UdpPacket packet) => Sent?.Invoke(this, new UdpPacketEventArgs(packet));
 
         /// <summary>
         /// Gets or sets a value indicating whether async callbacks are used for received packets.
@@ -80,8 +74,8 @@ namespace Cave.Net.Ntp
             }
 
             socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-            socket.SetSocketOption(SocketOptionLevel.IPv6, ipv6only, false);
-            socket.Bind(new IPEndPoint(IPAddress.IPv6Any, 123));
+            socket.SetSocketOption(SocketOptionLevel.IPv6, Ipv6only, false);
+            socket.Bind(new IPEndPoint(IPAddress.IPv6Any, port));
             socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref client, OnReceived, null);
         }
 

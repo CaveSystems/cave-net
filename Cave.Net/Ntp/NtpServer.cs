@@ -26,7 +26,7 @@ namespace Cave.Net.Ntp
 
             public NtpFixedPointUInt32 RootDispersion => 1 << 16;
 
-            public NtpUInt32 Reference => (uint)FourCC.Create("LOCL");
+            public NtpUInt32 Reference => (uint)FourCC.FromString("LOCL");
 
             public NtpTimestamp ReferenceTimestamp => DateTime.Now;
         }
@@ -35,14 +35,14 @@ namespace Cave.Net.Ntp
 
         bool Handle(UdpPacket packet)
         {
-            INtpServerProperties properties = propertiesFunction();
-            NtpPacket request = MarshalStruct.GetStruct<NtpPacket>(packet.Data);
+            var properties = propertiesFunction();
+            var request = MarshalStruct.GetStruct<NtpPacket>(packet.Data);
             if (!OnRequest(ref request))
             {
                 return false;
             }
 
-            NtpPacket answer = request;
+            var answer = request;
             var multicast = false;
             answer.LeapIndicator = properties.Valid ? NtpLeapIndicator.NoWarning : NtpLeapIndicator.Alarm;
             switch (request.Mode)

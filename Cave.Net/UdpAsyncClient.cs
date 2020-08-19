@@ -85,10 +85,7 @@ ReadCompletedBegin:
         /// </summary>
         /// <param name="remoteEndPoint">The remote endpoint causing the error. This may be null if the host encountered an error.</param>
         /// <param name="ex">The exception (most of the time this will be a <see cref="SocketException"/>.</param>
-        protected virtual void OnError(IPEndPoint remoteEndPoint, Exception ex)
-        {
-            Error?.Invoke(this, new RemoteEndPointExceptionEventArgs(remoteEndPoint, ex));
-        }
+        protected virtual void OnError(IPEndPoint remoteEndPoint, Exception ex) => Error?.Invoke(this, new RemoteEndPointExceptionEventArgs(remoteEndPoint, ex));
 
         /// <summary>
         /// Calls the <see cref="Received"/> event.
@@ -294,7 +291,7 @@ ReadCompletedBegin:
         /// <param name="callback">Callback method to be called after completion.</param>
         /// <param name="state">State to pass to the callback.</param>
         /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
-        public void SendToAsync<T>(IPEndPoint remote, byte[] data, Action<T> callback = null, T state = default(T)) => SendToAsync(remote, data, 0, data.Length, callback, state);
+        public void SendToAsync<T>(IPEndPoint remote, byte[] data, Action<T> callback = null, T state = default) => SendToAsync(remote, data, 0, data.Length, callback, state);
 
         /// <summary>
         /// Sends a message to the specified remote.
@@ -305,7 +302,7 @@ ReadCompletedBegin:
         /// <param name="callback">Callback method to be called after completion.</param>
         /// <param name="state">State to pass to the callback.</param>
         /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
-        public void SendToAsync<T>(IPEndPoint remote, byte[] data, int length, Action<T> callback = null, T state = default(T)) => SendToAsync(remote, data, 0, length, callback, state);
+        public void SendToAsync<T>(IPEndPoint remote, byte[] data, int length, Action<T> callback = null, T state = default) => SendToAsync(remote, data, 0, length, callback, state);
 
         /// <summary>
         /// Sends a message to the specified remote.
@@ -317,7 +314,7 @@ ReadCompletedBegin:
         /// <param name="callback">Callback method to be called after completion.</param>
         /// <param name="state">State to pass to the callback.</param>
         /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
-        public void SendToAsync<T>(IPEndPoint remote, byte[] data, int offset, int length, Action<T> callback = null, T state = default(T))
+        public void SendToAsync<T>(IPEndPoint remote, byte[] data, int offset, int length, Action<T> callback = null, T state = default)
         {
             if (data == null)
             {
@@ -381,10 +378,7 @@ ReadCompletedBegin:
         /// Returns a string that represents the current object.
         /// </summary>
         /// <returns>tcp://localip:port.</returns>
-        public override string ToString()
-        {
-            return $"udp://{LocalEndPoint}";
-        }
+        public override string ToString() => $"udp://{LocalEndPoint}";
 
         #region properties
 

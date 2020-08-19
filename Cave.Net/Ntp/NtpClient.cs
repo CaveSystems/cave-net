@@ -41,7 +41,7 @@ namespace Cave.Net.Ntp
                 client.Send(dataSnd, dataSnd.Length);
                 var dataRvd = client.Receive(ref ep);
 
-                NtpPacket answer = MarshalStruct.GetStruct<NtpPacket>(dataRvd);
+                var answer = MarshalStruct.GetStruct<NtpPacket>(dataRvd);
                 return new NtpAnswer(answer);
             }
         }

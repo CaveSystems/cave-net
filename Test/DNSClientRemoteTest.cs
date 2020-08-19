@@ -61,10 +61,10 @@ namespace Test.DNS
 
         void A_Test(DnsClient testClient)
         {
-            DnsResponse response = testClient.Resolve("one.one.one.one", DnsRecordType.A);
+            var response = testClient.Resolve("one.one.one.one", DnsRecordType.A);
             Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
             Assert.GreaterOrEqual(response.Answers.Count, 1);
-            IPAddress ipOne = new IPAddress(new byte[] { 1, 1, 1, 1 });
+            var ipOne = new IPAddress(new byte[] { 1, 1, 1, 1 });
             foreach (var record in response.Answers)
             {
                 if (record.Value.Equals(ipOne))
@@ -77,11 +77,10 @@ namespace Test.DNS
 
         void AAAA_Test(DnsClient testClient)
         {
-            DnsResponse response = testClient.Resolve("one.one.one.one", DnsRecordType.AAAA);
+            var response = testClient.Resolve("one.one.one.one", DnsRecordType.AAAA);
             Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
             Assert.GreaterOrEqual(response.Answers.Count, 1);
-            IPAddress ipOne;
-            IPAddress.TryParse("2606:4700:4700::1111", out ipOne);
+            IPAddress.TryParse("2606:4700:4700::1111", out var ipOne);
             foreach (var record in response.Answers)
             {
                 if (record.Value.Equals(ipOne))
@@ -94,10 +93,10 @@ namespace Test.DNS
 
         void MX_Test(DnsClient testClient)
         {
-            DnsResponse response = testClient.Resolve("google.com.", DnsRecordType.MX);
+            var response = testClient.Resolve("google.com.", DnsRecordType.MX);
             Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
             Assert.GreaterOrEqual(response.Answers.Count, 1);
-            int counter = 0;
+            var counter = 0;
             foreach (var record in response.Answers)
             {
                 Assert.AreEqual(DnsRecordType.MX, record.RecordType);
@@ -113,7 +112,7 @@ namespace Test.DNS
 
         void TXT_Test(DnsClient testClient)
         {
-            DnsResponse response = testClient.Resolve("google.com.", DnsRecordType.TXT);
+            var response = testClient.Resolve("google.com.", DnsRecordType.TXT);
             Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
             Assert.GreaterOrEqual(response.Answers.Count, 1);
             foreach (var record in response.Answers)

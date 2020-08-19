@@ -27,10 +27,7 @@ namespace Cave.Net
         /// </summary>
         /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <returns>Returns the downloaded data as string (utf8).</returns>
-        public static string GetString(ConnectionString connectionString)
-        {
-            return Encoding.UTF8.GetString(Get(connectionString));
-        }
+        public static string GetString(ConnectionString connectionString) => Encoding.UTF8.GetString(Get(connectionString));
 
         #region private functionality
 
@@ -67,7 +64,7 @@ namespace Cave.Net
             FtpWebResponse response = null;
             try
             {
-                FtpWebRequest request = CreateRequest(WebRequestMethods.Ftp.ListDirectory, connectionString);
+                var request = CreateRequest(WebRequestMethods.Ftp.ListDirectory, connectionString);
                 response = (FtpWebResponse)request.GetResponse();
                 switch (response.StatusCode)
                 {
@@ -80,13 +77,11 @@ namespace Cave.Net
                         throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
                 }
                 var reader = new StreamReader(response.GetResponseStream());
-                string[] result = reader.ReadToEnd().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                var result = reader.ReadToEnd().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                 reader.Close();
-                if (response.StatusCode == FtpStatusCode.ClosingData)
-                {
-                    return result;
-                }
-                throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
+                return response.StatusCode == FtpStatusCode.ClosingData
+                    ? result
+                    : throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
             }
             finally
             {
@@ -107,7 +102,7 @@ namespace Cave.Net
             FtpWebResponse response = null;
             try
             {
-                FtpWebRequest request = CreateRequest(WebRequestMethods.Ftp.UploadFile, connectionString);
+                var request = CreateRequest(WebRequestMethods.Ftp.UploadFile, connectionString);
                 var writer = new DataWriter(request.GetRequestStream());
                 writer.Write(data);
                 response = (FtpWebResponse)request.GetResponse();
@@ -136,16 +131,14 @@ namespace Cave.Net
             FtpWebResponse response = null;
             try
             {
-                FtpWebRequest request = CreateRequest(WebRequestMethods.Ftp.UploadFile, connectionString);
-                Stream requestStream = request.GetRequestStream();
-                long result = stream.CopyBlocksTo(requestStream);
+                var request = CreateRequest(WebRequestMethods.Ftp.UploadFile, connectionString);
+                var requestStream = request.GetRequestStream();
+                var result = stream.CopyBlocksTo(requestStream);
                 requestStream.Close();
                 response = (FtpWebResponse)request.GetResponse();
-                if (response.StatusCode != FtpStatusCode.ClosingData)
-                {
-                    throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
-                }
-                return result;
+                return response.StatusCode != FtpStatusCode.ClosingData
+                    ? throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription))
+                    : result;
             }
             finally
             {
@@ -166,7 +159,7 @@ namespace Cave.Net
             FtpWebResponse response = null;
             try
             {
-                FtpWebRequest request = CreateRequest(WebRequestMethods.Ftp.DownloadFile, connectionString);
+                var request = CreateRequest(WebRequestMethods.Ftp.DownloadFile, connectionString);
                 response = (FtpWebResponse)request.GetResponse();
                 switch (response.StatusCode)
                 {
@@ -177,14 +170,12 @@ namespace Cave.Net
                     default:
                         throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
                 }
-                Stream responseStream = response.GetResponseStream();
-                byte[] result = responseStream.ReadAllBytes();
+                var responseStream = response.GetResponseStream();
+                var result = responseStream.ReadAllBytes();
                 responseStream.Close();
-                if (response.StatusCode == FtpStatusCode.ClosingData)
-                {
-                    return result;
-                }
-                throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
+                return response.StatusCode == FtpStatusCode.ClosingData
+                    ? result
+                    : throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
             }
             finally
             {
@@ -206,7 +197,7 @@ namespace Cave.Net
             FtpWebResponse response = null;
             try
             {
-                FtpWebRequest request = CreateRequest(WebRequestMethods.Ftp.DownloadFile, connectionString);
+                var request = CreateRequest(WebRequestMethods.Ftp.DownloadFile, connectionString);
                 response = (FtpWebResponse)request.GetResponse();
                 switch (response.StatusCode)
                 {
@@ -217,14 +208,12 @@ namespace Cave.Net
                     default:
                         throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
                 }
-                Stream responseStream = response.GetResponseStream();
-                long size = responseStream.CopyBlocksTo(stream);
+                var responseStream = response.GetResponseStream();
+                var size = responseStream.CopyBlocksTo(stream);
                 responseStream.Close();
-                if (response.StatusCode == FtpStatusCode.ClosingData)
-                {
-                    return size;
-                }
-                throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
+                return response.StatusCode == FtpStatusCode.ClosingData
+                    ? size
+                    : throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
             }
             finally
             {

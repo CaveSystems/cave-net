@@ -15,10 +15,7 @@ namespace Cave.Net
         /// <param name="offset">Byte offset the received data starts.</param>
         /// <param name="length">Length in bytes the of the received data.</param>
         public RemoteEndPointBufferEventArgs(IPEndPoint remoteEndPoint, byte[] buffer, int offset, int length)
-            : base(buffer, offset, length)
-        {
-            RemoteEndPoint = remoteEndPoint;
-        }
+            : base(buffer, offset, length) => RemoteEndPoint = remoteEndPoint;
 
         /// <summary>
         /// Gets or sets remote endpoint the buffer was received from.

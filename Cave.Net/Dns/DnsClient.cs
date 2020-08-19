@@ -24,16 +24,16 @@ namespace Cave.Net.Dns
             {
                 try
                 {
-                    foreach (string line in File.ReadAllLines("/etc/resolv.conf"))
+                    foreach (var line in File.ReadAllLines("/etc/resolv.conf"))
                     {
-                        string s = line.Trim();
-                        int i = s.IndexOf('#');
+                        var s = line.Trim();
+                        var i = s.IndexOf('#');
                         if (i > -1)
                         {
                             s = s.Substring(0, i);
                         }
 
-                        string[] parts = s.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                        var parts = s.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
                         if (parts.Length > 1)
                         {
                             if (parts[0].ToUpper() != "NAMESERVER")
@@ -41,9 +41,9 @@ namespace Cave.Net.Dns
                                 continue;
                             }
 
-                            for (int n = 1; n < parts.Length; n++)
+                            for (var n = 1; n < parts.Length; n++)
                             {
-                                if (IPAddress.TryParse(parts[n], out IPAddress addr))
+                                if (IPAddress.TryParse(parts[n], out var addr))
                                 {
                                     result.Add(addr);
                                 }
@@ -102,7 +102,7 @@ namespace Cave.Net.Dns
             var result = new List<IPAddress>();
             try
             {
-                foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
+                foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
                 {
                     if ((nic.OperationalStatus == OperationalStatus.Up) && (nic.NetworkInterfaceType != NetworkInterfaceType.Loopback))
                     {
@@ -219,7 +219,7 @@ namespace Cave.Net.Dns
                 throw new ArgumentNullException(nameof(query.Name), "Name must be provided");
             }
 
-            ushort messageID = DefaultRNG.UInt16;
+            var messageID = DefaultRNG.UInt16;
 
             // question = name, recordtype, recordclass
             byte[] message;
@@ -242,7 +242,7 @@ namespace Cave.Net.Dns
                 message = stream.ToArray();
             }
 
-            bool useTcp = false;
+            var useTcp = false;
             if (message.Length > 512)
             {
                 if (!UseTcp)
@@ -253,12 +253,10 @@ namespace Cave.Net.Dns
                 useTcp = true;
             }
 
-            IStopWatch stopWatch = StopWatch.StartNew();
-            var tasks = new List<Task>();
             var exceptions = new List<Exception>();
             DnsResponse response = null;
 
-            foreach (IPAddress server in Servers)
+            foreach (var server in Servers)
             {
                 try
                 {
@@ -273,23 +271,18 @@ namespace Cave.Net.Dns
                     exceptions.Add(ex);
                 }
             }
-            if (response == null)
-            {
-                throw new AggregateException("Could not reach any dns server!", exceptions);
-            }
-
-            return response;
+            return response ?? throw new AggregateException("Could not reach any dns server!", exceptions);
         }
 
         DnsResponse DoQuery(bool useTcp, DnsQuery query, IPAddress server, ushort messageID, byte[] message)
         {
             while (true)
             {
-                DnsResponse r;
+                DnsResponse response;
                 try
                 {
-                    r = useTcp ? QueryTcp(server, message) : QueryUdp(server, message);
-                    if (r.IsTruncatedResponse && !useTcp)
+                    response = useTcp ? QueryTcp(server, message) : QueryUdp(server, message);
+                    if (response.IsTruncatedResponse && !useTcp)
                     {
                         useTcp = true;
                         continue;
@@ -306,32 +299,21 @@ namespace Cave.Net.Dns
                     continue;
                 }
 
-                if (r.TransactionID != messageID)
-                {
-                    throw new InvalidDataException("Invalid message ID received!");
-                }
-
-                if (r.Queries.Count != 1)
-                {
-                    throw new InvalidDataException("Invalid answer received!");
-                }
-
-                if (r.Queries[0] != query)
-                {
-                    throw new InvalidDataException("Invalid answer received!");
-                }
-
-                if (r.IsTruncatedResponse)
-                {
-                    throw new InvalidDataException("Truncated answer received!");
-                }
-                return r;
+                return response.TransactionID != messageID
+                    ? throw new InvalidDataException("Invalid message ID received!")
+                    : response.Queries.Count != 1
+                    ? throw new InvalidDataException("Invalid answer received!")
+                    : response.Queries[0] != query
+                    ? throw new InvalidDataException("Invalid answer received!")
+                    : response.IsTruncatedResponse
+                    ? throw new InvalidDataException("Truncated answer received!")
+                    : response;
             }
         }
 
         DnsResponse QueryUdp(IPAddress srv, byte[] query)
         {
-            int timeout = Math.Max(100, (int)QueryTimeout.TotalMilliseconds);
+            var timeout = Math.Max(100, (int)QueryTimeout.TotalMilliseconds);
             UdpClient udp = null;
             try
             {
@@ -341,7 +323,7 @@ namespace Cave.Net.Dns
                 udp.Client.ReceiveTimeout = timeout;
                 udp.Send(query, query.Length);
                 var remote = new IPEndPoint(IPAddress.Any, 0);
-                byte[] data = udp.Receive(ref remote);
+                var data = udp.Receive(ref remote);
                 var response = new DnsResponse(srv, data);
                 return response;
             }
@@ -353,7 +335,7 @@ namespace Cave.Net.Dns
 
         DnsResponse QueryTcp(IPAddress srv, byte[] query)
         {
-            int timeout = Math.Max(100, (int)QueryTimeout.TotalMilliseconds);
+            var timeout = Math.Max(100, (int)QueryTimeout.TotalMilliseconds);
             TcpClient tcp = null;
             try
             {

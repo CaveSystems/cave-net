@@ -16,9 +16,6 @@ namespace Cave.Net
         /// Initializes a new instance of the <see cref="SslClientEventArgs"/> class.
         /// </summary>
         /// <param name="client">The SslClient.</param>
-        public SslClientEventArgs(SslClient client)
-        {
-            Client = client;
-        }
+        public SslClientEventArgs(SslClient client) => Client = client;
     }
 }
