@@ -42,15 +42,9 @@ namespace Cave.Net
         readonly HashSet<SocketAsyncEventArgs> pendingAccepts = new HashSet<SocketAsyncEventArgs>();
         readonly HashSet<TClient> clients = new HashSet<TClient>();
 
-        void AddPendingAccept(SocketAsyncEventArgs e)
-        {
-            pendingAccepts.Add(e);
-        }
+        void AddPendingAccept(SocketAsyncEventArgs e) => pendingAccepts.Add(e);
 
-        void AddClient(TClient client)
-        {
-            clients.Add(client);
-        }
+        void AddClient(TClient client) => clients.Add(client);
 
         void RemoveClient(TClient client)
         {
@@ -117,7 +111,7 @@ namespace Cave.Net
 
         void AcceptCompleted(object sender, SocketAsyncEventArgs e)
         {
-AcceptCompletedBegin:
+        AcceptCompletedBegin:
             var waiting = Interlocked.Decrement(ref acceptWaiting);
             if (waiting == 0)
             {
@@ -126,7 +120,7 @@ AcceptCompletedBegin:
 
             // handle accepted socket
             {
-                Socket acceptedSocket = e.AcceptSocket;
+                var acceptedSocket = e.AcceptSocket;
                 if (acceptedSocket?.Connected == true)
                 {
                     // create client
@@ -314,7 +308,7 @@ AcceptCompletedBegin:
         {
             lock (clients)
             {
-                foreach (TClient c in Clients)
+                foreach (var c in Clients)
                 {
                     c.Close();
                 }
@@ -328,7 +322,7 @@ AcceptCompletedBegin:
             shutdown = true;
             lock (pendingAccepts)
             {
-                foreach (SocketAsyncEventArgs e in PendingAcceptList)
+                foreach (var e in PendingAcceptList)
                 {
                     e.Dispose();
                 }
@@ -479,10 +473,10 @@ AcceptCompletedBegin:
         }
         #endregion
 
-        /// <summary>
-        /// Returns a string that represents the current object.
-        /// </summary>
-        /// <returns>tcp://localip:port.</returns>
-        public override string ToString() => $"tcp://{LocalEndPoint}";
+        /// <inheritdoc/>
+        public override string ToString() =>
+            LocalEndPoint.Address.AddressFamily == AddressFamily.InterNetwork
+            ? $"tcp://{LocalEndPoint}"
+            : $"tcp://[{LocalEndPoint.Address}]:{LocalEndPoint.Port}";
     }
 }

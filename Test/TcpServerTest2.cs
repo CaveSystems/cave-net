@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -7,7 +6,6 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Cave;
@@ -31,7 +29,7 @@ namespace Test.TCP
         [Test]
         public void TestAccept()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer
             {
                 AcceptThreads = 10,
@@ -82,7 +80,7 @@ namespace Test.TCP
         [Test]
         public void TestAccept_SingleThread()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer
             {
                 AcceptThreads = 1,
@@ -133,7 +131,7 @@ namespace Test.TCP
         [Test]
         public void TestErrors()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer
             {
                 AcceptThreads = 1,
@@ -243,16 +241,10 @@ namespace Test.TCP
         [Test]
         public void TestSend()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
-            server.ClientAccepted += (s1, e1) =>
-            {
-                e1.Client.Received += (s2, e2) =>
-                {
-                    e2.Handled = true;
-                };
-            };
+            server.ClientAccepted += (s1, e1) => e1.Client.Received += (s2, e2) => e2.Handled = true;
             Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             long bytes = 0;
@@ -276,24 +268,18 @@ namespace Test.TCP
             });
             watch.Stop();
 
-            Console.WriteLine($"Test : info TP{port}: {bytes.ToString("N")} bytes in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
             var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info TP{port}: {bps.ToString("N")} bytes/s");
+            Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
         }
 
         [Test]
         public void TestStreamWrite()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
-            server.ClientAccepted += (s1, e1) =>
-            {
-                e1.Client.Buffered += (s2, e2) =>
-                {
-                    e1.Client.Stream.ReadBlock(e1.Client.Stream.Available);
-                };
-            };
+            server.ClientAccepted += (s1, e1) => e1.Client.Buffered += (s2, e2) => e1.Client.Stream.ReadBlock(e1.Client.Stream.Available);
             Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             long bytes = 0;
@@ -308,7 +294,7 @@ namespace Test.TCP
                     client.Connect(addr, port);
                     for (var x = 0; x < 256; x++)
                     {
-                        for (int y = 0; y < 1024; y++)
+                        for (var y = 0; y < 1024; y++)
                         {
                             client.Stream.Write(new byte[1024], 0, 1024);
                             Interlocked.Add(ref bytes, 1024);
@@ -325,24 +311,21 @@ namespace Test.TCP
             });
             watch.Stop();
 
-            Console.WriteLine($"Test : info TP{port}: {bytes.ToString("N")} bytes in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
             var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info TP{port}: {bps.ToString("N")} bytes/s");
+            Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
         }
 
         [Test]
         public void TestStreamDirectWrite()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) =>
             {
                 e1.Client.Stream.DirectWrites = true;
-                e1.Client.Buffered += (s2, e2) =>
-                {
-                    e1.Client.Stream.ReadBlock(e1.Client.Stream.Available);
-                };
+                e1.Client.Buffered += (s2, e2) => e1.Client.Stream.ReadBlock(e1.Client.Stream.Available);
             };
             Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
@@ -368,9 +351,9 @@ namespace Test.TCP
             });
             watch.Stop();
 
-            Console.WriteLine($"Test : info TP{port}: {bytes.ToString("N")} bytes in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
             var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info TP{port}: {bps.ToString("N")} bytes/s");
+            Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
         }
 
         [Test]
@@ -380,19 +363,13 @@ namespace Test.TCP
             var serverClientDisconnectedEventCount = 0;
             var clientConnectedEventCount = 0;
             var clientDisconnectedEventCount = 0;
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) =>
             {
-                e1.Client.Connected += (s2, e2) =>
-                {
-                    Interlocked.Increment(ref serverClientConnectedEventCount);
-                };
-                e1.Client.Disconnected += (s2, e2) =>
-                {
-                    Interlocked.Increment(ref serverClientDisconnectedEventCount);
-                };
+                e1.Client.Connected += (s2, e2) => Interlocked.Increment(ref serverClientConnectedEventCount);
+                e1.Client.Disconnected += (s2, e2) => Interlocked.Increment(ref serverClientDisconnectedEventCount);
             };
             Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
@@ -401,14 +378,8 @@ namespace Test.TCP
             Parallel.For(0, 1000, (n) =>
             {
                 var client = new TcpAsyncClient();
-                client.Connected += (s1, e1) =>
-                {
-                    Interlocked.Increment(ref clientConnectedEventCount);
-                };
-                client.Disconnected += (s1, e1) =>
-                {
-                    Interlocked.Increment(ref clientDisconnectedEventCount);
-                };
+                client.Connected += (s1, e1) => Interlocked.Increment(ref clientConnectedEventCount);
+                client.Disconnected += (s1, e1) => Interlocked.Increment(ref clientDisconnectedEventCount);
                 client.Connect(ip, port);
                 lock(clients) clients.Add(client);
             });
@@ -435,7 +406,7 @@ namespace Test.TCP
             int i = 0, disconnected = 0;
             lock (clients)
             {
-                foreach (TcpAsyncClient client in clients)
+                foreach (var client in clients)
                 {
                     if (i++ % 3 == 0)
                     {
@@ -457,7 +428,7 @@ namespace Test.TCP
 
             lock (clients)
             {
-                foreach (TcpAsyncClient client in clients)
+                foreach (var client in clients)
                 {
                     client?.Close();
                 }
@@ -475,8 +446,10 @@ namespace Test.TCP
         [Test]
         public void TestPortAlreadyInUse1()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
+#pragma warning disable CS0618
             var listen = new TcpListener(port);
+#pragma warning restore CS0618 
             listen.Start();
             try
             {
@@ -497,7 +470,7 @@ namespace Test.TCP
         [Test]
         public void TestPortAlreadyInUse2()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var listen = new TcpListener(IPAddress.Any, port);
             listen.Start();
             try
@@ -519,7 +492,7 @@ namespace Test.TCP
         [Test]
         public void TestSendAllBeforeClose_Client2TcpListener()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var listen = new TcpListener(IPAddress.Loopback, port);
             listen.Start();
             try
@@ -561,7 +534,7 @@ namespace Test.TCP
         [Test]
         public void TestSendAllBeforeClose_Client2TcpListener_DirectWrite()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var listen = new TcpListener(IPAddress.Loopback, port);
             listen.Start();
             try
@@ -604,7 +577,7 @@ namespace Test.TCP
         [Test]
         public void TestSendAllBeforeClose_Client2Server()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -647,7 +620,7 @@ namespace Test.TCP
         [Test]
         public void TestSendAllBeforeClose_Client2Server_DirectWrites()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -692,7 +665,7 @@ namespace Test.TCP
         [Test]
         public void TestSendAllBeforeClose_Client2Server_CloseBeforeRead()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -742,7 +715,7 @@ namespace Test.TCP
         [Test]
         public void TestSendAllBeforeClose_Client2Server_CloseBeforeRead_DirectWrite()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -794,7 +767,7 @@ namespace Test.TCP
         [Test]
         public void TestSendAllBeforeClose_Server2Client()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -838,7 +811,7 @@ namespace Test.TCP
         [Test]
         public void TestSendAllBeforeClose_Server2Client_DirectWrites()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))

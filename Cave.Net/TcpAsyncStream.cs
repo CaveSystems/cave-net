@@ -47,10 +47,7 @@ namespace Cave.Net
         /// Initializes a new instance of the <see cref="TcpAsyncStream"/> class.
         /// </summary>
         /// <param name="client">Client to be used by this stream.</param>
-        public TcpAsyncStream(TcpAsyncClient client)
-        {
-            this.client = client;
-        }
+        public TcpAsyncStream(TcpAsyncClient client) => this.client = client;
 
         /// <summary>
         /// Gets or sets a value indicating whether the stream use direct writes on the clients socket for each call to <see cref="Write(byte[], int, int)"/>.
@@ -66,7 +63,7 @@ namespace Cave.Net
         {
             get
             {
-                FifoStream buffer = client.ReceiveBuffer;
+                var buffer = client.ReceiveBuffer;
                 lock (buffer)
                 {
                     return buffer.Available;
@@ -131,7 +128,7 @@ namespace Cave.Net
         {
             get
             {
-                FifoStream buffer = client.ReceiveBuffer;
+                var buffer = client.ReceiveBuffer;
                 lock (buffer)
                 {
                     return buffer.Position;
@@ -184,8 +181,8 @@ namespace Cave.Net
         /// <exception cref="TimeoutException">A timeout occured while waiting for incoming data. (See <see cref="ReadTimeout"/>).</exception>
         public override int Read(byte[] array, int offset, int count)
         {
-            DateTime timeout = client.ReceiveTimeout > 0 ? DateTime.UtcNow + TimeSpan.FromMilliseconds(client.ReceiveTimeout) : DateTime.MaxValue;
-            FifoStream buffer = client.ReceiveBuffer;
+            var timeout = client.ReceiveTimeout > 0 ? DateTime.UtcNow + TimeSpan.FromMilliseconds(client.ReceiveTimeout) : DateTime.MaxValue;
+            var buffer = client.ReceiveBuffer;
             lock (buffer)
             {
                 while (true)
@@ -216,20 +213,14 @@ namespace Cave.Net
         /// <param name="origin">A value of type <see cref="SeekOrigin"/> indicating the reference point used to obtain the new position.</param>
         /// <returns>The new position within the current stream.</returns>
         /// <exception cref="NotSupportedException">The stream does not support seeking.</exception>
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException("The stream does not support seeking.");
-        }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException("The stream does not support seeking.");
 
         /// <summary>
         /// Not supported.
         /// </summary>
         /// <param name="value">The desired length of the current stream in bytes.</param>
         /// <exception cref="NotSupportedException">The stream does not support both writing and seeking.</exception>
-        public override void SetLength(long value)
-        {
-            throw new NotSupportedException("The stream does not support both writing and seeking.");
-        }
+        public override void SetLength(long value) => throw new NotSupportedException("The stream does not support both writing and seeking.");
 
         /// <summary>
         /// Writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.

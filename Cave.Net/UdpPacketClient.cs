@@ -9,19 +9,10 @@ namespace Cave.Net
     /// </summary>
     public sealed class UdpPacketClient : IDisposable
     {
-        static AddressFamily GetAddressFamily(IPEndPoint endPoint)
-        {
-            if (endPoint == null)
-            {
-                throw new ArgumentNullException("endPoint");
-            }
-
-            return endPoint.AddressFamily;
-        }
+        static AddressFamily GetAddressFamily(IPEndPoint endPoint) => endPoint == null ? throw new ArgumentNullException("endPoint") : endPoint.AddressFamily;
 
         readonly bool usesServerSocket;
         Socket socket;
-        bool closed;
 
         /// <summary>
         /// Gets the remote endpoint this client is primarily "connected" to. Be aware that udp does not support
@@ -102,7 +93,7 @@ namespace Cave.Net
         /// <param name="size">Number of bytes to send.</param>
         public void Send(IPEndPoint remote, byte[] data, int offset, int size)
         {
-            if (closed)
+            if (Closed)
             {
                 throw new InvalidOperationException(string.Format("Client already closed!"));
             }
@@ -120,14 +111,14 @@ namespace Cave.Net
         /// <param name="remote">Remote endpoint to send packet to.</param>
         /// <param name="data">Byte array to send.</param>
         /// <param name="size">Number of bytes to send.</param>
-        public void Send(IPEndPoint remote, byte[] data, int size) => Send(data, 0, size);
+        public void Send(IPEndPoint remote, byte[] data, int size) => Send(remote, data, 0, size);
 
         /// <summary>
         /// Sends a packet to the specified <paramref name="remote"/>.
         /// </summary>
         /// <param name="remote">Remote endpoint to send packet to.</param>
         /// <param name="data">Byte array to send.</param>
-        public void Send(IPEndPoint remote, byte[] data) => Send(data, 0, data.Length);
+        public void Send(IPEndPoint remote, byte[] data) => Send(remote, data, 0, data.Length);
 
         /// <summary>
         /// Sends a packet to the default <see cref="RemoteEndPoint"/>.
@@ -173,7 +164,7 @@ namespace Cave.Net
         /// <returns>An <see cref="UdpPacket"/> or null.</returns>
         public UdpPacket Read()
         {
-            if (closed)
+            if (Closed)
             {
                 throw new InvalidOperationException(string.Format("Client already closed!"));
             }
@@ -183,10 +174,12 @@ namespace Cave.Net
                 throw new InvalidOperationException(string.Format("This client is part of an UdpPacketServer."));
             }
 
-            var packet = new UdpPacket();
-            packet.LocalEndPoint = (IPEndPoint)socket.LocalEndPoint;
+            var packet = new UdpPacket
+            {
+                LocalEndPoint = (IPEndPoint)socket.LocalEndPoint,
+            };
             EndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-            int bufferSize = socket.Available > 0 ? socket.Available : MaximumPayloadSize;
+            var bufferSize = socket.Available > 0 ? socket.Available : MaximumPayloadSize;
             packet.Data = new byte[bufferSize];
             packet.Size = (ushort)socket.ReceiveFrom(packet.Data, ref endPoint);
             packet.RemoteEndPoint = (IPEndPoint)endPoint;
@@ -197,23 +190,14 @@ namespace Cave.Net
         /// <summary>
         /// Gets a value indicating whether the client was closed or not.
         /// </summary>
-        public bool Closed => closed;
+        public bool Closed { get; private set; }
 
         /// <summary>
         /// Determines whether two object instances are equal.
         /// </summary>
         /// <param name="obj">The object to compare with the current object.</param>
         /// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
-        public override bool Equals(object obj)
-        {
-            var other = obj as UdpPacketClient;
-            if (ReferenceEquals(other, null))
-            {
-                return false;
-            }
-
-            return RemoteEndPoint.Equals(other.RemoteEndPoint);
-        }
+        public override bool Equals(object obj) => (obj is UdpPacketClient other) && RemoteEndPoint.Equals(other.RemoteEndPoint);
 
         /// <summary>
         /// Returns a hash value for a System.Net.IPEndPoint instance.
@@ -226,7 +210,7 @@ namespace Cave.Net
         /// </summary>
         public void Close()
         {
-            closed = true;
+            Closed = true;
             if (!usesServerSocket)
             {
                 socket.Close();

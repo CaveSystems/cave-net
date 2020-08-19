@@ -128,10 +128,12 @@ namespace Cave.Net
             {
                 try
                 {
-                    var packet = new UdpPacket();
-                    packet.LocalEndPoint = (IPEndPoint)socket.LocalEndPoint;
+                    var packet = new UdpPacket
+                    {
+                        LocalEndPoint = (IPEndPoint)socket.LocalEndPoint,
+                    };
                     EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
-                    int bufferSize = socket.Available > 0 ? socket.Available : MaximumPayloadSize;
+                    var bufferSize = socket.Available > 0 ? socket.Available : MaximumPayloadSize;
                     packet.Data = new byte[bufferSize];
                     packet.Size = (ushort)socket.ReceiveFrom(packet.Data, ref remoteEndPoint);
                     packet.RemoteEndPoint = (IPEndPoint)remoteEndPoint;
@@ -153,7 +155,7 @@ namespace Cave.Net
                 var timeoutClients = new List<IPEndPoint>();
                 lock (clients)
                 {
-                    foreach (UdpPacketClient client in Clients)
+                    foreach (var client in Clients)
                     {
                         if (client.LastActivity + Timeout > DateTime.UtcNow)
                         {
@@ -169,7 +171,7 @@ namespace Cave.Net
                 }
                 if (timeoutClients.Count > 0)
                 {
-                    foreach (IPEndPoint client in timeoutClients)
+                    foreach (var client in timeoutClients)
                     {
                         try
                         {
@@ -190,7 +192,7 @@ namespace Cave.Net
 
         void NewPacket(UdpPacket packet, Socket socket)
         {
-            bool newConnection = false;
+            var newConnection = false;
 
             // checl all present clients
             lock (clients)
@@ -235,10 +237,7 @@ namespace Cave.Net
         /// <summary>
         /// Initializes a new instance of the <see cref="UdpPacketServer"/> class.
         /// </summary>
-        public UdpPacketServer()
-        {
-            new Thread(TimeoutCheckThread).Start();
-        }
+        public UdpPacketServer() => new Thread(TimeoutCheckThread).Start();
 
         /// <summary>
         /// Starts listening at the specified <see cref="IPEndPoint"/>.
@@ -269,7 +268,7 @@ namespace Cave.Net
         /// <param name="port">Port to listen at.</param>
         public void Listen(string hostName, int port)
         {
-            foreach (IPAddress address in System.Net.Dns.GetHostAddresses(hostName))
+            foreach (var address in System.Net.Dns.GetHostAddresses(hostName))
             {
                 Listen(address, port);
             }
@@ -280,10 +279,7 @@ namespace Cave.Net
         /// </summary>
         /// <param name="address">Local address to listen at.</param>
         /// <param name="port">Port to listen at.</param>
-        public void Listen(IPAddress address, int port)
-        {
-            Listen(new IPEndPoint(address, port));
-        }
+        public void Listen(IPAddress address, int port) => Listen(new IPEndPoint(address, port));
 
         /// <summary>
         /// Listens at any ipv6 and ipv4 interfaces at the specified port.
@@ -306,7 +302,7 @@ namespace Cave.Net
                 lock (sockets)
                 {
                     result = new IPEndPoint[sockets.Count];
-                    for (int i = 0; i < result.Length; i++)
+                    for (var i = 0; i < result.Length; i++)
                     {
                         result[i] = (IPEndPoint)sockets[i].LocalEndPoint;
                     }
@@ -361,7 +357,7 @@ namespace Cave.Net
                     throw new ArgumentException("No client found with the specified remote end point!");
                 }
 
-                UdpPacketClient client = clients[packet.RemoteEndPoint];
+                var client = clients[packet.RemoteEndPoint];
                 client.Send(packet);
             }
         }
@@ -402,7 +398,7 @@ namespace Cave.Net
                     throw new ArgumentException("No client found with the specified remote end point!");
                 }
 
-                UdpPacketClient client = clients[destination];
+                var client = clients[destination];
                 client.Send(data, offset, size);
             }
         }
@@ -411,10 +407,7 @@ namespace Cave.Net
         /// Obtains the string "UcpPacketServer&lt;LocalEndPoint[s]&gt;.
         /// </summary>
         /// <returns>A string that represents the current object.</returns>
-        public override string ToString()
-        {
-            return string.Format("UcpPacketServer<{0}>", StringExtensions.Join(LocalEndPoints, ","));
-        }
+        public override string ToString() => string.Format("UcpPacketServer<{0}>", StringExtensions.Join(LocalEndPoints, ","));
 
         /// <summary>
         /// Closes the <see cref="UdpPacketServer"/>.

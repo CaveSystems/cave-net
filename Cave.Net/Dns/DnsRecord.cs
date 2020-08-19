@@ -17,8 +17,6 @@ namespace Cave.Net.Dns
         /// <exception cref="NotImplementedException">RecordType not implemented.</exception>
         public static DnsRecord Parse(DataReader reader)
         {
-            long start = reader.BaseStream.Position;
-
             var result = new DnsRecord
             {
                 Name = DomainName.Parse(reader),

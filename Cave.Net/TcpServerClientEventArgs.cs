@@ -15,9 +15,6 @@ namespace Cave.Net
 
         /// <summary>Initializes a new instance of the <see cref="TcpServerClientEventArgs{TClient}"/> class.</summary>
         /// <param name="client">The client.</param>
-        public TcpServerClientEventArgs(TClient client)
-        {
-            Client = client;
-        }
+        public TcpServerClientEventArgs(TClient client) => Client = client;
     }
 }

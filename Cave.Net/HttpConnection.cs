@@ -5,7 +5,6 @@ using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Text;
-using Cave.IO;
 
 namespace Cave.Net
 {
@@ -33,20 +32,20 @@ namespace Cave.Net
                 if (asm != null)
                 {
                     // Use the assembly in order to get the internal type for the internal class
-                    Type type = asm.GetType("System.Net.Configuration.SettingsSectionInternal");
+                    var type = asm.GetType("System.Net.Configuration.SettingsSectionInternal");
                     if (type != null)
                     {
                         // Use the internal static property to get an instance of the internal settings class.
                         // If the static instance isn't created allready the property will create it for us.
-                        object obj = type.InvokeMember("Section", BindingFlags.Static | BindingFlags.GetProperty | BindingFlags.NonPublic, null, null, new object[] { });
+                        var obj = type.InvokeMember("Section", BindingFlags.Static | BindingFlags.GetProperty | BindingFlags.NonPublic, null, null, new object[] { });
                         if (obj != null)
                         {
                             // Locate the private bool field that tells the framework is unsafe header parsing should be allowed or not
-                            FieldInfo field = type.GetField("useUnsafeHeaderParsing", BindingFlags.NonPublic | BindingFlags.Instance);
+                            var field = type.GetField("useUnsafeHeaderParsing", BindingFlags.NonPublic | BindingFlags.Instance);
                             if (field != null)
                             {
                                 field.SetValue(obj, true);
-                                Trace.WriteLine("UseUnsafeHeaderParsing <green>enabled.");
+                                Trace.WriteLine("UseUnsafeHeaderParsing enabled.");
                                 return;
                             }
                         }
@@ -58,7 +57,7 @@ namespace Cave.Net
                 Trace.WriteLine(ex);
             }
 #endif
-            Trace.WriteLine("UseUnsafeHeaderParsing <red>disabled.");
+            Trace.WriteLine("UseUnsafeHeaderParsing disabled.");
         }
 
         /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
@@ -135,10 +134,7 @@ namespace Cave.Net
         /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <param name="proxy">The proxy.</param>
         /// <returns>Returns downloaded data as string (utf8).</returns>
-        public static string GetString(ConnectionString connectionString, ConnectionString? proxy = null)
-        {
-            return Encoding.UTF8.GetString(Get(connectionString, proxy));
-        }
+        public static string GetString(ConnectionString connectionString, ConnectionString? proxy = null) => Encoding.UTF8.GetString(Get(connectionString, proxy));
 
         /// <summary>The headers to use.</summary>
         public readonly Dictionary<string, string> Headers = new Dictionary<string, string>();
@@ -171,7 +167,7 @@ namespace Cave.Net
                 newRequest.Accept = Accept;
             }
 
-            foreach (KeyValuePair<string, string> head in Headers)
+            foreach (var head in Headers)
             {
                 newRequest.Headers[head.Key] = head.Value;
             }
@@ -207,10 +203,7 @@ namespace Cave.Net
 
         /// <summary>Sets the proxy.</summary>
         /// <param name="proxy">The proxy.</param>
-        public void SetProxy(ConnectionString proxy)
-        {
-            Proxy = new WebProxy(proxy.ToString(ConnectionStringPart.Server), true, new string[] { "localhost" }, new NetworkCredential(proxy.UserName, proxy.Password));
-        }
+        public void SetProxy(ConnectionString proxy) => Proxy = new WebProxy(proxy.ToString(ConnectionStringPart.Server), true, new string[] { "localhost" }, new NetworkCredential(proxy.UserName, proxy.Password));
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HttpConnection"/> class.
@@ -238,10 +231,10 @@ namespace Cave.Net
             HttpWebResponse response = null;
             try
             {
-                HttpWebRequest request = CreateRequest(connectionString);
+                var request = CreateRequest(connectionString);
                 response = (HttpWebResponse)request.GetResponse();
-                Stream responseStream = response.GetResponseStream();
-                byte[] result = responseStream.ReadAllBytes(response.ContentLength);
+                var responseStream = response.GetResponseStream();
+                var result = responseStream.ReadAllBytes(response.ContentLength);
                 responseStream.Close();
                 return result;
             }
@@ -264,10 +257,10 @@ namespace Cave.Net
             HttpWebResponse response = null;
             try
             {
-                HttpWebRequest request = CreateRequest(connectionString);
+                var request = CreateRequest(connectionString);
                 response = (HttpWebResponse)request.GetResponse();
-                Stream responseStream = response.GetResponseStream();
-                byte[] result = responseStream.ReadBlock((int)response.ContentLength, callback, userItem);
+                var responseStream = response.GetResponseStream();
+                var result = responseStream.ReadBlock((int)response.ContentLength, callback, userItem);
                 responseStream.Close();
                 return result;
             }
@@ -291,10 +284,10 @@ namespace Cave.Net
             HttpWebResponse response = null;
             try
             {
-                HttpWebRequest request = CreateRequest(connectionString);
+                var request = CreateRequest(connectionString);
                 response = (HttpWebResponse)request.GetResponse();
-                Stream responseStream = response.GetResponseStream();
-                long size = responseStream.CopyBlocksTo(stream);
+                var responseStream = response.GetResponseStream();
+                var size = responseStream.CopyBlocksTo(stream);
                 responseStream.Close();
                 return size;
             }
@@ -318,15 +311,15 @@ namespace Cave.Net
             HttpWebResponse response = null;
             try
             {
-                HttpWebRequest request = CreateRequest(connectionString);
+                var request = CreateRequest(connectionString);
                 if (Proxy != null)
                 {
                     request.Proxy = Proxy;
                 }
 
                 response = (HttpWebResponse)request.GetResponse();
-                Stream responseStream = response.GetResponseStream();
-                long size = responseStream.CopyBlocksTo(stream, response.ContentLength, callback, userItem);
+                var responseStream = response.GetResponseStream();
+                var size = responseStream.CopyBlocksTo(stream, response.ContentLength, callback, userItem);
                 responseStream.Close();
                 return size;
             }

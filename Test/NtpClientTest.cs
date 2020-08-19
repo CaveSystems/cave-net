@@ -13,12 +13,12 @@ namespace Test.NTP
         {
             for (uint u = 0; u < int.MaxValue; u = (u * 3) + 1)
             {
-                int i = (int)u;
+                var i = (int)u;
                 Assert.AreEqual(u, (uint)(NtpUInt32)u);
                 Assert.AreEqual(i, (int)(NtpInt32)i);
             }
 
-            for (DateTime testDate = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc); testDate.Year < 5000; testDate += TimeSpan.FromHours(100.0 / 3.0))
+            for (var testDate = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc); testDate.Year < 5000; testDate += TimeSpan.FromHours(100.0 / 3.0))
             {
                 NtpTimestamp.LocalReferenceTimeFunction = () => testDate;
                 NtpTimestamp ntpTimestamp = testDate;
@@ -27,9 +27,9 @@ namespace Test.NTP
 
             NtpTimestamp.LocalReferenceTimeFunction = () => DateTime.UtcNow;
 
-            DateTime testDateTime = DateTime.UtcNow;
+            var testDateTime = DateTime.UtcNow;
 
-            NtpPacket pack = new NtpPacket()
+            var pack = new NtpPacket()
             {
                 Settings = 0x1B,
                 OriginateTimestamp = testDateTime,
@@ -41,7 +41,7 @@ namespace Test.NTP
                 RootDelay = 5,
                 RootDispersion = 6,
                 Stratum = 16,
-                Reference = (uint)FourCC.Create("LOCL"),
+                Reference = (uint)FourCC.FromString("LOCL"),
             };
 
             Assert.AreEqual(NtpLeapIndicator.NoWarning, pack.LeapIndicator);
@@ -64,11 +64,11 @@ namespace Test.NTP
             Assert.AreEqual(16384, pack.PollInterval.Seconds);
             Assert.AreEqual(TimeSpan.FromSeconds(16384), (TimeSpan)pack.PollInterval);
 
-            for (int i = 1; i < 5; i++)
+            for (var i = 1; i < 5; i++)
             {
                 try
                 {
-                    NtpAnswer answer = NtpClient.Query($"{i}.pool.ntp.org");
+                    var answer = NtpClient.Query($"{i}.pool.ntp.org");
                     return;
                 }
                 catch (Exception ex)

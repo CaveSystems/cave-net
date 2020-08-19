@@ -60,10 +60,7 @@ namespace Cave.Net
             }
         }
 
-        void ClientAuthenticate(object sender, SslAuthenticationEventArgs e)
-        {
-            OnAuthenticate(e);
-        }
+        void ClientAuthenticate(object sender, SslAuthenticationEventArgs e) => OnAuthenticate(e);
 
         #endregion
 
@@ -75,7 +72,7 @@ namespace Cave.Net
         /// <param name="client">The client.</param>
         protected virtual void OnConnected(SslClient client)
         {
-            EventHandler<SslClientEventArgs> evt = Connected;
+            var evt = Connected;
 
             // return if event not used
             try
@@ -186,9 +183,9 @@ namespace Cave.Net
         {
             get
             {
-                int i = 0;
-                IPEndPoint[] result = new IPEndPoint[listeners.Count];
-                foreach (TcpListener listener in listeners)
+                var i = 0;
+                var result = new IPEndPoint[listeners.Count];
+                foreach (var listener in listeners)
                 {
                     result[i++] = (IPEndPoint)listener.LocalEndpoint;
                 }
@@ -213,7 +210,7 @@ namespace Cave.Net
             isClosed = true;
             lock (listeners)
             {
-                foreach (TcpListener listener in listeners)
+                foreach (var listener in listeners)
                 {
                     listener.Stop();
                 }

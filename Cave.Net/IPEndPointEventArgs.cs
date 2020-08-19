@@ -17,9 +17,6 @@ namespace Cave.Net
         /// Initializes a new instance of the <see cref="IPEndPointEventArgs"/> class.
         /// </summary>
         /// <param name="endPoint">IP endpoint.</param>
-        public IPEndPointEventArgs(IPEndPoint endPoint)
-        {
-            EndPoint = endPoint;
-        }
+        public IPEndPointEventArgs(IPEndPoint endPoint) => EndPoint = endPoint;
     }
 }

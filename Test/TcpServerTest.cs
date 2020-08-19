@@ -1,13 +1,12 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Cave;
 using Cave.Net;
 using NUnit.Framework;
 
@@ -19,7 +18,7 @@ namespace Test.TCP
         [Test]
         public void TestAccept()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer
             {
                 AcceptThreads = 10,
@@ -41,7 +40,7 @@ namespace Test.TCP
             using (var client = new TcpAsyncClient())
             {
                 client.Connect("127.0.0.1", port);
-                Assert.AreEqual($"tcp://[::ffff:127.0.0.1]:{port}", client.ToString());
+                Assert.AreEqual($"tcp://127.0.0.1:{port}", client.ToString());
                 client.Send(new byte[1000]);
                 client.Close();
             }
@@ -70,7 +69,7 @@ namespace Test.TCP
         [Test]
         public void TestAccept_SingleThread()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer
             {
                 AcceptThreads = 1,
@@ -119,7 +118,7 @@ namespace Test.TCP
         [Test]
         public void TestErrors()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer
             {
                 AcceptThreads = 1,
@@ -229,16 +228,10 @@ namespace Test.TCP
         [Test]
         public void TestSend()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
-            server.ClientAccepted += (s1, e1) =>
-            {
-                e1.Client.Received += (s2, e2) =>
-                {
-                    e2.Handled = true;
-                };
-            };
+            server.ClientAccepted += (s1, e1) => e1.Client.Received += (s2, e2) => e2.Handled = true;
             Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             long bytes = 0;
@@ -261,9 +254,9 @@ namespace Test.TCP
             });
             watch.Stop();
 
-            Console.WriteLine($"Test : info TP{port}: {bytes.ToString("N")} bytes in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
             var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info TP{port}: {bps.ToString("N")} bytes/s");
+            Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
         }
 
         [Test]
@@ -273,19 +266,13 @@ namespace Test.TCP
             var serverClientDisconnectedEventCount = 0;
             var clientConnectedEventCount = 0;
             var clientDisconnectedEventCount = 0;
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) =>
             {
-                e1.Client.Connected += (s2, e2) =>
-                {
-                    Interlocked.Increment(ref serverClientConnectedEventCount);
-                };
-                e1.Client.Disconnected += (s2, e2) =>
-                {
-                    Interlocked.Increment(ref serverClientDisconnectedEventCount);
-                };
+                e1.Client.Connected += (s2, e2) => Interlocked.Increment(ref serverClientConnectedEventCount);
+                e1.Client.Disconnected += (s2, e2) => Interlocked.Increment(ref serverClientDisconnectedEventCount);
             };
             Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
@@ -294,14 +281,8 @@ namespace Test.TCP
             Parallel.For(0, 1000, (n) =>
             {
                 var client = new TcpAsyncClient();
-                client.Connected += (s1, e1) =>
-                {
-                    Interlocked.Increment(ref clientConnectedEventCount);
-                };
-                client.Disconnected += (s1, e1) =>
-                {
-                    Interlocked.Increment(ref clientDisconnectedEventCount);
-                };
+                client.Connected += (s1, e1) => Interlocked.Increment(ref clientConnectedEventCount);
+                client.Disconnected += (s1, e1) => Interlocked.Increment(ref clientDisconnectedEventCount);
                 client.Connect(ip, port);
                 lock(clients) clients.Add(client);
             });
@@ -326,7 +307,7 @@ namespace Test.TCP
 
             //disconnect some
             int i = 0, disconnected = 0;
-            foreach (TcpAsyncClient client in clients)
+            foreach (var client in clients)
             {
                 if (i++ % 3 == 0)
                 {
@@ -345,7 +326,7 @@ namespace Test.TCP
 
             Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
 
-            foreach (TcpAsyncClient client in clients)
+            foreach (var client in clients)
             {
                 client.Close();
             }
@@ -362,7 +343,7 @@ namespace Test.TCP
         [Test]
         public void TestPortAlreadyInUse1()
         {
-            var listen = Program.OpenPort(out int port);
+            var listen = Tools.OpenPort(out var port);
             try
             {
                 var server = new TcpServer();
@@ -382,7 +363,7 @@ namespace Test.TCP
         [Test]
         public void TestPortAlreadyInUse2()
         {
-            var listen = Program.OpenPort(out int port);
+            var listen = Tools.OpenPort(out var port);
             try
             {
                 var server = new TcpServer();
@@ -402,7 +383,7 @@ namespace Test.TCP
         [Test]
         public void TestSendAllBeforeClose_Client2TcpListener()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var listen = new TcpListener(IPAddress.Loopback, port);
             listen.Start();
             try
@@ -444,7 +425,7 @@ namespace Test.TCP
         [Test]
         public void TestSendAllBeforeClose_Client2Server()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -487,7 +468,7 @@ namespace Test.TCP
         [Test]
         public void TestSendAllBeforeClose_Client2Server_CloseBeforeRead()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -537,7 +518,7 @@ namespace Test.TCP
         [Test]
         public void TestSendAllBeforeClose_Server2Client()
         {
-            var port = Program.GetPort();
+            var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
             using (var completed = new ManualResetEvent(false))
@@ -581,9 +562,9 @@ namespace Test.TCP
         [Test]
         public void TestBuffering()
         {
-            for (int i = 0; i < 100; i++)
+            for (var i = 0; i < 100; i++)
             {
-                var port = Program.GetPort();
+                var port = Tools.GetPort();
                 using (var server = new TcpServer())
                 using (var sendEvent = new ManualResetEvent(false))
                 using (var testClient = new TcpAsyncClient())

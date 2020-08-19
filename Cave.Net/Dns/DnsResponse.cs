@@ -65,7 +65,7 @@ namespace Cave.Net.Dns
         IList<DnsRecord> LoadRecords(DataReader reader, int recordCount)
         {
             var result = new List<DnsRecord>(recordCount);
-            for (int i = 0; i < recordCount; i++)
+            for (var i = 0; i < recordCount; i++)
             {
                 var item = DnsRecord.Parse(reader);
                 result.Add(item);
@@ -76,7 +76,7 @@ namespace Cave.Net.Dns
         IList<DnsQuery> LoadQueries(DataReader reader, int queryCount)
         {
             var result = new List<DnsQuery>(queryCount);
-            for (int i = 0; i < queryCount; i++)
+            for (var i = 0; i < queryCount; i++)
             {
                 var item = DnsQuery.Parse(reader);
                 result.Add(item);
