@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -77,11 +78,17 @@ namespace Cave.Net
         /// <summary>
         /// Retrieves all local addresses.
         /// </summary>
+        /// <param name="status">Filter to apply.</param>
         /// <returns>Returns <see cref="UnicastIPAddressInformation"/> instances for all local network interfaces.</returns>
-        public static UnicastIPAddressInformation[] GetLocalAddresses()
+        public static UnicastIPAddressInformation[] GetLocalAddresses(OperationalStatus? status = null)
         {
             var result = new List<UnicastIPAddressInformation>();
-            foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+            IEnumerable<NetworkInterface> interfaces = NetworkInterface.GetAllNetworkInterfaces();
+            if (status != null)
+            {
+                interfaces = interfaces.Where(i => i.OperationalStatus == status.Value);
+            }
+            foreach (NetworkInterface ni in interfaces)
             {
                 var p = ni.GetIPProperties();
                 foreach (var ip in p.UnicastAddresses)
