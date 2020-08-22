@@ -119,8 +119,8 @@ namespace Test.TCP
             });
             watch.Stop();
 
-            Assert.AreEqual(errors > 0, busyCount > 0);
-            Assert.IsTrue(success > errors);
+            if (errors > 0 && busyCount == 0) throw new Exception($"BusyCount {busyCount}, Errors {errors}");
+            Assert.IsTrue(success > errors, $"Errors {errors} > Success {success}");
             Assert.AreEqual(count, success + errors);
             Console.WriteLine($"Test : info TP{port}: {success} connections in {watch.Elapsed}");
             Console.WriteLine($"Test : info TP{port}: {errors} failed connections in {watch.Elapsed}");
