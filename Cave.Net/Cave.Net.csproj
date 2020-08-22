@@ -61,7 +61,7 @@
     <AdditionalFiles Include="stylecop.json" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Cave.Extensions" Version="2.0.6" />
+    <PackageReference Include="Cave.Extensions" Version="2.0.7" />
     <PackageReference Include="Cave.IO" Version="2.0.2" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.*">
       <PrivateAssets>all</PrivateAssets>
