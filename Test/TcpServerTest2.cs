@@ -44,7 +44,7 @@ namespace Test.TCP
             {
                 Assert.AreEqual($"tcp://0.0.0.0:{port}", server.ToString());
             }
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             var addresses = GetMyAddresses(true);
             foreach (var addr in addresses)
@@ -55,7 +55,7 @@ namespace Test.TCP
                     client.Send(new byte[1000]);
                     client.Close();
                 }
-                Console.WriteLine($"Test {Environment.Version} : info TP{port}: Test connect to {addr} successful.");
+                Console.WriteLine($"Test : info TP{port}: Test connect to {addr} successful.");
             }
 
             var count = 10000;
@@ -72,9 +72,9 @@ namespace Test.TCP
             });
             watch.Stop();
 
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: {success} connections in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {success} connections in {watch.Elapsed}");
             var cps = Math.Round(success / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: {cps} connections/s");
+            Console.WriteLine($"Test : info TP{port}: {cps} connections/s");
         }
 
         [Test]
@@ -95,7 +95,7 @@ namespace Test.TCP
             {
                 Assert.AreEqual($"tcp://0.0.0.0:{port}", server.ToString());
             }
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             var addresses = GetMyAddresses(true);
             foreach (var addr in addresses)
@@ -106,7 +106,7 @@ namespace Test.TCP
                     client.Send(new byte[1000]);
                     client.Close();
                 }
-                Console.WriteLine($"Test {Environment.Version} : info TP{port}: Test connect to {addr} successful.");
+                Console.WriteLine($"Test : info TP{port}: Test connect to {addr} successful.");
             }
 
             var count = 10000;
@@ -123,9 +123,9 @@ namespace Test.TCP
             });
             watch.Stop();
 
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: {success} connections in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {success} connections in {watch.Elapsed}");
             var cps = Math.Round(success / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: {cps} connections/s");
+            Console.WriteLine($"Test : info TP{port}: {cps} connections/s");
         }
 
         [Test]
@@ -140,7 +140,7 @@ namespace Test.TCP
             Assert.AreEqual(false, server.IsListening);
             server.Listen(port);
             Assert.AreEqual(true, server.IsListening);
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             try { server.AcceptBacklog = 10; }
             catch (Exception ex)
@@ -181,7 +181,7 @@ namespace Test.TCP
             void QueueError(object sender, TcpServerClientExceptionEventArgs<TcpAsyncClient> e)
             {
                 lock(exceptions) exceptions.Add(e.Exception);
-                Console.WriteLine($"Test {Environment.Version} : info TP{port}: Client {e.Client} Error Test {e.Exception.Message}");
+                Console.WriteLine($"Test : info TP{port}: Client {e.Client} Error Test {e.Exception.Message}");
             }
             server.ClientAccepted += AcceptError;
             server.ClientException += QueueError;
@@ -195,7 +195,7 @@ namespace Test.TCP
                     catch { }
                 }
             }
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: Test connect to ::1 successful.");
+            Console.WriteLine($"Test : info TP{port}: Test connect to ::1 successful.");
 
             {
                 Assert.AreEqual(1, exceptions.Count);
@@ -223,7 +223,7 @@ namespace Test.TCP
                     catch { }
                 }
             }
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: Test connect to ::1 successful.");
+            Console.WriteLine($"Test : info TP{port}: Test connect to ::1 successful.");
 
             {
                 Assert.AreEqual(1, exceptions.Count);
@@ -245,7 +245,7 @@ namespace Test.TCP
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) => e1.Client.Received += (s2, e2) => e2.Handled = true;
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             long bytes = 0;
             var watch = Stopwatch.StartNew();
@@ -264,13 +264,13 @@ namespace Test.TCP
                     }
                     client.Close();
                 }
-                Console.WriteLine($"Test {Environment.Version} : info TP{port}: Client {n + 1} {addr} completed.");
+                Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
             });
             watch.Stop();
 
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
             var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: {bps:N} bytes/s");
+            Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
         }
 
         [Test]
@@ -280,7 +280,7 @@ namespace Test.TCP
             var server = new TcpServer();
             server.Listen(port);
             server.ClientAccepted += (s1, e1) => e1.Client.Buffered += (s2, e2) => e1.Client.Stream.ReadBlock(e1.Client.Stream.Available);
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             long bytes = 0;
             var watch = Stopwatch.StartNew();
@@ -307,13 +307,13 @@ namespace Test.TCP
                     client.Stream.Flush();
                     client.Close();
                 }
-                Console.WriteLine($"Test {Environment.Version} : info TP{port}: Client {n + 1} {addr} completed.");
+                Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
             });
             watch.Stop();
 
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
             var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: {bps:N} bytes/s");
+            Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
         }
 
         [Test]
@@ -327,7 +327,7 @@ namespace Test.TCP
                 e1.Client.Stream.DirectWrites = true;
                 e1.Client.Buffered += (s2, e2) => e1.Client.Stream.ReadBlock(e1.Client.Stream.Available);
             };
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             long bytes = 0;
             var watch = Stopwatch.StartNew();
@@ -347,13 +347,13 @@ namespace Test.TCP
                     }
                     client.Close();
                 }
-                Console.WriteLine($"Test {Environment.Version} : info TP{port}: Client {n + 1} {addr} completed.");
+                Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
             });
             watch.Stop();
 
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
             var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: {bps:N} bytes/s");
+            Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
         }
 
         [Test]
@@ -374,7 +374,7 @@ namespace Test.TCP
                 e1.Client.Connected += (s2, e2) => Interlocked.Increment(ref serverClientConnectedEventCount);
                 e1.Client.Disconnected += (s2, e2) => Interlocked.Increment(ref serverClientDisconnectedEventCount);
             };
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: Opened Server at port {port}.");
+            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             var clients = new List<TcpAsyncClient>();
             var ip = IPAddress.Parse("127.0.0.1");
@@ -391,7 +391,7 @@ namespace Test.TCP
             //no client disconnected
             Assert.AreEqual(0, clientDisconnectedEventCount);
 
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: ConnectedEventCount ok.");
+            Console.WriteLine($"Test : info TP{port}: ConnectedEventCount ok.");
 
             //give the server some more time
             Thread.Sleep(2000);
@@ -403,7 +403,7 @@ namespace Test.TCP
             Assert.AreEqual(0, clientDisconnectedEventCount);
             Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
 
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
+            Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
 
             //disconnect some
             int i = 0, disconnected = 0;
@@ -427,7 +427,7 @@ namespace Test.TCP
             Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
             Assert.AreEqual(clientConnectedEventCount - disconnected, server.Clients.Length);
 
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
+            Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
 
             lock (clients)
             {
@@ -443,7 +443,7 @@ namespace Test.TCP
 
             Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
 
-            Console.WriteLine($"Test {Environment.Version} : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
+            Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
         }
 
         [Test]
