@@ -22,7 +22,7 @@ namespace Test.TCP
             var server = new TcpServer
             {
                 AcceptThreads = 10,
-                AcceptBacklog = 100
+                AcceptBacklog = 1000,
             };
             server.Listen(port);
             Assert.AreEqual($"tcp://[::]:{port}", server.ToString());
