@@ -13,9 +13,9 @@ namespace Cave.Net
     /// </summary>
     public sealed class HttpConnection
     {
+#if !NETSTANDARD20
         static HttpConnection()
         {
-#if !NETSTANDARD20
             try
             {
                 new System.Net.Configuration.HttpWebRequestElement().UseUnsafeHeaderParsing = true;
@@ -56,9 +56,9 @@ namespace Cave.Net
             {
                 Trace.WriteLine(ex);
             }
-#endif
             Trace.WriteLine("UseUnsafeHeaderParsing disabled.");
         }
+#endif
 
         /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
         /// <param name="connectionString">The full connectionstring for the download.</param>
