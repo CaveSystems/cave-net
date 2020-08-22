@@ -186,7 +186,8 @@ namespace Cave.Net.Dns
             QueryTimeout = TimeSpan.FromSeconds(5);
         }
 
-        /// <summary>Queries a dns server for specified records.</summary>
+        /// <summary>Queries the dns servers for the specified records.</summary>
+        /// <remarks>This method works parallel and returns the first result of any <see cref="Servers"/>.</remarks>
         /// <param name="domainName">Domain, that should be queried.</param>
         /// <param name="recordType">Type the should be queried.</param>
         /// <param name="recordClass">Class the should be queried.</param>
@@ -204,13 +205,205 @@ namespace Cave.Net.Dns
             });
         }
 
-        /// <summary>Queries a dns server for specified records.</summary>
+        /// <summary>Queries the dns servers for the specified records.</summary>
+        /// <remarks>This method works parallel and returns the first result of any <see cref="Servers"/>.</remarks>
         /// <param name="query">The query.</param>
         /// <returns>The complete response of the dns server.</returns>
         /// <exception cref="ArgumentNullException">Name must be provided.</exception>
         /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp.</exception>
         /// <exception cref="AggregateException">Could not reach any dns server.</exception>
         public DnsResponse Resolve(DnsQuery query)
+        {
+            if (Servers == null)
+            {
+                Servers = GetDefaultDnsServers();
+            }
+
+            if (query.Name == null)
+            {
+                throw new ArgumentNullException(nameof(query.Name), "Name must be provided");
+            }
+
+            var messageID = DefaultRNG.UInt16;
+
+            // question = name, recordtype, recordclass
+            byte[] message;
+            using (var stream = new MemoryStream())
+            {
+                var writer = new DataWriter(stream, StringEncoding.ASCII, endian: EndianType.BigEndian);
+                writer.Write(messageID); // transaction id
+                writer.Write((ushort)query.Flags); // flags
+                writer.Write((ushort)1); // question records
+                writer.Write((ushort)0); // answer records
+                writer.Write((ushort)0); // authority records
+                writer.Write((ushort)0); // additional records
+
+                if (UseRandomCase)
+                {
+                    query.RandomizeCase();
+                }
+
+                query.Write(writer);
+                message = stream.ToArray();
+            }
+
+            var useTcp = false;
+            if (message.Length > 512)
+            {
+                if (!UseTcp)
+                {
+                    throw new Exception("Query to big for UDP transmission. Enable UseTcp!");
+                }
+
+                useTcp = true;
+            }
+
+            var exceptions = new List<Exception>();
+            DnsResponse response = null;
+
+            Parallel.ForEach(Servers, (server, state) =>
+            {
+                try
+                {
+                    var r = DoQuery(useTcp, query, server, messageID, message);
+                    if (r != null)
+                    {
+                        if (response is null)
+                        {
+                            response = r;
+                        }
+
+                        state.Break();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
+            });
+            return response ?? throw new AggregateException("Could not reach any dns server!", exceptions);
+        }
+
+        /// <summary>Queries the dns servers for the specified records.</summary>
+        /// <remarks>This method works parallel and returns all results received from all <see cref="Servers"/>.</remarks>
+        /// <param name="domainName">Domain, that should be queried.</param>
+        /// <param name="recordType">Type the should be queried.</param>
+        /// <param name="recordClass">Class the should be queried.</param>
+        /// <param name="flags">Options for the query.</param>
+        /// <returns>The complete response of the dns server.</returns>
+        /// <exception cref="ArgumentNullException">Name must be provided.</exception>
+        public IList<DnsResponse> ResolveAll(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
+        {
+            return ResolveAll(new DnsQuery()
+            {
+                Name = domainName,
+                RecordType = recordType,
+                RecordClass = recordClass,
+                Flags = flags,
+            });
+        }
+
+        /// <summary>Queries the dns servers for the specified records.</summary>
+        /// <remarks>This method works parallel and returns all results received from all <see cref="Servers"/>.</remarks>
+        /// <param name="query">The query.</param>
+        /// <returns>The complete response of the dns server.</returns>
+        /// <exception cref="ArgumentNullException">Name must be provided.</exception>
+        /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp.</exception>
+        /// <exception cref="AggregateException">Could not reach any dns server.</exception>
+        public IList<DnsResponse> ResolveAll(DnsQuery query)
+        {
+            if (Servers == null)
+            {
+                Servers = GetDefaultDnsServers();
+            }
+
+            if (query.Name == null)
+            {
+                throw new ArgumentNullException(nameof(query.Name), "Name must be provided");
+            }
+
+            var messageID = DefaultRNG.UInt16;
+
+            // question = name, recordtype, recordclass
+            byte[] message;
+            using (var stream = new MemoryStream())
+            {
+                var writer = new DataWriter(stream, StringEncoding.ASCII, endian: EndianType.BigEndian);
+                writer.Write(messageID); // transaction id
+                writer.Write((ushort)query.Flags); // flags
+                writer.Write((ushort)1); // question records
+                writer.Write((ushort)0); // answer records
+                writer.Write((ushort)0); // authority records
+                writer.Write((ushort)0); // additional records
+
+                if (UseRandomCase)
+                {
+                    query.RandomizeCase();
+                }
+
+                query.Write(writer);
+                message = stream.ToArray();
+            }
+
+            var useTcp = false;
+            if (message.Length > 512)
+            {
+                if (!UseTcp)
+                {
+                    throw new Exception("Query to big for UDP transmission. Enable UseTcp!");
+                }
+
+                useTcp = true;
+            }
+
+            var result = new List<DnsResponse>();
+            Parallel.ForEach(Servers, (server, state) =>
+            {
+                try
+                {
+                    var response = DoQuery(useTcp, query, server, messageID, message);
+                    if (response != null)
+                    {
+                        lock (result)
+                        {
+                            result.Add(response);
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            });
+            return result;
+        }
+
+        /// <summary>Queries the dns servers for the specified records.</summary>
+        /// <remarks>This method works sequential and may need up to <see cref="QueryTimeout"/> per <see cref="Servers"/>.</remarks>
+        /// <param name="domainName">Domain, that should be queried.</param>
+        /// <param name="recordType">Type the should be queried.</param>
+        /// <param name="recordClass">Class the should be queried.</param>
+        /// <param name="flags">Options for the query.</param>
+        /// <returns>The complete response of the dns server.</returns>
+        /// <exception cref="ArgumentNullException">Name must be provided.</exception>
+        public DnsResponse ResolveSequential(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
+        {
+            return ResolveSequential(new DnsQuery()
+            {
+                Name = domainName,
+                RecordType = recordType,
+                RecordClass = recordClass,
+                Flags = flags,
+            });
+        }
+
+        /// <summary>Queries the dns servers for the specified records.</summary>
+        /// <remarks>This method works sequential and may need up to <see cref="QueryTimeout"/> per <see cref="Servers"/>.</remarks>
+        /// <param name="query">The query.</param>
+        /// <returns>The complete response of the dns server.</returns>
+        /// <exception cref="ArgumentNullException">Name must be provided.</exception>
+        /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp.</exception>
+        /// <exception cref="AggregateException">Could not reach any dns server.</exception>
+        public DnsResponse ResolveSequential(DnsQuery query)
         {
             if (Servers == null)
             {
