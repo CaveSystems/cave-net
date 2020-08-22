@@ -88,7 +88,7 @@ namespace Cave.Net
             {
                 interfaces = interfaces.Where(i => i.OperationalStatus == status.Value);
             }
-            foreach (NetworkInterface ni in interfaces)
+            foreach (var ni in interfaces)
             {
                 var p = ni.GetIPProperties();
                 foreach (var ip in p.UnicastAddresses)
