@@ -95,22 +95,35 @@ namespace Test.TCP
             }
             Console.WriteLine($"Test : info TP{port}: Test connect to 127.0.0.1 successful.");
 
+            var busyCount = 0;
+            server.AcceptTasksBusy += (s,e) => Interlocked.Increment(ref busyCount);
             var count = 10000;
             var watch = Stopwatch.StartNew();
             var success = 0;
-
+            var errors = 0;
             var ip = IPAddress.Parse("127.0.0.1");
             Parallel.For(0, count, (n) =>
             {
                 using (var client = new TcpAsyncClient())
                 {
-                    client.Connect(ip, port);
-                    Interlocked.Increment(ref success);
+                    try
+                    {
+                        client.Connect(ip, port);
+                        Interlocked.Increment(ref success);
+                    }
+                    catch 
+                    {
+                        Interlocked.Increment(ref errors);
+                    }
                 }
             });
             watch.Stop();
 
+            Assert.AreEqual(errors > 0, busyCount > 0);
+            Assert.IsTrue(success > errors);
+            Assert.AreEqual(count, success + errors);
             Console.WriteLine($"Test : info TP{port}: {success} connections in {watch.Elapsed}");
+            Console.WriteLine($"Test : info TP{port}: {errors} failed connections in {watch.Elapsed}");
             var cps = Math.Round(success / watch.Elapsed.TotalSeconds, 2);
             Console.WriteLine($"Test : info TP{port}: {cps} connections/s");
         }
