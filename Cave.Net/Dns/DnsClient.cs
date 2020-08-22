@@ -129,7 +129,10 @@ namespace Cave.Net.Dns
 
             // public dns as fallback
             {
-                Trace.TraceWarning("Cannot use the default DNS servers of this system. Using google.");
+                if (result.Count == 0)
+                {
+                    Trace.TraceWarning("Cannot use the default DNS servers of this system. Using public dns.");
+                }
                 result.Add(IPAddress.Parse("1.1.1.1"));
                 result.Add(IPAddress.Parse("8.8.4.4"));
                 result.Add(IPAddress.Parse("8.8.8.8"));
