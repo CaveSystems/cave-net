@@ -33,7 +33,7 @@ namespace Test.TCP
             var server = new TcpServer
             {
                 AcceptThreads = 10,
-                AcceptBacklog = 100
+                AcceptBacklog = 1000,
             };
             server.Listen(port);
             if (server.LocalEndPoint.AddressFamily == AddressFamily.InterNetworkV6)
@@ -379,7 +379,8 @@ namespace Test.TCP
             var port = Tools.GetPort();
             var server = new TcpServer()
             {
-                AcceptThreads = 10
+                AcceptThreads = 10,
+                AcceptBacklog = 100,
             };
             server.Listen(port);
             server.ClientAccepted += (s1, e1) =>
