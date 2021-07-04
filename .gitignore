@@ -108,4 +108,3 @@ Backup*/
 UpgradeLog*.XML
 
 /.vs
-/wol-send/Properties/launchSettings.json

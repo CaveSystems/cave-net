@@ -5,7 +5,7 @@ using System.ComponentModel.Design;
 using System.Linq;
 using System.Net.NetworkInformation;
 
-namespace wol_send
+namespace wol
 {
     class Program
     {

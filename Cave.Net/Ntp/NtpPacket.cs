@@ -57,7 +57,7 @@ namespace Cave.Net.Ntp
         /// leap second to be inserted/deleted in the last minute of the current
         /// day.
         /// </summary>
-        public NtpLeapIndicator LeapIndicator { get => (NtpLeapIndicator)(Settings >> 6); set => Settings = (byte)(Settings & ~(0x3 << 6) | (((int)value & 0x3) << 6)); }
+        public NtpLeapIndicator LeapIndicator { get => (NtpLeapIndicator)(Settings >> 6); set => Settings = (byte)((Settings & ~(0x3 << 6)) | (((int)value & 0x3) << 6)); }
 
         /// <summary>
         /// Gets or sets a three-bit integer indicating the
@@ -66,12 +66,12 @@ namespace Cave.Net.Ntp
         /// distinguish between IPv4, IPv6 and OSI, the encapsulating context
         /// must be inspected.
         /// </summary>
-        public int VersionNumber { get => (Settings >> 3) & 0x7; set => Settings = (byte)(Settings & ~(0x7 << 3) | ((value & 0x7) << 3)); }
+        public int VersionNumber { get => (Settings >> 3) & 0x7; set => Settings = (byte)((Settings & ~(0x7 << 3)) | ((value & 0x7) << 3)); }
 
         /// <summary>
         /// Gets or sets a three-bit integer indicating the mode.
         /// </summary>
-        public NtpMode Mode { get => (NtpMode)(Settings & 0x7); set => Settings = (byte)(Settings & ~0x7 | ((int)value & 0x7)); }
+        public NtpMode Mode { get => (NtpMode)(Settings & 0x7); set => Settings = (byte)((Settings & ~0x7) | ((int)value & 0x7)); }
 
         /// <summary>
         /// Gets or sets the Stratum of the clock.

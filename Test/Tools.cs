@@ -8,7 +8,7 @@ namespace Test
 {
     class Tools
     {
-        static int firstPort = 32768 + Environment.TickCount % 1024;
+        static int firstPort = 32768 + (Environment.TickCount % 1024);
 
         public static int GetPort()
         {
