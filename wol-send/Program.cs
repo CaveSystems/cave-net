@@ -7,8 +7,15 @@ using System.Net.NetworkInformation;
 
 namespace wol
 {
-    class Program
+    /// <summary>
+    /// Sends a Wake-On-Lan request to a specified mac address
+    /// </summary>
+    public class Program
     {
+        /// <summary>
+        /// Usage: wol-send &lt;mac&gt; [&lt;mac&gt; [..]] [--pwd=password]
+        /// </summary>
+        /// <param name="args"></param>
         static void Main(string[] args)
         {
             try

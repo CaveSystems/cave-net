@@ -10,27 +10,28 @@
     <PackageProjectUrl>https://github.com/CaveSystems/cave-net</PackageProjectUrl>
     <RepositoryUrl>https://github.com/CaveSystems/cave-net</RepositoryUrl>
     <!--settings-->
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageReleaseNotes />
   </PropertyGroup>
 
-  
-<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DefineConstants>TRACE;DEBUG;</DefineConstants>
   </PropertyGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)'=='net40' OR '$(TargetFramework)'=='net45' OR '$(TargetFramework)'=='net46' OR '$(TargetFramework)'=='net47'">
+  <ItemGroup Condition="'$(TargetFramework)'=='net40' OR '$(TargetFramework)'=='net45' OR '$(TargetFramework)'=='net46' OR '$(TargetFramework)'=='net47'">
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
-      
+
   <ItemGroup Condition="'$(TargetFramework)'=='net20' OR '$(TargetFramework)'=='net35'">
     <Reference Include="System" />
   </ItemGroup>
-    
+
   <ItemGroup>
     <PackageReference Include="Cave.Extensions" Version="2.0.12" />
     <PackageReference Include="Cave.IO" Version="2.0.4" />
