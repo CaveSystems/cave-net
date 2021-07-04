@@ -1,0 +1,50 @@
+<Project>
+  <PropertyGroup>
+    <Authors>Andreas Rohleder</Authors>
+    <Company>CaveSystems GmbH, Andreas Rohleder</Company>
+    <Copyright>(c) 2003-$([System.DateTime]::UtcNow.Year) Andreas Rohleder</Copyright>
+    <NeutralLanguage />
+
+    <!-- Settings -->
+    <FileVersion>$([System.DateTime]::UtcNow.Year).$([System.DateTime]::UtcNow.ToString("MMdd")).$([System.DateTime]::UtcNow.ToString("HHmm")).$([System.DateTime]::UtcNow.ToString("ssfff"))</FileVersion>
+    <LangVersion>latest</LangVersion>
+    <DelaySign>false</DelaySign>
+    <SignAssembly>true</SignAssembly>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+
+    <!-- Nullable 
+    <nullable>enable</nullable>
+    <WarningsAsErrors>CS8600;CS8601;CS8602;CS8603;CS8604;CS8618;CS8620;CS8621;CS8622;CS8625;CS8764;CS8765;CS8766;CS8767</WarningsAsErrors>
+    <NoWarn>IDE0047;CA1822</NoWarn>
+    -->
+
+    <!-- Analyzer -->
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <!-- Compiler -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+    <DeterministicSourcePaths>false</DeterministicSourcePaths>
+
+    <!-- Package -->
+    <PackageIconUrl>https://www.cavesystems.de/favicon.ico</PackageIconUrl>
+    <PackageLicenseExpression>LGPL-3.0-only</PackageLicenseExpression>
+    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+    <!-- Debug -->
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <IncludeSymbols>true</IncludeSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MSBuildProjectExtensionsPath>$(MSBuildProjectDirectory)/obj/$(MSBuildProjectName)</MSBuildProjectExtensionsPath>
+  </PropertyGroup>
+</Project>

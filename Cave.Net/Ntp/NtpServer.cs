@@ -120,10 +120,7 @@ namespace Cave.Net.Ntp
             {
                 var e = new NtpPacketEventArgs(request);
                 Request?.Invoke(this, e);
-                if (!ReferenceEquals(request, e.Packet))
-                {
-                    request = e.Packet;
-                }
+                request = e.Packet;
 
                 return !e.Discard;
             }
@@ -142,10 +139,7 @@ namespace Cave.Net.Ntp
             {
                 var e = new NtpPacketEventArgs(answer);
                 Answer?.Invoke(this, e);
-                if (!ReferenceEquals(answer, e.Packet))
-                {
-                    answer = e.Packet;
-                }
+                answer = e.Packet;
 
                 return !e.Discard;
             }

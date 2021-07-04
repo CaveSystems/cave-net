@@ -5,6 +5,7 @@ using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using Cave.IO;
 
 namespace Cave.Net
 {
@@ -90,6 +91,24 @@ namespace Cave.Net
             }
 
             return connection.Download(connectionString, callback, userItem);
+        }
+
+        /// <summary>Performs a post request ath the specified connectionstring.</summary>
+        /// <param name="connectionString">The full connectionstring for the post request.</param>
+        /// <param name="postData">Post data to send to the server.</param>
+        /// <param name="callback">Callback to run after each block or null (will be called from 0..100% for upload and download).</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <param name="userItem">The user item.</param>
+        /// <returns>Returns the downloaded byte array.</returns>
+        public static byte[] Post(ConnectionString connectionString, IList<PostData> postData, ProgressCallback callback, ConnectionString? proxy = null, object userItem = null)
+        {
+            var connection = new HttpConnection();
+            if (proxy.HasValue)
+            {
+                connection.SetProxy(proxy.Value);
+            }
+
+            return connection.Post(connectionString, postData, callback, userItem);
         }
 
         /// <summary>
@@ -228,23 +247,12 @@ namespace Cave.Net
         /// <returns>Returns a byte array.</returns>
         public byte[] Download(ConnectionString connectionString)
         {
-            HttpWebResponse response = null;
-            try
-            {
-                var request = CreateRequest(connectionString);
-                response = (HttpWebResponse)request.GetResponse();
-                var responseStream = response.GetResponseStream();
-                var result = responseStream.ReadAllBytes(response.ContentLength);
-                responseStream.Close();
-                return result;
-            }
-            finally
-            {
-                if (response != null)
-                {
-                    response.Close();
-                }
-            }
+            var request = CreateRequest(connectionString);
+            using var response = (HttpWebResponse)request.GetResponse();
+            var responseStream = response.GetResponseStream();
+            var result = responseStream.ReadAllBytes(response.ContentLength);
+            responseStream.Close();
+            return result;
         }
 
         /// <summary>Downloads a file.</summary>
@@ -254,23 +262,45 @@ namespace Cave.Net
         /// <returns>Returns a byte array.</returns>
         public byte[] Download(ConnectionString connectionString, ProgressCallback callback, object userItem = null)
         {
-            HttpWebResponse response = null;
-            try
+            var request = CreateRequest(connectionString);
+            using var response = (HttpWebResponse)request.GetResponse();
+            using var responseStream = response.GetResponseStream();
+            var result = responseStream.ReadAllBytes(response.ContentLength, callback, userItem);
+            responseStream.Close();
+            return result;
+        }
+
+        /// <summary>Performs a post request ath the specified connectionstring.</summary>
+        /// <param name="connectionString">The full connectionstring for the post request.</param>
+        /// <param name="postData">Post data to send to the server.</param>
+        /// <param name="callback">Callback to run after each block or null (will be called from 0..100% for upload and download).</param>
+        /// <param name="userItem">The user item.</param>
+        /// <returns>Returns the downloaded byte array.</returns>
+        public byte[] Post(ConnectionString connectionString, IList<PostData> postData, ProgressCallback callback = null, object userItem = null)
+        {
+            var boundary = $"---boundary-{Base64.UrlChars.Encode(DateTime.Now.Ticks)}";
+            var request = CreateRequest(connectionString);
+            request.ContentType = "multipart/form-data; boundary=" + boundary;
+            request.Method = "POST";
+            request.KeepAlive = true;
+            using var requestStream = request.GetRequestStream();
+            var writer = new DataWriter(requestStream, StringEncoding.ASCII, NewLineMode.CRLF);
+
+            foreach (var postItem in postData)
             {
-                var request = CreateRequest(connectionString);
-                response = (HttpWebResponse)request.GetResponse();
-                var responseStream = response.GetResponseStream();
-                var result = responseStream.ReadBlock((int)response.ContentLength, callback, userItem);
-                responseStream.Close();
-                return result;
+                writer.WriteLine();
+                writer.WriteLine($"--{boundary}");
+                postItem.WriteTo(writer);
             }
-            finally
-            {
-                if (response != null)
-                {
-                    response.Close();
-                }
-            }
+
+            writer.WriteLine();
+            writer.WriteLine($"--{boundary}--");
+            writer.Close();
+            using var response = request.GetResponse();
+            using var responseStream = response.GetResponseStream();
+            var result = responseStream.ReadAllBytes(response.ContentLength, callback, userItem);
+            responseStream.Close();
+            return result;
         }
 
         /// <summary>
@@ -281,23 +311,12 @@ namespace Cave.Net
         /// <returns>Returns the number of bytes downloaded.</returns>
         public long Download(ConnectionString connectionString, Stream stream)
         {
-            HttpWebResponse response = null;
-            try
-            {
-                var request = CreateRequest(connectionString);
-                response = (HttpWebResponse)request.GetResponse();
-                var responseStream = response.GetResponseStream();
-                var size = responseStream.CopyBlocksTo(stream);
-                responseStream.Close();
-                return size;
-            }
-            finally
-            {
-                if (response != null)
-                {
-                    response.Close();
-                }
-            }
+            var request = CreateRequest(connectionString);
+            using var response = (HttpWebResponse)request.GetResponse();
+            var responseStream = response.GetResponseStream();
+            var size = responseStream.CopyBlocksTo(stream);
+            responseStream.Close();
+            return size;
         }
 
         /// <summary>Downloads a file.</summary>
