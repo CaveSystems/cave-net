@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -85,13 +86,17 @@ namespace Cave.Net.Dns
         {
             get
             {
-                if (defaultClient == null)
+                var google = defaultClient = new DnsClient()
                 {
-                    defaultClient = new DnsClient();
-                    long ip = BitConverter.IsLittleEndian ? 0x04040808 : 0x08080404;
-                    defaultClient.Servers = new IPAddress[] { new IPAddress(0x08080808), new IPAddress(ip) };
-                }
-                return defaultClient;
+                    Servers = new[]
+                    {
+                        IPAddress.Parse("8.8.4.4"),
+                        IPAddress.Parse("8.8.8.8"),
+                        IPAddress.Parse("2001:4860:4860::8844"),
+                        IPAddress.Parse("2001:4860:4860::8888"),
+                    }
+                };
+                return google;
             }
         }
 
@@ -133,7 +138,16 @@ namespace Cave.Net.Dns
                 {
                     Trace.TraceWarning("Cannot use the default DNS servers of this system. Using public dns.");
                 }
+                //Deutsche Telekom AG
+                result.Add(IPAddress.Parse("194.25.0.60"));
+                //uunet germany
+                result.Add(IPAddress.Parse("193.101.111.10"));
+                //uunet france
+                result.Add(IPAddress.Parse("194.98.65.65"));
+                //cloudflare usa
                 result.Add(IPAddress.Parse("1.1.1.1"));
+                result.Add(IPAddress.Parse("2606:4700:4700::1001"));
+                //google
                 result.Add(IPAddress.Parse("8.8.4.4"));
                 result.Add(IPAddress.Parse("8.8.8.8"));
                 result.Add(IPAddress.Parse("2001:4860:4860::8844"));
@@ -258,30 +272,42 @@ namespace Cave.Net.Dns
                 useTcp = true;
             }
 
-            var exceptions = new List<Exception>();
-            DnsResponse response = null;
+            var exceptions = new Exception[Servers.Length];
+            var responses = new DnsResponse[Servers.Length];
 
-            Parallel.ForEach(Servers, (server, state) =>
+            var tasks = new Task[Servers.Length];
+            for (var i = 0; i < Servers.Length; i++)
             {
-                try
+                void Query(object state)
                 {
-                    var r = DoQuery(useTcp, query, server, messageID, message);
-                    if (r != null)
+                    var n = (int)state;
+                    try
                     {
-                        if (response is null)
+                        var response = DoQuery(useTcp, query, Servers[n], messageID, message);
+                        if (response != null)
                         {
-                            response = r;
+                            responses[n] = response;
                         }
-
-                        state.Break();
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions[n] = ex;
                     }
                 }
-                catch (Exception ex)
+                tasks[i] = Task.Factory.StartNew(Query, (object)i);
+            };
+
+            while (tasks.Length > 0)
+            {
+                Task.WaitAny(tasks);
+                var response = responses.FirstOrDefault(r => r?.ResponseCode == DnsResponseCode.NoError);
+                if (response != null)
                 {
-                    exceptions.Add(ex);
+                    return response;
                 }
-            });
-            return response ?? throw new AggregateException("Could not reach any dns server!", exceptions);
+                tasks = tasks.Where(t => !t.IsCompleted).ToArray();
+            }
+            return responses.FirstOrDefault() ?? throw new AggregateException("Could not reach any dns server!", exceptions.Where(e => e is not null));
         }
 
         /// <summary>Queries the dns servers for the specified records.</summary>
@@ -540,16 +566,15 @@ namespace Cave.Net.Dns
                 tcp.Client.ReceiveTimeout = timeout;
                 tcp.NoDelay = true;
                 tcp.Connect(srv, 53);
-                using (Stream stream = tcp.GetStream())
-                {
-                    var writer = new DataWriter(stream, endian: EndianType.BigEndian);
-                    writer.Write((ushort)query.Length);
-                    writer.Write(query);
-                    writer.Flush();
-                    var reader = new DataReader(stream);
-                    int length = reader.ReadUInt16();
-                    return new DnsResponse(srv, reader.ReadBytes(length));
-                }
+                using Stream stream = tcp.GetStream();
+                var writer = new DataWriter(stream, endian: EndianType.BigEndian);
+                writer.Write((ushort)query.Length);
+                writer.Write(query);
+                writer.Flush();
+                var reader = new DataReader(stream, endian: EndianType.BigEndian);
+                var length = reader.ReadUInt16();
+                var data = reader.ReadBytes(length);
+                return new DnsResponse(srv, data);
             }
             finally
             {
