@@ -43,7 +43,7 @@ namespace Cave.Net
         int sendTimeout;
         short ttl;
         bool nodelay;
-        LingerOption lingerState;
+        LingerOption lingerState = new LingerOption(false, 0);
         Socket uncheckedSocket;
 
         Socket CheckedSocket
@@ -62,6 +62,15 @@ namespace Cave.Net
                 field = func();
             }
             return field;
+        }
+
+        void SetValue<T>(ref T field, Action<T> setter, T value)
+        {
+            if (uncheckedSocket != null && !closing)
+            {
+                setter(value);
+            }
+            field = value;
         }
 
 #if NETSTANDARD13 || NET20 || NET35 || NET40
@@ -92,6 +101,11 @@ namespace Cave.Net
                 throw new InvalidOperationException("Already initialized!");
             }
             uncheckedSocket = socket ?? throw new ArgumentNullException(nameof(socket));
+            uncheckedSocket.NoDelay = nodelay;
+            uncheckedSocket.Ttl = ttl;
+            uncheckedSocket.LingerState = lingerState;
+            uncheckedSocket.SendTimeout = sendTimeout;
+            uncheckedSocket.ReceiveTimeout = receiveTimeout;
             RemoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
             LocalEndPoint = (IPEndPoint)socket.LocalEndPoint;
             initialized = true;
@@ -200,9 +214,8 @@ namespace Cave.Net
                 throw new ArgumentNullException(nameof(socket));
             }
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontLinger, true);
-            socket.ReceiveTimeout = server.ReceiveTimeout;
-            socket.SendTimeout = server.SendTimeout;
-            socket.LingerState = new LingerOption(false, 0);
+            ReceiveTimeout = server.ReceiveTimeout;
+            SendTimeout = server.SendTimeout;
             InitializeSocket(socket);
         }
 
@@ -967,7 +980,7 @@ namespace Cave.Net
         public int ReceiveTimeout
         {
             get => CachedValue(ref receiveTimeout, () => uncheckedSocket.ReceiveTimeout);
-            set => CheckedSocket.ReceiveTimeout = value;
+            set => SetValue(ref receiveTimeout, (v) => CheckedSocket.ReceiveTimeout = v, value);
         }
 
         /// <summary>Gets or sets the amount of time, in milliseconds, that a write operation blocks waiting for transmission.</summary>
@@ -976,7 +989,7 @@ namespace Cave.Net
         public int SendTimeout
         {
             get => CachedValue(ref sendTimeout, () => uncheckedSocket.SendTimeout);
-            set => CheckedSocket.SendTimeout = value;
+            set => SetValue(ref sendTimeout, (v) => CheckedSocket.SendTimeout = v, value);
         }
 
         /// <summary>
@@ -996,7 +1009,7 @@ namespace Cave.Net
         public short Ttl
         {
             get => CachedValue(ref ttl, () => uncheckedSocket.Ttl);
-            set => CheckedSocket.Ttl = value;
+            set => SetValue(ref ttl, (v) => CheckedSocket.Ttl = v, value);
         }
 
         /// <summary>Gets or sets a value indicating whether the stream Socket is using the Nagle algorithm.</summary>
@@ -1005,7 +1018,7 @@ namespace Cave.Net
         public bool NoDelay
         {
             get => CachedValue(ref nodelay, () => uncheckedSocket.NoDelay);
-            set => CheckedSocket.NoDelay = value;
+            set => SetValue(ref nodelay, (v) => CheckedSocket.NoDelay = v, value);
         }
 
         /// <summary>
@@ -1015,7 +1028,7 @@ namespace Cave.Net
         public LingerOption LingerState
         {
             get => CachedValue(ref lingerState, () => uncheckedSocket.LingerState);
-            set => CheckedSocket.LingerState = value;
+            set => SetValue(ref lingerState, (v) => CheckedSocket.LingerState = v, value);
         }
 
         /// <summary>
