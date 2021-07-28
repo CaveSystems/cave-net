@@ -53,11 +53,9 @@ namespace Test.TCP
             var ip = IPAddress.Parse("127.0.0.1");
             Parallel.For(0, count, (n) =>
             {
-                using (var client = new TcpAsyncClient())
-                {
-                    client.Connect(ip, port);
-                    Interlocked.Increment(ref success);
-                }
+                using var client = new TcpAsyncClient();
+                client.Connect(ip, port);
+                Interlocked.Increment(ref success);
             });
             watch.Stop();
 
@@ -104,17 +102,15 @@ namespace Test.TCP
             var ip = IPAddress.Parse("127.0.0.1");
             Parallel.For(0, count, (n) =>
             {
-                using (var client = new TcpAsyncClient())
+                using var client = new TcpAsyncClient();
+                try
                 {
-                    try
-                    {
-                        client.Connect(ip, port);
-                        Interlocked.Increment(ref success);
-                    }
-                    catch 
-                    {
-                        Interlocked.Increment(ref errors);
-                    }
+                    client.Connect(ip, port);
+                    Interlocked.Increment(ref success);
+                }
+                catch
+                {
+                    Interlocked.Increment(ref errors);
                 }
             });
             watch.Stop();
@@ -409,27 +405,21 @@ namespace Test.TCP
                 var serverTask = Task.Factory.StartNew(delegate
                 {
                     var client = listen.AcceptTcpClient();
-                    using (var reader = new StreamReader(client.GetStream()))
+                    using var reader = new StreamReader(client.GetStream());
+                    for (var i = 0; i < 10000; i++)
                     {
-                        for (var i = 0; i < 10000; i++)
-                        {
-                            var s = reader.ReadLine();
-                            Assert.AreEqual(i.ToString(), s);
-                        }
+                        var s = reader.ReadLine();
+                        Assert.AreEqual(i.ToString(), s);
                     }
                 });
                 var clientTask = Task.Factory.StartNew(delegate
                 {
-                    using (var client = new TcpAsyncClient())
+                    using var client = new TcpAsyncClient();
+                    client.Connect(IPAddress.Loopback, port);
+                    using var writer = new StreamWriter(client.GetStream());
+                    for (var i = 0; i < 10000; i++)
                     {
-                        client.Connect(IPAddress.Loopback, port);
-                        using (var writer = new StreamWriter(client.GetStream()))
-                        {
-                            for (var i = 0; i < 10000; i++)
-                            {
-                                writer.WriteLine(i);
-                            }
-                        }
+                        writer.WriteLine(i);
                     }
                 });
                 Task.WaitAll(serverTask, clientTask);
@@ -446,40 +436,36 @@ namespace Test.TCP
             var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
-            using (var completed = new ManualResetEvent(false))
+            using var completed = new ManualResetEvent(false);
+            try
             {
-                try
+                server.ClientAccepted += (sender, eventArgs) => Task.Factory.StartNew((c) =>
                 {
-                    server.ClientAccepted += (sender, eventArgs) => Task.Factory.StartNew((c) =>
+                    var client = (TcpAsyncClient)c;
+                    using (var reader = new StreamReader(client.GetStream()))
                     {
-                        var client = (TcpAsyncClient)c;
-                        using (var reader = new StreamReader(client.GetStream()))
+                        for (var i = 0; i < 10000; i++)
                         {
-                            for (var i = 0; i < 10000; i++)
-                            {
-                                var s = reader.ReadLine();
-                                Assert.AreEqual(i.ToString(), s);
-                            }
-                        }
-                        completed.Set();
-                    }, eventArgs.Client);
-                    using (var client = new TcpAsyncClient())
-                    {
-                        client.Connect(IPAddress.Loopback, port);
-                        using (var writer = new StreamWriter(client.GetStream()))
-                        {
-                            for (var i = 0; i < 10000; i++)
-                            {
-                                writer.WriteLine(i);
-                            }
+                            var s = reader.ReadLine();
+                            Assert.AreEqual(i.ToString(), s);
                         }
                     }
-                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
-                }
-                finally
+                    completed.Set();
+                }, eventArgs.Client);
+                using (var client = new TcpAsyncClient())
                 {
-                    server.Close();
+                    client.Connect(IPAddress.Loopback, port);
+                    using var writer = new StreamWriter(client.GetStream());
+                    for (var i = 0; i < 10000; i++)
+                    {
+                        writer.WriteLine(i);
+                    }
                 }
+                if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
+            }
+            finally
+            {
+                server.Close();
             }
         }
 
@@ -489,47 +475,45 @@ namespace Test.TCP
             var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
-            using (var completed = new ManualResetEvent(false))
+            using var completed = new ManualResetEvent(false);
+            try
             {
-                try
+                Task t = null;
+                server.ClientAccepted += (sender, eventArgs) => t = Task.Factory.StartNew((c) =>
                 {
-                    Task t = null;
-                    server.ClientAccepted += (sender, eventArgs) => t = Task.Factory.StartNew((c) =>
-                    {
-                        var client = (TcpAsyncClient)c;
-                        var stream = client.GetStream();
+                    var client = (TcpAsyncClient)c;
+                    var stream = client.GetStream();
                         //wait for client disco
                         while (client.IsConnected) Thread.Sleep(1);
                         //read after client disco
                         using (var reader = new StreamReader(stream))
-                        {
-                            for (var i = 0; i < 10000; i++)
-                            {
-                                var s = reader.ReadLine();
-                                Assert.AreEqual(i.ToString(), s);
-                            }
-                        }
-                        completed.Set();
-                    }, eventArgs.Client);
-                    using (var client = new TcpAsyncClient())
                     {
-                        client.Connect(IPAddress.Loopback, port);
-                        using (var writer = new StreamWriter(client.GetStream()))
+                        for (var i = 0; i < 10000; i++)
                         {
-                            for (var i = 0; i < 10000; i++)
-                            {
-                                writer.WriteLine(i);
-                            }
+                            var s = reader.ReadLine();
+                            Assert.AreEqual(i.ToString(), s);
                         }
-                        client.Close();
                     }
-                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
-                    Assert.AreEqual(null, t?.Exception, $"{t.Exception}");
-                }
-                finally
+                    completed.Set();
+                }, eventArgs.Client);
+                using (var client = new TcpAsyncClient())
                 {
-                    server.Close();
+                    client.Connect(IPAddress.Loopback, port);
+                    using (var writer = new StreamWriter(client.GetStream()))
+                    {
+                        for (var i = 0; i < 10000; i++)
+                        {
+                            writer.WriteLine(i);
+                        }
+                    }
+                    client.Close();
                 }
+                if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
+                Assert.AreEqual(null, t?.Exception, $"{t.Exception}");
+            }
+            finally
+            {
+                server.Close();
             }
         }
 
@@ -539,41 +523,37 @@ namespace Test.TCP
             var port = Tools.GetPort();
             var server = new TcpServer();
             server.Listen(port);
-            using (var completed = new ManualResetEvent(false))
+            using var completed = new ManualResetEvent(false);
+            try
             {
-                try
+                server.ClientAccepted += (sender, eventArgs) => Task.Factory.StartNew((c) =>
                 {
-                    server.ClientAccepted += (sender, eventArgs) => Task.Factory.StartNew((c) =>
+                    var client = eventArgs.Client;
+                    using (var writer = new StreamWriter(client.GetStream()))
                     {
-                        var client = eventArgs.Client;
-                        using (var writer = new StreamWriter(client.GetStream()))
+                        for (var i = 0; i < 10000; i++)
                         {
-                            for (var i = 0; i < 10000; i++)
-                            {
-                                writer.WriteLine(i);
-                            }
-                        }
-                        client.Close();
-                        completed.Set();
-                    }, eventArgs.Client);
-                    using (var client = new TcpAsyncClient())
-                    {
-                        client.Connect(IPAddress.Loopback, port);
-                        using (var reader = new StreamReader(client.GetStream()))
-                        {
-                            for (var i = 0; i < 10000; i++)
-                            {
-                                var s = reader.ReadLine();
-                                Assert.AreEqual(i.ToString(), s);
-                            }
+                            writer.WriteLine(i);
                         }
                     }
-                    if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
-                }
-                finally
+                    client.Close();
+                    completed.Set();
+                }, eventArgs.Client);
+                using (var client = new TcpAsyncClient())
                 {
-                    server.Close();
+                    client.Connect(IPAddress.Loopback, port);
+                    using var reader = new StreamReader(client.GetStream());
+                    for (var i = 0; i < 10000; i++)
+                    {
+                        var s = reader.ReadLine();
+                        Assert.AreEqual(i.ToString(), s);
+                    }
                 }
+                if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
+            }
+            finally
+            {
+                server.Close();
             }
         }
 
@@ -583,64 +563,62 @@ namespace Test.TCP
             for (var i = 0; i < 100; i++)
             {
                 var port = Tools.GetPort();
-                using (var server = new TcpServer())
-                using (var sendEvent = new ManualResetEvent(false))
-                using (var testClient = new TcpAsyncClient())
-                using (var bufferedEvent = new ManualResetEvent(false))
+                using var server = new TcpServer();
+                using var sendEvent = new ManualResetEvent(false);
+                using var testClient = new TcpAsyncClient();
+                using var bufferedEvent = new ManualResetEvent(false);
+                // on client accept send buffer
+                server.ClientAccepted += (sender, eventArgs) => Task.Factory.StartNew((c) =>
                 {
-                    // on client accept send buffer
-                    server.ClientAccepted += (sender, eventArgs) => Task.Factory.StartNew((c) =>
-                    {
-                        var serverClient = eventArgs.Client;
-                        serverClient.Send(new byte[] { 2, 1, 0, 1 });
-                        serverClient.Close();
-                        sendEvent.Set();
-                    }, eventArgs.Client);
+                    var serverClient = eventArgs.Client;
+                    serverClient.Send(new byte[] { 2, 1, 0, 1 });
+                    serverClient.Close();
+                    sendEvent.Set();
+                }, eventArgs.Client);
 
-                    // open server port
-                    server.Listen(port);
+                // open server port
+                server.Listen(port);
 
-                    // on client buffered, test receivebuffer
-                    testClient.Buffered += (s, e) =>
-                    {
-                        if (testClient.ReceiveBuffer.Available < 4) return;
-                        Assert.AreEqual(4, testClient.ReceiveBuffer.Available);
-                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
-                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(2));
-                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
-                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(0));
-                        Assert.AreEqual(2, testClient.ReceiveBuffer.ReadByte());
+                // on client buffered, test receivebuffer
+                testClient.Buffered += (s, e) =>
+                {
+                    if (testClient.ReceiveBuffer.Available < 4) return;
+                    Assert.AreEqual(4, testClient.ReceiveBuffer.Available);
+                    Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
+                    Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(2));
+                    Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
+                    Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(0));
+                    Assert.AreEqual(2, testClient.ReceiveBuffer.ReadByte());
 
-                        Assert.AreEqual(3, testClient.ReceiveBuffer.Available);
-                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
-                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(2));
-                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
-                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(0));
-                        Assert.AreEqual(1, testClient.ReceiveBuffer.ReadByte());
+                    Assert.AreEqual(3, testClient.ReceiveBuffer.Available);
+                    Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
+                    Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(2));
+                    Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
+                    Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(0));
+                    Assert.AreEqual(1, testClient.ReceiveBuffer.ReadByte());
 
-                        Assert.AreEqual(2, testClient.ReceiveBuffer.Available);
-                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
-                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(2));
-                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
-                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(0));
-                        Assert.AreEqual(0, testClient.ReceiveBuffer.ReadByte());
+                    Assert.AreEqual(2, testClient.ReceiveBuffer.Available);
+                    Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
+                    Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(2));
+                    Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
+                    Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(0));
+                    Assert.AreEqual(0, testClient.ReceiveBuffer.ReadByte());
 
-                        Assert.AreEqual(1, testClient.ReceiveBuffer.Available);
-                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
-                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(2));
-                        Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
-                        Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(0));
-                        Assert.AreEqual(1, testClient.ReceiveBuffer.ReadByte());
-                        bufferedEvent.Set();
-                    };
+                    Assert.AreEqual(1, testClient.ReceiveBuffer.Available);
+                    Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(3));
+                    Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(2));
+                    Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
+                    Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(0));
+                    Assert.AreEqual(1, testClient.ReceiveBuffer.ReadByte());
+                    bufferedEvent.Set();
+                };
 
-                    // connect to server
-                    testClient.Connect(IPAddress.Loopback, port);
+                // connect to server
+                testClient.Connect(IPAddress.Loopback, port);
 
-                    //wait for completion
-                    if (!sendEvent.WaitOne(Settings.Timeout)) throw new TimeoutException("Send event not completed!");
-                    if (!bufferedEvent.WaitOne(Settings.Timeout)) throw new TimeoutException("Buffered event not completed!");
-                }
+                //wait for completion
+                if (!sendEvent.WaitOne(Settings.Timeout)) throw new TimeoutException("Send event not completed!");
+                if (!bufferedEvent.WaitOne(Settings.Timeout)) throw new TimeoutException("Buffered event not completed!");
             }
         }
     }

@@ -24,26 +24,24 @@ namespace Cave.Net.Ntp
                 timeoutMilliseconds = 1000;
             }
 
-            using (var client = new UdpClient())
+            using var client = new UdpClient();
+            var ep = new IPEndPoint(0, 123);
+            client.Client.SendTimeout = timeoutMilliseconds;
+            client.Client.ReceiveTimeout = timeoutMilliseconds;
+            client.Connect(server, 123);
+
+            var packet = new NtpPacket()
             {
-                var ep = new IPEndPoint(0, 123);
-                client.Client.SendTimeout = timeoutMilliseconds;
-                client.Client.ReceiveTimeout = timeoutMilliseconds;
-                client.Connect(server, 123);
+                // Set version number to 4 and Mode to 3
+                Settings = 0x1B,
+                TransmitTimestamp = DateTime.UtcNow,
+            };
+            var dataSnd = MarshalStruct.GetBytes(packet);
+            client.Send(dataSnd, dataSnd.Length);
+            var dataRvd = client.Receive(ref ep);
 
-                var packet = new NtpPacket()
-                {
-                    // Set version number to 4 and Mode to 3
-                    Settings = 0x1B,
-                    TransmitTimestamp = DateTime.UtcNow,
-                };
-                var dataSnd = MarshalStruct.GetBytes(packet);
-                client.Send(dataSnd, dataSnd.Length);
-                var dataRvd = client.Receive(ref ep);
-
-                var answer = MarshalStruct.GetStruct<NtpPacket>(dataRvd);
-                return new NtpAnswer(answer);
-            }
+            var answer = MarshalStruct.GetStruct<NtpPacket>(dataRvd);
+            return new NtpAnswer(answer);
         }
     }
 }

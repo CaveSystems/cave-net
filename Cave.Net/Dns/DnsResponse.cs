@@ -39,23 +39,21 @@ namespace Cave.Net.Dns
         internal DnsResponse(IPAddress srv, byte[] data)
         {
             Sender = srv;
-            using (var ms = new MemoryStream(data))
-            {
-                var reader = new DataReader(ms, endian: EndianType.BigEndian);
-                TransactionID = reader.ReadUInt16();
-                flags = reader.ReadUInt16();
-                int queryCount = reader.ReadUInt16();
-                int answerRecordCount = reader.ReadUInt16();
-                int authorityRecordCount = reader.ReadUInt16();
-                int additionalRecordCount = reader.ReadUInt16();
+            using var ms = new MemoryStream(data);
+            var reader = new DataReader(ms, endian: EndianType.BigEndian);
+            TransactionID = reader.ReadUInt16();
+            flags = reader.ReadUInt16();
+            int queryCount = reader.ReadUInt16();
+            int answerRecordCount = reader.ReadUInt16();
+            int authorityRecordCount = reader.ReadUInt16();
+            int additionalRecordCount = reader.ReadUInt16();
 
-                Queries = LoadQueries(reader, queryCount);
-                Answers = LoadRecords(reader, answerRecordCount);
-                Authorities = LoadRecords(reader, authorityRecordCount);
-                AdditionalRecords = LoadRecords(reader, additionalRecordCount);
+            Queries = LoadQueries(reader, queryCount);
+            Answers = LoadRecords(reader, answerRecordCount);
+            Authorities = LoadRecords(reader, authorityRecordCount);
+            AdditionalRecords = LoadRecords(reader, additionalRecordCount);
 
-                // TODO signature
-            }
+            // TODO signature
         }
 
         /// <summary>Loads the records.</summary>
