@@ -58,7 +58,6 @@ namespace Test.DNS
             TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true });
         }
 
-
         void A_Test(DnsClient testClient)
         {
             var response = testClient.Resolve("one.one.one.one", DnsRecordType.A);

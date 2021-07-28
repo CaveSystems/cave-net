@@ -6,7 +6,7 @@ using Cave.IO;
 namespace Cave.Net
 {
     /// <summary>
-    /// Provides post data for <see cref="HttpConnection.Post(ConnectionString, System.Collections.Generic.IList{PostData}, ProgressCallback, ConnectionString?, object)"/>.
+    /// Provides post data for <see cref="HttpConnection.Post(ConnectionString, System.Collections.Generic.IList{PostData}, ProgressCallback, object)"/>.
     /// </summary>
     public class PostData
     {

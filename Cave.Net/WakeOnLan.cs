@@ -76,13 +76,11 @@ namespace Cave.Net
                 macBytes.CopyTo(buffer, i);
             }
 
-            using (UdpClient udp = new UdpClient())
+            using UdpClient udp = new UdpClient();
+            udp.EnableBroadcast = true;
+            foreach (var targetPort in new[] { 0, 7, 9 })
             {
-                udp.EnableBroadcast = true;
-                foreach (var targetPort in new[] { 0, 7, 9 })
-                {
-                    udp.Send(buffer, buffer.Length, new IPEndPoint(broadcastAddress, targetPort));
-                }
+                udp.Send(buffer, buffer.Length, new IPEndPoint(broadcastAddress, targetPort));
             }
         }
     }
