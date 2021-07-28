@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Cache;
 using System.Reflection;
 using System.Text;
 using Cave.IO;
@@ -156,69 +157,98 @@ namespace Cave.Net
         public static string GetString(ConnectionString connectionString, ConnectionString? proxy = null) => Encoding.UTF8.GetString(Get(connectionString, proxy));
 
         /// <summary>The headers to use.</summary>
-        public readonly Dictionary<string, string> Headers = new Dictionary<string, string>();
+        public Dictionary<string, string> Headers { get; } = new Dictionary<string, string>();
 
         #region private functionality
         HttpWebRequest CreateRequest(ConnectionString connectionString)
         {
             var target = connectionString.ToUri();
-            HttpWebRequest newRequest;
-            newRequest = (HttpWebRequest)WebRequest.Create(target);
-            if (Proxy != null)
-            {
-                newRequest.Proxy = Proxy;
-            }
+            HttpWebRequest request;
+            request = (HttpWebRequest)WebRequest.Create(target);
+#if NETSTANDARD20
+            request.AllowReadStreamBuffering = false;
+#endif
 
             // set defaults
-            newRequest.ProtocolVersion = ProtocolVersion;
+            request.ProtocolVersion = ProtocolVersion;
+            if (Proxy != null)
+            {
+                request.Proxy = Proxy;
+            }
             if (UserAgent != null)
             {
-                newRequest.UserAgent = UserAgent;
+                request.UserAgent = UserAgent;
             }
-
             if (Referer != null)
             {
-                newRequest.Referer = Referer;
+                request.Referer = Referer;
             }
-
             if (Accept != null)
             {
-                newRequest.Accept = Accept;
+                request.Accept = Accept;
             }
-
             foreach (var head in Headers)
             {
-                newRequest.Headers[head.Key] = head.Value;
+                request.Headers[head.Key] = head.Value;
             }
-            newRequest.AllowAutoRedirect = true;
-            newRequest.CookieContainer = new CookieContainer();
+            if (PreventCaching)
+            {
+                CachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
+                request.Headers[HttpRequestHeader.IfModifiedSince] = DateTime.UtcNow.ToString();
+                request.Headers["Pragma"] = "no-cache";
+                request.Headers["RequestId"] = Guid.NewGuid().ToString("D");
+            }
+            else if (CachePolicy != null)
+            {
+                request.CachePolicy = CachePolicy;
+            }
+
+            request.AllowAutoRedirect = true;
+            request.CookieContainer = Cookies ?? new CookieContainer();
             var credentialCache = new CredentialCache
             {
                 { connectionString.ToUri(), "plain", connectionString.GetCredentials() },
             };
-            newRequest.Credentials = credentialCache;
-            newRequest.KeepAlive = false;
-            newRequest.Timeout = (int)Timeout.TotalMilliseconds;
-            newRequest.ReadWriteTimeout = (int)Timeout.TotalMilliseconds;
-            return newRequest;
+            request.Credentials = credentialCache;
+            request.KeepAlive = false;
+            request.Timeout = (int)Timeout.TotalMilliseconds;
+            request.ReadWriteTimeout = (int)Timeout.TotalMilliseconds;
+            return request;
         }
 
         #endregion
 
+        /// <summary>
+        /// Gets or sets a value indicating if caching shall be prevented using multiple measures. 
+        /// </summary>
+        /// <remarks>
+        /// This is setting <see cref="CachePolicy"/> to <see cref="HttpRequestCacheLevel.NoCacheNoStore"/>, <see cref="HttpRequestHeader.IfModifiedSince"/> and 
+        /// Header[Pragma] = no-cache and Header[RequestId] = new guid.
+        /// </remarks>
+        public bool PreventCaching { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="CookieContainer"/>.
+        /// </summary>
+        public CookieContainer Cookies { get; set; } = new CookieContainer();
+
+        /// Gets or sets the <see cref="RequestCachePolicy"/>.
+        public RequestCachePolicy CachePolicy { get; set; } = HttpWebRequest.DefaultCachePolicy;
+
         /// <summary>Gets or sets the protocol version.</summary>
         /// <value>The protocol version.</value>
-        public Version ProtocolVersion = new Version("1.0");
+        public Version ProtocolVersion = new Version("1.1");
 
         /// <summary>Gets or sets the referer.</summary>
         /// <value>The referer.</value>
-        public string Referer;
+        public string Referer { get; set; }
 
         /// <summary>The accept string.</summary>
-        public string Accept;
+        public string Accept { get; set; }
 
         /// <summary>Gets or sets the user agent.</summary>
         /// <value>The user agent.</value>
-        public string UserAgent = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)";
+        public string UserAgent { get; set; } = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)";
 
         /// <summary>Sets the proxy.</summary>
         /// <param name="proxy">The proxy.</param>
@@ -233,12 +263,12 @@ namespace Cave.Net
 
         /// <summary>Gets or sets the proxy.</summary>
         /// <value>The proxy.</value>
-        public IWebProxy Proxy;
+        public IWebProxy Proxy { get; set; }
 
         /// <summary>
         /// Download Timeout.
         /// </summary>
-        public TimeSpan Timeout = TimeSpan.FromSeconds(5);
+        public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
 
         /// <summary>
         /// Downloads a file.
