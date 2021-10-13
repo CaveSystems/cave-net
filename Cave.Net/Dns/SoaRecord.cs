@@ -122,15 +122,14 @@ namespace Cave.Net.Dns
 
         /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
         /// <returns>A <see cref="string" /> that represents this instance.</returns>
-        public override string ToString()
-        {
-            return string.Format(
+        public override string ToString() =>
+            string.Format(
                 "{0}. {1}. (\n" +
-                 "\t{2} ; serial\n" +
-                 "\t{3} ; refresh\n" +
-                 "\t{4} ; retry\n" +
-                 "\t{5} ; expire\n" +
-                 "\t{6} ) ; ttl",
+                "\t{2} ; serial\n" +
+                "\t{3} ; refresh\n" +
+                "\t{4} ; retry\n" +
+                "\t{5} ; expire\n" +
+                "\t{6} ) ; ttl",
                 MasterName,
                 ResponsibleName,
                 SerialNumber,
@@ -138,6 +137,5 @@ namespace Cave.Net.Dns
                 RetryInterval,
                 ExpireInterval,
                 NegativeCachingTTL);
-        }
     }
 }

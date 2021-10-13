@@ -30,17 +30,16 @@ namespace Cave.Net.Dns
             {
                 Trace.WriteLine("Additional data after dns answer.");
             }
-            switch (result.RecordType)
+            result.Value = result.RecordType switch
             {
-                case DnsRecordType.A:
-                case DnsRecordType.AAAA: result.Value = new IPAddress(reader.ReadBytes(length)); break;
-                case DnsRecordType.NS: result.Value = DomainName.Parse(reader); break;
-                case DnsRecordType.SOA: result.Value = SoaRecord.Parse(reader); break;
-                case DnsRecordType.MX: result.Value = MxRecord.Parse(reader); break;
-                case DnsRecordType.TXT: result.Value = TxtRecord.Parse(reader, length); break;
-                case DnsRecordType.CNAME: result.Value = DomainName.Parse(reader); break;
-                default: throw new NotImplementedException($"RecordType {result.RecordType} not implemented!");
-            }
+                DnsRecordType.A or DnsRecordType.AAAA => new IPAddress(reader.ReadBytes(length)),
+                DnsRecordType.NS => DomainName.Parse(reader),
+                DnsRecordType.SOA => SoaRecord.Parse(reader),
+                DnsRecordType.MX => MxRecord.Parse(reader),
+                DnsRecordType.TXT => TxtRecord.Parse(reader, length),
+                DnsRecordType.CNAME => DomainName.Parse(reader),
+                _ => throw new NotImplementedException($"RecordType {result.RecordType} not implemented!"),
+            };
             return result;
         }
 

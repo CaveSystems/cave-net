@@ -40,21 +40,21 @@ namespace Cave.Net
         /// <returns>The result of the operator.</returns>
         public static bool operator !=(DomainName a, DomainName b) => b is null ? a is object : a is null || a.ToString() != b.ToString();
 
-        static readonly IdnMapping IdnParser = new IdnMapping() { UseStd3AsciiRules = true };
-        static readonly Regex AsciiNameRegex = new Regex("^[a-zA-Z0-9_-]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+        static readonly IdnMapping idnParser = new() { UseStd3AsciiRules = true };
+        static readonly Regex asciiNameRegex = new("^[a-zA-Z0-9_-]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         static bool TryParsePart(string value, out string label)
         {
             try
             {
-                if (AsciiNameRegex.IsMatch(value))
+                if (asciiNameRegex.IsMatch(value))
                 {
                     label = value;
                     return true;
                 }
                 else
                 {
-                    label = IdnParser.GetAscii(value);
+                    label = idnParser.GetAscii(value);
                     return true;
                 }
             }
