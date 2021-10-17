@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using Cave.IO;
 
 namespace Cave.Net
 {
@@ -15,8 +14,8 @@ namespace Cave.Net
     public class SslServer
     {
         #region private implementation
-        readonly List<TcpListener> listeners = new List<TcpListener>();
-        bool isClosed = false;
+        readonly List<TcpListener> listeners = new();
+        bool isClosed;
 
         void Listen(object obj)
         {
@@ -38,10 +37,10 @@ namespace Cave.Net
                 try
                 {
                     tcpClient = listener.AcceptTcpClient();
-                    var l_SslClient = new SslClient(tcpClient);
-                    l_SslClient.Authenticate += new EventHandler<SslAuthenticationEventArgs>(ClientAuthenticate);
-                    l_SslClient.DoServerTLS(Certificate);
-                    OnConnected(l_SslClient);
+                    var sslClient = new SslClient(tcpClient);
+                    sslClient.Authenticate += new EventHandler<SslAuthenticationEventArgs>(ClientAuthenticate);
+                    sslClient.DoServerTLS(Certificate);
+                    OnConnected(sslClient);
                 }
                 catch (Exception ex)
                 {
@@ -130,11 +129,7 @@ namespace Cave.Net
         /// <param name="certificate">The certificate.</param>
         public SslServer(X509Certificate2 certificate)
         {
-            Certificate = certificate as X509Certificate2;
-            if (Certificate == null)
-            {
-                throw new ArgumentException(string.Format("Certificate has to be a valid X509Certificate2!"));
-            }
+            Certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
         }
 
         /// <summary>
@@ -193,10 +188,6 @@ namespace Cave.Net
             }
         }
 
-        /// <summary>Gets the name of the log source.</summary>
-        /// <value>The name of the log source.</value>
-        public string LogSourceName => "SslServer";
-
         /// <summary>
         /// Stops listening and closes all client connections and the server.
         /// </summary>
@@ -204,7 +195,7 @@ namespace Cave.Net
         {
             if (isClosed)
             {
-                throw new ObjectDisposedException("SslServer");
+                throw new ObjectDisposedException(nameof(SslServer));
             }
 
             isClosed = true;

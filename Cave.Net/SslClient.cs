@@ -9,7 +9,6 @@ using System.Security.Authentication;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using Cave.IO;
 
 namespace Cave.Net
 {
@@ -102,7 +101,7 @@ namespace Cave.Net
         {
             if (eventArgs == null)
             {
-                throw new ArgumentNullException("eventArgs");
+                throw new ArgumentNullException(nameof(eventArgs));
             }
 
             var auth = Authenticate;
@@ -148,7 +147,7 @@ namespace Cave.Net
         /// <param name="client">Client to use.</param>
         public SslClient(TcpClient client)
         {
-            this.client = client ?? throw new ArgumentNullException("client");
+            this.client = client ?? throw new ArgumentNullException(nameof(client));
             RemoteEndPoint = (IPEndPoint)this.client.Client.RemoteEndPoint;
         }
 
@@ -157,10 +156,10 @@ namespace Cave.Net
         /// <summary>
         /// Check certificate revocation.
         /// </summary>
-        public bool CheckRevocation = false;
+        public bool CheckRevocation;
 
         /// <summary>Allow client authentication without cert.</summary>
-        public bool AllowClientAuthWithoutCert = true;
+        public bool AllowClientAuthWithoutCert { get; set; } = true;
 
         /// <summary>
         /// Gets the remote <see cref="IPEndPoint"/> this client is/was connected to.
@@ -181,17 +180,17 @@ namespace Cave.Net
         {
             if (certificate == null)
             {
-                throw new ArgumentNullException("Certificate required!", "certificate");
+                throw new ArgumentNullException(nameof(certificate), "Certificate required!");
             }
 
             if (stream != null)
             {
-                throw new InvalidOperationException(string.Format("TLS negotiation already started!"));
+                throw new InvalidOperationException("TLS negotiation already started!");
             }
 
             if (client == null)
             {
-                throw new InvalidOperationException(string.Format("Please establish connection first!"));
+                throw new InvalidOperationException("Please establish connection first!");
             }
 
             if (!certificate.Verify())
@@ -202,7 +201,9 @@ namespace Cave.Net
             PolicyErrors = 0;
             ValidationErrors = 0;
             stream = new SslStream(client.GetStream(), false, new RemoteCertificateValidationCallback(OnValidateRemoteCert), new LocalCertificateSelectionCallback(OnSelectLocalCert));
-            stream.AuthenticateAsServer(certificate, false, SslProtocols.Tls, CheckRevocation);
+            // Let the operating system decide what TLS protocol version to use.
+            // See https://docs.microsoft.com/dotnet/framework/network-programming/tls
+            stream.AuthenticateAsServer(certificate, false, SslProtocols.None, CheckRevocation);
             if (!stream.IsEncrypted)
             {
                 throw new CryptographicException("Stream is not encrypted!");
@@ -253,7 +254,9 @@ namespace Cave.Net
 
                 certificates.Add(certificate);
             }
-            stream.AuthenticateAsClient(serverCN, certificates, SslProtocols.Tls, CheckRevocation);
+            // Let the operating system decide what TLS protocol version to use.
+            // See https://docs.microsoft.com/dotnet/framework/network-programming/tls
+            stream.AuthenticateAsClient(serverCN, certificates, SslProtocols.None, CheckRevocation);
             if (!stream.IsEncrypted)
             {
                 throw new SecurityException("Stream is not encrypted!");
