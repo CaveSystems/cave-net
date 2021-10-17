@@ -3,7 +3,7 @@ using Cave.IO;
 using Cave.Net.Ntp;
 using NUnit.Framework;
 
-namespace Test.NTP
+namespace Test.Ntp
 {
     [TestFixture]
     public class NtpClientTest
