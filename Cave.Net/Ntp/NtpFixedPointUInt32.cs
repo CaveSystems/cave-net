@@ -13,7 +13,7 @@ namespace Cave.Net.Ntp
         /// Implicit conversion from uint to <see cref="NtpFixedPointUInt32"/>.
         /// </summary>
         /// <param name="value">Value to convert.</param>
-        public static implicit operator NtpFixedPointUInt32(uint value) => new NtpFixedPointUInt32() { Value = value };
+        public static implicit operator NtpFixedPointUInt32(uint value) => new() { Value = value };
 
         /// <summary>
         /// Gets or sets the current raw value.

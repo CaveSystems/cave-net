@@ -19,7 +19,7 @@ namespace Cave.Net.Ntp
         /// Implicit conversion from int to <see cref="NtpInt32"/>.
         /// </summary>
         /// <param name="val">Value to convert.</param>
-        public static implicit operator NtpInt32(int val) => new NtpInt32() { Value = val };
+        public static implicit operator NtpInt32(int val) => new() { Value = val };
 
         int value;
 

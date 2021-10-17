@@ -13,7 +13,7 @@ namespace Cave.Net.Ntp
         /// Implicit conversion from sbyte to <see cref="NtpPow2Int8"/>.
         /// </summary>
         /// <param name="value">Value to convert.</param>
-        public static implicit operator NtpPow2Int8(sbyte value) => new NtpPow2Int8() { Value = value };
+        public static implicit operator NtpPow2Int8(sbyte value) => new() { Value = value };
 
         /// <summary>
         /// Implicit conversion from <see cref="NtpPow2Int8"/> to TimeSpan.
