@@ -237,7 +237,7 @@ namespace Cave.Net
 
         /// <summary>Gets or sets the protocol version.</summary>
         /// <value>The protocol version.</value>
-        public Version ProtocolVersion = new Version("1.1");
+        public Version ProtocolVersion { get; set; } = new("1.1");
 
         /// <summary>Gets or sets the referer.</summary>
         /// <value>The referer.</value>
