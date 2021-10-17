@@ -3,15 +3,13 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace Cave.Net.Ntp
+namespace Cave.Net
 {
     /// <summary>
     /// Provides a simple udp server socket.
     /// </summary>
     public class UdpServer : IDisposable
     {
-        const SocketOptionName Ipv6only = (SocketOptionName)27;
-
         Socket socket;
         byte[] buffer = new byte[2048];
         EndPoint client = new IPEndPoint(0, 0);
@@ -74,7 +72,7 @@ namespace Cave.Net.Ntp
             }
 
             socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-            socket.SetSocketOption(SocketOptionLevel.IPv6, Ipv6only, false);
+            socket.EnableDualSocket();
             socket.Bind(new IPEndPoint(IPAddress.IPv6Any, port));
             socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref client, OnReceived, null);
         }
