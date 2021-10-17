@@ -64,7 +64,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestAccept_SingleThread()
+        public void TestAcceptSingleThread()
         {
             var port = Tools.GetPort();
             var server = new TcpServer
@@ -394,7 +394,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeClose_Client2TcpListener()
+        public void TestSendAllBeforeCloseClient2TcpListener()
         {
             var port = Tools.GetPort();
             var listen = new TcpListener(IPAddress.Loopback, port);
@@ -430,7 +430,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeClose_Client2Server()
+        public void TestSendAllBeforeCloseClient2Server()
         {
             var port = Tools.GetPort();
             var server = new TcpServer();
@@ -469,7 +469,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeClose_Client2Server_CloseBeforeRead()
+        public void TestSendAllBeforeCloseClient2ServerCloseBeforeRead()
         {
             var port = Tools.GetPort();
             var server = new TcpServer();
@@ -517,7 +517,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeClose_Server2Client()
+        public void TestSendAllBeforeCloseServer2Client()
         {
             var port = Tools.GetPort();
             var server = new TcpServer();
@@ -574,7 +574,7 @@ namespace Test.Tcp
                     serverClient.Send(new byte[] { 2, 1, 0, 1 });
                     serverClient.Close();
                     Console.WriteLine($"Test : info TP{port}: Server accept, send and close.");
-                    sendEvent.Set();                   
+                    sendEvent.Set();
                 }, eventArgs.Client);
 
                 Console.WriteLine($"Test : info TP{port}: Server listen.");
@@ -590,7 +590,7 @@ namespace Test.Tcp
                 // connect to server
                 Console.WriteLine($"Test : info TP{port}: Client connect.");
                 testClient.Connect(IPAddress.Loopback, port);
-                
+
                 //wait for completion
                 if (!sendEvent.WaitOne(1000)) throw new TimeoutException("Send event not completed!");
                 if (!bufferedEvent.WaitOne(1000)) throw new TimeoutException("Buffered event not completed!");

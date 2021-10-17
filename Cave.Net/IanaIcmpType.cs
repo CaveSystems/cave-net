@@ -1,10 +1,12 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Cave.Net
 {
     /// <summary>
     /// http://www.nthelp.com/icmp.html.
     /// </summary>
+    [SuppressMessage("Naming", "CA1707", Justification = "Underlines needed in names for parsing and compatibility.")]
     public enum IanaIcmpType
     {
         /// <summary>

@@ -20,8 +20,8 @@ namespace Cave.Net
         where TClient : TcpAsyncClient, new()
     {
 #if NETSTANDARD13 || NET20
-        readonly Dictionary<SocketAsyncEventArgs, SocketAsyncEventArgs> pendingAccepts = new Dictionary<SocketAsyncEventArgs, SocketAsyncEventArgs>();
-        readonly Dictionary<TClient, TClient> clients = new Dictionary<TClient, TClient>();
+        readonly Dictionary<SocketAsyncEventArgs, SocketAsyncEventArgs> pendingAccepts = new();
+        readonly Dictionary<TClient, TClient> clients = new();
 
         void AddPendingAccept(SocketAsyncEventArgs e) => pendingAccepts.Add(e, e);
 
@@ -39,8 +39,8 @@ namespace Cave.Net
         IEnumerable<SocketAsyncEventArgs> PendingAcceptList => pendingAccepts.Keys;
 #else
         IEnumerable<TClient> ClientList => clients;
-        readonly HashSet<SocketAsyncEventArgs> pendingAccepts = new HashSet<SocketAsyncEventArgs>();
-        readonly HashSet<TClient> clients = new HashSet<TClient>();
+        readonly HashSet<SocketAsyncEventArgs> pendingAccepts = new();
+        readonly HashSet<TClient> clients = new();
 
         void AddPendingAccept(SocketAsyncEventArgs e) => pendingAccepts.Add(e);
 
@@ -141,7 +141,7 @@ namespace Cave.Net
                         OnClientAccepted(client);
 
                         // start processing of incoming data
-                        client.StartReader(BufferSize);
+                        client.StartReader();
                     }
                     catch (Exception ex)
                     {
@@ -258,8 +258,7 @@ namespace Cave.Net
                 case AddressFamily.InterNetwork:
                     break;
                 case AddressFamily.InterNetworkV6:
-                    // Patches for net 2.0: SocketOptionLevel 41 = IPv6   SocketOptionName 27 = IPv6Only
-                    socket.SetSocketOption((SocketOptionLevel)41, (SocketOptionName)27, false);
+                    socket.EnableDualSocket();
                     break;
             }
 
@@ -448,7 +447,7 @@ namespace Cave.Net
         }
 
         #region IDisposable Support
-        bool disposed = false;
+        bool disposed;
 
         /// <summary>Releases the unmanaged resources used by this instance and optionally releases the managed resources.</summary>
         /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>

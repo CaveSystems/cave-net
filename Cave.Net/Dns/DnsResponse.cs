@@ -59,7 +59,7 @@ namespace Cave.Net.Dns
         /// <param name="reader">The reader.</param>
         /// <param name="recordCount">The record count.</param>
         /// <returns>Returns a list of <see cref="DnsRecord"/>s.</returns>
-        IList<DnsRecord> LoadRecords(DataReader reader, int recordCount)
+        static IList<DnsRecord> LoadRecords(DataReader reader, int recordCount)
         {
             var result = new List<DnsRecord>(recordCount);
             for (var i = 0; i < recordCount; i++)
@@ -70,7 +70,7 @@ namespace Cave.Net.Dns
             return result.AsReadOnly();
         }
 
-        IList<DnsQuery> LoadQueries(DataReader reader, int queryCount)
+        static IList<DnsQuery> LoadQueries(DataReader reader, int queryCount)
         {
             var result = new List<DnsQuery>(queryCount);
             for (var i = 0; i < queryCount; i++)
@@ -128,9 +128,5 @@ namespace Cave.Net.Dns
         /// <c>true</c> if this instance is checking disabled; otherwise, <c>false</c>.
         /// </value>
         public bool IsCheckingDisabled => ((DnsFlags)flags & DnsFlags.CheckingDisabled) != 0;
-
-        /// <summary>Gets the name of the log source.</summary>
-        /// <value>The name of the log source.</value>
-        public string LogSourceName => "DnsResponse";
     }
 }

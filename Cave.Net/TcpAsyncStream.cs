@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 using Cave.IO;
 
 namespace Cave.Net
@@ -13,7 +12,7 @@ namespace Cave.Net
     /// <remarks>All functions of this class are threadsafe.</remarks>
     public class TcpAsyncStream : Stream
     {
-        readonly FifoBuffer sendBuffer = new FifoBuffer();
+        readonly FifoBuffer sendBuffer = new();
         readonly TcpAsyncClient client;
         bool asyncSendInProgress;
 
@@ -203,20 +202,20 @@ namespace Cave.Net
         /// Reads data from the the buffers. A maximum of count bytes is read but if less is available any number of bytes may be read.
         /// If no bytes are available the read method will block until at least one byte is available, the connection is closed or the timeout is reached.
         /// </summary>
-        /// <param name="array">byte array to write data to.</param>
+        /// <param name="buffer">byte array to write data to.</param>
         /// <param name="offset">start offset at array to begin writing at.</param>
         /// <param name="count">number of bytes to read.</param>
         /// <returns>The total number of bytes read into the buffer. This can be less than the number of bytes requested if that many bytes are not currently available, or zero (0) if the end of the stream has been reached.</returns>
         /// <exception cref="TimeoutException">A timeout occured while waiting for incoming data. (See <see cref="ReadTimeout"/>).</exception>
-        public override int Read(byte[] array, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             var timeout = client.ReceiveTimeout > 0 ? DateTime.UtcNow + TimeSpan.FromMilliseconds(client.ReceiveTimeout) : DateTime.MaxValue;
-            var buffer = client.ReceiveBuffer;
-            lock (buffer)
+            var clientBuffer = client.ReceiveBuffer;
+            lock (clientBuffer)
             {
                 while (true)
                 {
-                    if (buffer.Available > 0)
+                    if (clientBuffer.Available > 0)
                     {
                         break;
                     }
@@ -229,9 +228,9 @@ namespace Cave.Net
                     {
                         throw new TimeoutException();
                     }
-                    Monitor.Wait(buffer, waitTime);
+                    Monitor.Wait(clientBuffer, waitTime);
                 }
-                return buffer.Read(array, offset, count);
+                return clientBuffer.Read(buffer, offset, count);
             }
         }
 

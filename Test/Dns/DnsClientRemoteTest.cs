@@ -58,7 +58,7 @@ namespace Test.Dns
         }
 
 
-        void A_Test(DnsClient testClient)
+        static void A_Test(DnsClient testClient)
         {
             var response = testClient.Resolve("one.one.one.one", DnsRecordType.A);
             Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
@@ -74,12 +74,12 @@ namespace Test.Dns
             Assert.Fail();
         }
 
-        void AAAA_Test(DnsClient testClient)
+        static void AAAA_Test(DnsClient testClient)
         {
             var response = testClient.Resolve("one.one.one.one", DnsRecordType.AAAA);
             Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
             Assert.GreaterOrEqual(response.Answers.Count, 1);
-            IPAddress.TryParse("2606:4700:4700::1111", out var ipOne);
+            Assert.IsTrue(IPAddress.TryParse("2606:4700:4700::1111", out var ipOne));
             foreach (var record in response.Answers)
             {
                 if (record.Value.Equals(ipOne))
@@ -90,7 +90,7 @@ namespace Test.Dns
             Assert.Fail();
         }
 
-        void MX_Test(DnsClient testClient)
+        static void MX_Test(DnsClient testClient)
         {
             var response = testClient.Resolve("google.com.", DnsRecordType.MX);
             Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
@@ -109,7 +109,7 @@ namespace Test.Dns
             Assert.AreEqual(5, counter);
         }
 
-        void TXT_Test(DnsClient testClient)
+        static void TXT_Test(DnsClient testClient)
         {
             var response = testClient.Resolve("google.com.", DnsRecordType.TXT);
             Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);

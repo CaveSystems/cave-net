@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
-using Cave.IO;
 
 namespace Cave.Net
 {
@@ -26,7 +23,7 @@ namespace Cave.Net
         {
             // taken from Cave.TcpAsyncClient
             var socket = (Socket)sender;
-ReadCompletedBegin:
+        ReadCompletedBegin:
             var bytesTransferred = e.BytesTransferred;
 
             switch (e.SocketError)
@@ -164,8 +161,7 @@ ReadCompletedBegin:
                 case AddressFamily.InterNetwork:
                     break;
                 case AddressFamily.InterNetworkV6:
-                    // Patches for net 2.0: SocketOptionLevel 41 = IPv6   SocketOptionName 27 = IPv6Only
-                    socket.SetSocketOption((SocketOptionLevel)41, (SocketOptionName)27, false);
+                    socket.EnableDualSocket();
                     break;
             }
             socket.Bind(endPoint);

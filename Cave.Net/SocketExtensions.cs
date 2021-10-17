@@ -21,9 +21,6 @@ namespace Cave.Net
         /// Enables dual socket on ipv4 and ipv6.
         /// </summary>
         /// <param name="socket"></param>
-        public static void EnableDualSocket(this Socket socket)
-        {
-            socket.SetSocketOption(Ipv6, Ipv6Only, false);
-        }
+        public static void EnableDualSocket(this Socket socket) => socket.SetSocketOption(Ipv6, Ipv6Only, false);
     }
 }

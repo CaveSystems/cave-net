@@ -127,10 +127,7 @@ namespace Cave.Net
         /// Initializes a new instance of the <see cref="SslServer"/> class.
         /// </summary>
         /// <param name="certificate">The certificate.</param>
-        public SslServer(X509Certificate2 certificate)
-        {
-            Certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
-        }
+        public SslServer(X509Certificate2 certificate) => Certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
 
         /// <summary>
         /// Starts listening at the specified port (IPv4).

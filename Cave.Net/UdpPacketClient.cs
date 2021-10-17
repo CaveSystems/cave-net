@@ -9,7 +9,7 @@ namespace Cave.Net
     /// </summary>
     public sealed class UdpPacketClient : IDisposable
     {
-        static AddressFamily GetAddressFamily(IPEndPoint endPoint) => endPoint == null ? throw new ArgumentNullException("endPoint") : endPoint.AddressFamily;
+        static AddressFamily GetAddressFamily(IPEndPoint endPoint) => endPoint == null ? throw new ArgumentNullException(nameof(endPoint)) : endPoint.AddressFamily;
 
         readonly bool usesServerSocket;
         Socket socket;
@@ -45,12 +45,12 @@ namespace Cave.Net
             MaximumPayloadSize = 576; // see IETF RFC 1122
 
             // substract package header (ip header + udp header)
-            switch (addressFamily)
+            MaximumPayloadSize -= addressFamily switch
             {
-                case AddressFamily.InterNetwork: MaximumPayloadSize -= 20 + 8; break;
-                case AddressFamily.InterNetworkV6: MaximumPayloadSize -= 40 + 8; break;
-                default: throw new ArgumentException(string.Format("Unknown AddressFamily {0}", addressFamily), "addressFamily");
-            }
+                AddressFamily.InterNetwork => 20 + 8,
+                AddressFamily.InterNetworkV6 => 40 + 8,
+                _ => throw new ArgumentException(string.Format("Unknown AddressFamily {0}", addressFamily), nameof(addressFamily))
+            };
         }
 
         /// <summary>
@@ -149,7 +149,7 @@ namespace Cave.Net
         {
             if (packet == null)
             {
-                throw new ArgumentNullException("packet");
+                throw new ArgumentNullException(nameof(packet));
             }
 
             Send(packet.Data, 0, packet.Size);

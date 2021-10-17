@@ -18,11 +18,11 @@ namespace Cave.Net.Dns
         NS = 2,
 
         /// <summary>Mail destination server</summary>
-        [Obsolete]
+        [Obsolete("Deprecated.")]
         MD = 3,
 
         /// <summary>Mail forwarder</summary>
-        [Obsolete]
+        [Obsolete("Deprecated.")]
         MF = 4,
 
         /// <summary>Canonical name for an alias</summary>
@@ -101,7 +101,7 @@ namespace Cave.Net.Dns
         LOC = 29,
 
         /// <summary>Next domain</summary>
-        [Obsolete]
+        [Obsolete("Deprecated.")]
         NXT = 30,
 
         /// <summary>Endpoint identifier</summary>
@@ -126,7 +126,7 @@ namespace Cave.Net.Dns
         CERT = 37,
 
         /// <summary>The a6</summary>
-        [Obsolete]
+        [Obsolete("Deprecated.")]
         A6 = 38,
 
         /// <summary>DNS Name Redirection</summary>
@@ -196,7 +196,7 @@ namespace Cave.Net.Dns
         CSYNC = 62,
 
         /// <summary>Sender Policy Framework</summary>
-        [Obsolete]
+        [Obsolete("Deprecated.")]
         SPF = 99,
 
         /// <summary>UINFO</summary>
@@ -247,7 +247,7 @@ namespace Cave.Net.Dns
         MAILB = 253,
 
         /// <summary>mail agent RRs (OBSOLETE - see MX)</summary>
-        [Obsolete]
+        [Obsolete("Deprecated.")]
         MAILA = 254,
 
         /// <summary>A request for all records the server/cache has available</summary>

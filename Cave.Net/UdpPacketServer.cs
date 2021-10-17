@@ -116,9 +116,9 @@ namespace Cave.Net
         public event EventHandler<ExceptionEventArgs> ExceptionEvent;
         #endregion
 
-        readonly Dictionary<IPEndPoint, UdpPacketClient> clients = new Dictionary<IPEndPoint, UdpPacketClient>();
-        readonly List<Socket> sockets = new List<Socket>();
-        volatile bool closed = false;
+        readonly Dictionary<IPEndPoint, UdpPacketClient> clients = new();
+        readonly List<Socket> sockets = new();
+        volatile bool closed;
 
         void ListenThread_ReadPackets(object socketObject)
         {
@@ -247,7 +247,7 @@ namespace Cave.Net
         {
             if (ipEndPoint == null)
             {
-                throw new ArgumentNullException("iPEndPoint");
+                throw new ArgumentNullException(nameof(ipEndPoint));
             }
 
             var socket = new Socket(ipEndPoint.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -347,7 +347,7 @@ namespace Cave.Net
         {
             if (packet == null)
             {
-                throw new ArgumentNullException("packet");
+                throw new ArgumentNullException(nameof(packet));
             }
 
             lock (clients)
@@ -388,7 +388,7 @@ namespace Cave.Net
         {
             if (data == null)
             {
-                throw new ArgumentNullException("data");
+                throw new ArgumentNullException(nameof(data));
             }
 
             lock (clients)

@@ -17,7 +17,7 @@ namespace Test.Tcp
     [TestFixture]
     public class TcpServerTest2
     {
-        public IPAddress[] GetMyAddresses(bool includeLoopback)
+        static IPAddress[] GetMyAddresses(bool includeLoopback)
         {
             var interfaces = NetworkInterface.GetAllNetworkInterfaces().Where(i => i.OperationalStatus == OperationalStatus.Up);
             if (!includeLoopback) interfaces = interfaces.Where(i => i.NetworkInterfaceType != NetworkInterfaceType.Loopback);
@@ -76,7 +76,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestAccept_SingleThread()
+        public void TestAcceptSingleThread()
         {
             var port = Tools.GetPort();
             var server = new TcpServer
@@ -503,7 +503,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeClose_Client2TcpListener()
+        public void TestSendAllBeforeCloseClient2TcpListener()
         {
             var port = Tools.GetPort();
             var listen = new TcpListener(IPAddress.Loopback, port);
@@ -539,7 +539,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeClose_Client2TcpListener_DirectWrite()
+        public void TestSendAllBeforeCloseClient2TcpListenerDirectWrite()
         {
             var port = Tools.GetPort();
             var listen = new TcpListener(IPAddress.Loopback, port);
@@ -576,7 +576,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeClose_Client2Server()
+        public void TestSendAllBeforeCloseClient2Server()
         {
             var port = Tools.GetPort();
             var server = new TcpServer();
@@ -615,7 +615,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeClose_Client2Server_DirectWrites()
+        public void TestSendAllBeforeCloseClient2ServerDirectWrites()
         {
             var port = Tools.GetPort();
             var server = new TcpServer();
@@ -654,7 +654,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeClose_Client2Server_CloseBeforeRead()
+        public void TestSendAllBeforeCloseClient2ServerCloseBeforeRead()
         {
             var port = Tools.GetPort();
             var server = new TcpServer();
@@ -702,7 +702,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeClose_Client2Server_CloseBeforeRead_DirectWrite()
+        public void TestSendAllBeforeCloseClient2ServerCloseBeforeReadDirectWrite()
         {
             var port = Tools.GetPort();
             var server = new TcpServer();
@@ -752,7 +752,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeClose_Server2Client()
+        public void TestSendAllBeforeCloseServer2Client()
         {
             var port = Tools.GetPort();
             var server = new TcpServer();
@@ -792,7 +792,7 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeClose_Server2Client_DirectWrites()
+        public void TestSendAllBeforeCloseServer2ClientDirectWrites()
         {
             var port = Tools.GetPort();
             var server = new TcpServer();
