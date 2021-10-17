@@ -1,21 +1,13 @@
 ﻿using Cave;
 using Cave.Net;
 using System;
-using System.ComponentModel.Design;
 using System.Linq;
 using System.Net.NetworkInformation;
 
-namespace wol
+namespace WakeOnLanSend
 {
-    /// <summary>
-    /// Sends a Wake-On-Lan request to a specified mac address
-    /// </summary>
-    public class Program
+    class Program
     {
-        /// <summary>
-        /// Usage: wol-send &lt;mac&gt; [&lt;mac&gt; [..]] [--pwd=password]
-        /// </summary>
-        /// <param name="args"></param>
         static void Main(string[] args)
         {
             try
@@ -36,7 +28,7 @@ namespace wol
                 return;
             }
 
-            string password = args.FirstOrDefault(a => a.StartsWith("--pwd"))?.AfterFirst("--pwd=");
+            var password = args.FirstOrDefault(a => a.StartsWith("--pwd"))?.AfterFirst("--pwd=");
             foreach (var target in args.Where(a => !a.StartsWith("-")))
             {
                 PhysicalAddress address;
