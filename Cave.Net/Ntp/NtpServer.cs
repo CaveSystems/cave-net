@@ -1,6 +1,5 @@
 ﻿using System;
 using Cave.IO;
-using Cave.Net;
 
 namespace Cave.Net.Ntp
 {
@@ -31,7 +30,7 @@ namespace Cave.Net.Ntp
             public NtpTimestamp ReferenceTimestamp => DateTime.Now;
         }
 
-        Func<INtpServerProperties> propertiesFunction;
+        Func<INtpServerProperties> propertiesFunction = () => new DefaultNtpProperties();
 
         bool Handle(UdpPacket packet)
         {
@@ -120,7 +119,10 @@ namespace Cave.Net.Ntp
             {
                 var e = new NtpPacketEventArgs(request);
                 Request?.Invoke(this, e);
-                request = e.Packet;
+                if (!ReferenceEquals(request, e.Packet))
+                {
+                    request = e.Packet;
+                }
 
                 return !e.Discard;
             }
@@ -139,7 +141,10 @@ namespace Cave.Net.Ntp
             {
                 var e = new NtpPacketEventArgs(answer);
                 Answer?.Invoke(this, e);
-                answer = e.Packet;
+                if (!ReferenceEquals(answer, e.Packet))
+                {
+                    answer = e.Packet;
+                }
 
                 return !e.Discard;
             }

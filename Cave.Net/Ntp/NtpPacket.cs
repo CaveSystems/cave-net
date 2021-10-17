@@ -161,7 +161,7 @@ namespace Cave.Net.Ntp
             {
                 if (Stratum < 2)
                 {
-                    if (VersionNumber == 3 || VersionNumber == 4)
+                    if (VersionNumber is 3 or 4)
                     {
                         return ((FourCC)Reference.Value).ToString();
                     }

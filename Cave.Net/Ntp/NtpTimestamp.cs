@@ -33,9 +33,20 @@ namespace Cave.Net.Ntp
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8)]
     public struct NtpTimestamp
     {
-        const long FullEpoch = 1L << 32;
-        const long QuarterEpoch = FullEpoch >> 2;
-        static readonly DateTime NtpEpoch = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        /// <summary>
+        /// Provides the seconds per epoch.
+        /// </summary>
+        public const long FullEpoch = 1L << 32;
+
+        /// <summary>
+        /// Provides the seconds per quarter epoch.
+        /// </summary>
+        public const long QuarterEpoch = FullEpoch >> 2;
+
+        /// <summary>
+        /// Provides the start of the ntp epoch.
+        /// </summary>
+        public static readonly DateTime NtpEpoch = new(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         static Func<DateTime> localReferenceTimeFunction = () => DateTime.UtcNow;
 
@@ -53,7 +64,7 @@ namespace Cave.Net.Ntp
         /// Implicit conversion from <see cref="System.DateTime"/> to <see cref="NtpTimestamp"/>.
         /// </summary>
         /// <param name="dateTime">The dateTime value to convert.</param>
-        public static implicit operator NtpTimestamp(DateTime dateTime) => new NtpTimestamp() { DateTime = dateTime };
+        public static implicit operator NtpTimestamp(DateTime dateTime) => new() { DateTime = dateTime };
 
         void GetBaseEpoch(out DateTime baseEpoch, out long secondsOffset)
         {
@@ -84,7 +95,7 @@ namespace Cave.Net.Ntp
 
                 // check range
                 var secondsSinceBaseEpoch = Seconds + secondsOffset;
-                return secondsSinceBaseEpoch < -QuarterEpoch || secondsSinceBaseEpoch > QuarterEpoch
+                return secondsSinceBaseEpoch is < (-QuarterEpoch) or > QuarterEpoch
                     ? throw new Exception($"Local clock is more than {QuarterEpoch / 86400} days out of sync!")
                     : baseEpoch + new TimeSpan((TimeSpan.TicksPerSecond * secondsSinceBaseEpoch) + (TimeSpan.TicksPerSecond * Fraction / FullEpoch));
             }
@@ -92,7 +103,7 @@ namespace Cave.Net.Ntp
             {
                 var baseEpoch = NtpEpoch;
                 var secondsSinceEpoch = (value - baseEpoch).Ticks / TimeSpan.TicksPerSecond;
-                Fraction = (uint)((value.Ticks % TimeSpan.TicksPerSecond) * FullEpoch / TimeSpan.TicksPerSecond);
+                Fraction = (uint)(value.Ticks % TimeSpan.TicksPerSecond * FullEpoch / TimeSpan.TicksPerSecond);
                 while (secondsSinceEpoch >= FullEpoch)
                 {
                     secondsSinceEpoch -= FullEpoch;
@@ -115,7 +126,7 @@ namespace Cave.Net.Ntp
         /// <summary>
         /// Gets the raw ntp timespan without epoch.
         /// </summary>
-        public TimeSpan TimeSpan => new TimeSpan((TimeSpan.TicksPerSecond * Seconds) + (TimeSpan.TicksPerSecond * Fraction / 0x100000000L));
+        public TimeSpan TimeSpan => new((TimeSpan.TicksPerSecond * Seconds) + (TimeSpan.TicksPerSecond * Fraction / 0x100000000L));
 
         /// <summary>
         /// Gets the <see cref="DateTime"/> as string.
