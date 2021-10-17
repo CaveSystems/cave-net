@@ -1,12 +1,11 @@
-using Cave;
 using Cave.Net.Dns;
 using NUnit.Framework;
 using System.Net;
 
-namespace Test.DNS
+namespace Test.Dns
 {
     [TestFixture]
-    public class DNSClientRemoteTest
+    public class DnsClientRemoteTest
     {
 
         [Test]
@@ -57,6 +56,7 @@ namespace Test.DNS
         {
             TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true });
         }
+
 
         void A_Test(DnsClient testClient)
         {

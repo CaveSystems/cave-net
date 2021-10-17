@@ -1,12 +1,8 @@
-using Cave;
-using Cave.Net.Dns;
-using NUnit.Framework;
-using System.Net;
 
 // TODO START LOCAL DNS SERVER IN TEST
 #if false
 
-namespace Test.DNS
+namespace Test.Dns
 {
     /// <summary>
     /// Test require a local dns server with the zone file provided in zone.txt
