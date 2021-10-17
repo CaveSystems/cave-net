@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>net20;net35;net40;net45;net46;net47</TargetFrameworks>
-    <RootNamespace>wol</RootNamespace>
+    <RootNamespace>WakeOnLanSend</RootNamespace>
     <PublishSingleFile>true</PublishSingleFile>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishTrimmed>true</PublishTrimmed>
