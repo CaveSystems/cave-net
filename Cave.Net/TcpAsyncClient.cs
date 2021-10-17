@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using Cave.IO;
+using Cave.Net.Dns;
 #if NETSTANDARD13 || NETSTANDARD20 || NET45 || NET46 || NET47
 using System.Threading.Tasks;
 #endif
@@ -17,23 +19,9 @@ namespace Cave.Net
     [DebuggerDisplay("{RemoteEndPoint}")]
     public class TcpAsyncClient : IDisposable
     {
-        class AsyncParameters
-        {
-            public AsyncParameters(Socket socket, int bufferSize)
-            {
-                Socket = socket;
-                BufferSize = bufferSize;
-            }
-
-            public Socket Socket { get; }
-
-            public int BufferSize { get; }
-        }
-
         #region private class
         bool connectedEventTriggered;
         bool closing;
-        bool initialized;
         bool disconnectedEventTriggered;
         long bytesReceived;
         long bytesSent;
@@ -41,10 +29,12 @@ namespace Cave.Net
         SocketAsyncEventArgs socketAsync;
         int receiveTimeout;
         int sendTimeout;
-        short ttl;
+        short ttl = 255;
         bool nodelay;
         LingerOption lingerState = new LingerOption(false, 0);
         Socket uncheckedSocket;
+
+        bool Initialized => uncheckedSocket != null;
 
         Socket CheckedSocket
         {
@@ -84,31 +74,37 @@ namespace Cave.Net
                 throw new ObjectDisposedException(nameof(TcpAsyncClient));
             }
 #if NETSTANDARD13 || NET20 || NET35 || NET40
-            uncheckedSocket = new Socket(family, SocketType.Stream, ProtocolType.Tcp);
+            var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp);
 #else
-            uncheckedSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
 #endif
-            uncheckedSocket.ExclusiveAddressUse = false;
-            uncheckedSocket.LingerState = new LingerOption(false, 0);
-            uncheckedSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontLinger, true);
-            return uncheckedSocket;
+            socket.ExclusiveAddressUse = false;
+            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            SetSocketOptions(socket);
+            return socket;
+        }
+
+        void SetSocketOptions(Socket socket)
+        {
+            socket.NoDelay = nodelay;
+            socket.Ttl = ttl;
+            socket.LingerState = lingerState;
+            if (!lingerState.Enabled)
+            {
+                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontLinger, true);
+            }
+            socket.SendTimeout = sendTimeout;
+            socket.ReceiveTimeout = receiveTimeout;
         }
 
         void InitializeSocket(Socket socket)
         {
-            if (initialized)
-            {
-                throw new InvalidOperationException("Already initialized!");
-            }
-            uncheckedSocket = socket ?? throw new ArgumentNullException(nameof(socket));
-            uncheckedSocket.NoDelay = nodelay;
-            uncheckedSocket.Ttl = ttl;
-            uncheckedSocket.LingerState = lingerState;
-            uncheckedSocket.SendTimeout = sendTimeout;
-            uncheckedSocket.ReceiveTimeout = receiveTimeout;
+            if (socket == null) throw new ArgumentNullException(nameof(socket));
+            if (Initialized) throw new InvalidOperationException("Already initialized!");
+            SetSocketOptions(socket);
             RemoteEndPoint = (IPEndPoint)socket.RemoteEndPoint;
             LocalEndPoint = (IPEndPoint)socket.LocalEndPoint;
-            initialized = true;
+            uncheckedSocket = socket;
         }
 
         /// <summary>Gets called whenever a read is completed.</summary>
@@ -117,11 +113,6 @@ namespace Cave.Net
         void ReadCompleted(object sender, SocketAsyncEventArgs e)
         {
         ReadCompletedBegin:
-            if (closing)
-            {
-                return;
-            }
-
             var bytesTransferred = e.BytesTransferred;
 
             switch (e.SocketError)
@@ -129,12 +120,14 @@ namespace Cave.Net
                 case SocketError.Success:
                     break;
                 case SocketError.ConnectionReset:
-                    Close();
+                    if (!closing)
+                    {
+                        Close();
+                    }
                     return;
                 default:
                     OnError(new SocketException((int)e.SocketError));
-                    Close();
-                    return;
+                    goto case SocketError.ConnectionReset;
             }
 
             try
@@ -151,35 +144,37 @@ namespace Cave.Net
                         // cleanup read buffers and add new data
                         lock (ReceiveBuffer)
                         {
-                            ReceiveBuffer?.FreeBuffers();
-                            ReceiveBuffer?.AppendBuffer(e.Buffer, e.Offset, bytesTransferred);
+                            ReceiveBuffer.FreeBuffers();
+                            ReceiveBuffer.AppendBuffer(e.Buffer, e.Offset, bytesTransferred);
                             OnBuffered();
                             Monitor.PulseAll(ReceiveBuffer);
                         }
                     }
 
-                    // still connected after event ?
-                    if (IsConnected)
+                    // read next
+                    var isPending = CheckedSocket.ReceiveAsync(socketAsync);
+                    if (!isPending)
                     {
-                        // yes read again
-                        var isPending = CheckedSocket.ReceiveAsync(socketAsync);
-                        if (!isPending)
-                        {
-                            e = socketAsync;
-                            goto ReadCompletedBegin;
+                        e = socketAsync;
+                        goto ReadCompletedBegin;
 
-                            // we could do a function call to myself here but with slow OnReceived() functions and fast networks we might get a stack overflow caused by infinite recursion
-                            // spawning threads using the threadpool is not a good idea either, because multiple receives will mess up our (sequential) stream reading.
-                        }
-                        return;
+                        // we could do a function call to myself here but with slow OnReceived() functions and fast networks we might get a stack overflow caused by infinite recursion
+                        // spawning threads using the threadpool is not a good idea either, because multiple receives will mess up our (sequential) stream reading.
                     }
+                    return;
                 }
             }
             catch (Exception ex)
             {
-                OnError(ex);
+                if (!closing)
+                {
+                    OnError(ex);
+                }
             }
-            Close();
+            if (!closing)
+            {
+                Close();
+            }
         }
 
         void EnterLock()
@@ -204,16 +199,12 @@ namespace Cave.Net
         /// <param name="socket">Socket instance this client uses.</param>
         protected internal virtual void InitializeServer(ITcpServer server, Socket socket)
         {
-            if (initialized)
-            {
-                throw new InvalidOperationException("Already initialized!");
-            }
-            Server = server ?? throw new ArgumentNullException(nameof(server));
             if (socket == null)
             {
                 throw new ArgumentNullException(nameof(socket));
             }
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontLinger, true);
+            Server = server ?? throw new ArgumentNullException(nameof(server));
+            BufferSize = server.BufferSize;
             ReceiveTimeout = server.ReceiveTimeout;
             SendTimeout = server.SendTimeout;
             InitializeSocket(socket);
@@ -222,33 +213,23 @@ namespace Cave.Net
         /// <summary>
         /// Calls the <see cref="OnConnect()"/> function and starts the async socket reader.
         /// </summary>
-        /// <param name="bufferSize">The <see cref="Socket.SendBufferSize"/> and <see cref="Socket.ReceiveBufferSize"/> to be used.</param>
-        internal void StartReader(int bufferSize)
+        internal void StartReader()
         {
             if (socketAsync != null)
             {
                 throw new InvalidOperationException("Reader already started!");
             }
-            if (bufferSize < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize));
-            }
-            BufferSize = bufferSize;
             OnConnect();
-            CheckedSocket.SendBufferSize = bufferSize;
-            CheckedSocket.ReceiveBufferSize = bufferSize;
-            var buffer = new byte[bufferSize];
+            CheckedSocket.SendBufferSize = BufferSize;
+            CheckedSocket.ReceiveBufferSize = BufferSize;
+            var buffer = new byte[BufferSize];
             socketAsync = new SocketAsyncEventArgs() { UserToken = this, };
             socketAsync.Completed += ReadCompleted;
             socketAsync.SetBuffer(buffer, 0, buffer.Length);
             var isPending = CheckedSocket.ReceiveAsync(socketAsync);
             if (!isPending)
             {
-#if NET20 || NET35 || NET40
                 ThreadPool.QueueUserWorkItem((e) => ReadCompleted(this, (SocketAsyncEventArgs)e), socketAsync);
-#else
-                Task.Factory.StartNew((e) => ReadCompleted(this, (SocketAsyncEventArgs)e), socketAsync);
-#endif
             }
         }
 
@@ -389,16 +370,71 @@ namespace Cave.Net
             }
         }
 #else
-        void Connect(AsyncParameters parameters, IAsyncResult asyncResult)
+        void ConnectInternal(IPEndPoint endpoint)
         {
             EnterLock();
             try
             {
+                while (true)
+                {
+#if NETSTANDARD13 || NET20 || NET35 || NET40
+                    var socket = CreateSocket(endpoint.AddressFamily);
+#else
+                    var socket = CreateSocket();
+#endif
+                    var asyncResult = socket.BeginConnect(endpoint.Address, endpoint.Port, null, null);
+                    if (HandleAsyncConnectResult(socket, asyncResult))
+                    {
+                        return;
+                    }
+                }
+            }
+            finally
+            {
+                ExitLock();
+            }
+        }
+
+        void ConnectInternal(string hostname, int port)
+        {
+            EnterLock();
+            try
+            {
+                var response = DnsClient.Default.Resolve(hostname);
+                var errors = new List<Exception>();
+                foreach (var answer in response.Answers)
+                {
+                    if (IPAddress.TryParse(answer.Value.ToString(), out var address))
+                    {
+                        try
+                        {
+                            ConnectInternal(new IPEndPoint(address, port));
+                            return;
+                        }
+                        catch (Exception ex)
+                        {
+                            errors.Add(ex);
+                        }
+                    }
+                }
+                throw new AggregateException($"Could not connect to any ip address for host {hostname}!", errors);
+            }
+            finally
+            {
+                ExitLock();
+            }
+        }
+
+        bool HandleAsyncConnectResult(Socket socket, IAsyncResult asyncResult)
+        {
+            try
+            {
                 if (asyncResult.AsyncWaitHandle.WaitOne(ConnectTimeout))
                 {
-                    parameters.Socket.EndConnect(asyncResult);
-                    InitializeSocket(parameters.Socket);
-                    StartReader(parameters.BufferSize);
+                    socket.EndConnect(asyncResult);
+                    InitializeSocket(socket);
+                    StartReader();
+                    return true;
                 }
                 else
                 {
@@ -406,14 +442,19 @@ namespace Cave.Net
                     throw new TimeoutException();
                 }
             }
+            catch (SocketException s)
+            {
+                if (s.SocketErrorCode != SocketError.AddressAlreadyInUse)
+                {
+                    OnError(s);
+                    throw;
+                }
+                return false;
+            }
             catch (Exception ex)
             {
                 OnError(ex);
                 throw;
-            }
-            finally
-            {
-                ExitLock();
             }
         }
 #endif
@@ -442,9 +483,9 @@ namespace Cave.Net
                 }
                 try
                 {
-                    var parameters = (AsyncParameters)e.UserToken;
-                    InitializeSocket(parameters.Socket);
-                    StartReader(parameters.BufferSize);
+                    var socket = (Socket)sender;
+                    InitializeSocket(socket);
+                    StartReader();
                 }
                 catch (Exception ex)
                 {
@@ -464,15 +505,15 @@ namespace Cave.Net
             EnterLock();
             try
             {
-                var parameters = (AsyncParameters)asyncResult.AsyncState;
-                if (!parameters.Socket.Connected)
+                var socket = (Socket)asyncResult.AsyncState;
+                if (!socket.Connected)
                 {
                     OnError(new SocketException((int)SocketError.SocketError));
                     return;
                 }
-                parameters.Socket.EndConnect(asyncResult);
-                InitializeSocket(parameters.Socket);
-                StartReader(parameters.BufferSize);
+                socket.EndConnect(asyncResult);
+                InitializeSocket(socket);
+                StartReader();
             }
             catch (Exception ex)
             {
@@ -493,37 +534,24 @@ namespace Cave.Net
         /// <param name="bufferSize">tcp buffer size in bytes.</param>
         public void Connect(string hostname, int port, int bufferSize = 64 * 1024)
         {
+            if (IPAddress.TryParse(hostname, out var ipaddress))
+            {
+                Connect(ipaddress, port, bufferSize);
+                return;
+            }
+
             if (closing)
             {
                 throw new ObjectDisposedException(nameof(TcpAsyncClient));
             }
 
-            if (initialized)
+            if (Initialized)
             {
                 throw new InvalidOperationException("Client already connected!");
             }
-#if NETSTANDARD13
-            var socket = CreateSocket();
-            var parameters = new AsyncParameters(socket, bufferSize);
-            Connect(parameters, socket.ConnectAsync(hostname, port));
-#elif NET20 || NET35 || NET40
-            try
-            {
-                var socket = CreateSocket(AddressFamily.InterNetwork);
-                var parameters = new AsyncParameters(socket, bufferSize);
-                Connect(parameters, socket.BeginConnect(hostname, port, null, null));
-            }
-            catch
-            {
-                var socket = CreateSocket(AddressFamily.InterNetworkV6);
-                var parameters = new AsyncParameters(socket, bufferSize);
-                Connect(parameters, socket.BeginConnect(hostname, port, null, null));
-            }
-#else
-            var socket = CreateSocket();
-            var parameters = new AsyncParameters(socket, bufferSize);
-            Connect(parameters, socket.BeginConnect(hostname, port, null, null));
-#endif
+
+            BufferSize = bufferSize;
+            ConnectInternal(hostname, port);
         }
 
         /// <summary>
@@ -539,7 +567,7 @@ namespace Cave.Net
                 throw new ObjectDisposedException(nameof(TcpAsyncClient));
             }
 
-            if (initialized)
+            if (Initialized)
             {
                 throw new InvalidOperationException("Client already connected!");
             }
@@ -551,7 +579,7 @@ namespace Cave.Net
                 var socket = CreateSocket(addr.AddressFamily);
                 try
                 {
-                    socket.BeginConnect(hostname, port, ConnectAsyncCallback, new AsyncParameters(socket, bufferSize));
+                    socket.BeginConnect(hostname, port, ConnectAsyncCallback, socket);
                     return;
                 }
                 catch (Exception ex)
@@ -583,25 +611,20 @@ namespace Cave.Net
                 throw new ObjectDisposedException(nameof(TcpAsyncClient));
             }
 
-            if (initialized)
+            if (Initialized)
             {
                 throw new InvalidOperationException("Client already connected!");
             }
 
             RemoteEndPoint = new IPEndPoint(address, port);
+            BufferSize = bufferSize;
 
 #if NETSTANDARD13
             var socket = CreateSocket();
             var parameters = new AsyncParameters(socket, bufferSize);
             Connect(parameters, socket.ConnectAsync(address, port));
-#elif NET20 || NET35 || NET40
-            var socket = CreateSocket(address.AddressFamily);
-            var parameters = new AsyncParameters(socket, bufferSize);
-            Connect(parameters, socket.BeginConnect(address, port, null, null));
 #else
-            var socket = CreateSocket();
-            var parameters = new AsyncParameters(socket, bufferSize);
-            Connect(parameters, socket.BeginConnect(address, port, null, null));
+            ConnectInternal(new IPEndPoint(address, port));
 #endif
         }
 
@@ -622,12 +645,14 @@ namespace Cave.Net
                 throw new ObjectDisposedException(nameof(TcpAsyncClient));
             }
 
-            if (initialized)
+            if (Initialized)
             {
                 throw new InvalidOperationException("Client already connected!");
             }
 
             RemoteEndPoint = new IPEndPoint(address, port);
+            BufferSize = bufferSize;
+
             ConnectAsync(RemoteEndPoint, bufferSize);
         }
 
@@ -639,7 +664,7 @@ namespace Cave.Net
         public void Connect(IPEndPoint endPoint, int bufferSize = 64 * 1024) => Connect(endPoint.Address, endPoint.Port, bufferSize);
 
         /// <summary>
-        /// Performs an asynchonous connect to the specified address and port.
+        /// Performs an asynchronous connect to the specified address and port.
         /// </summary>
         /// <remarks>
         /// This function returns immediately.
@@ -661,7 +686,7 @@ namespace Cave.Net
                 var e = new SocketAsyncEventArgs()
                 {
                     RemoteEndPoint = endPoint,
-                    UserToken = new AsyncParameters(socket, bufferSize),
+                    UserToken = socket,
                 };
                 e.Completed += ConnectAsyncCallback;
                 var isPending = socket.ConnectAsync(e);
@@ -924,7 +949,13 @@ namespace Cave.Net
         /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
         protected virtual void Dispose(bool disposing)
         {
-            closing = true;
+            if (disposing)
+            {
+                if (!closing)
+                {
+                    Close();
+                }
+            }
             DisposeUnmanaged();
         }
 
@@ -995,7 +1026,7 @@ namespace Cave.Net
         /// <summary>
         /// Gets or sets the dead lock timeout. This is the maximum time thread safe functions wait for acquiring the socket lock.
         /// </summary>
-        public TimeSpan DeadLockTimeout { get; set; } = TimeSpan.FromSeconds(5);
+        public TimeSpan DeadLockTimeout { get; set; } = TimeSpan.FromSeconds(1);
 
         /// <summary>
         /// Gets the buffer size used.
