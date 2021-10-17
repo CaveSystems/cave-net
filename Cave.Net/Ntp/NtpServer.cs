@@ -115,18 +115,20 @@ namespace Cave.Net.Ntp
         /// <returns>Returns whether the request shall be handled (true) or not (false).</returns>
         protected virtual bool OnRequest(ref NtpPacket request)
         {
-            if (Request != null)
+            var handler = Request;
+            //has handler ?
+            if (handler != null)
             {
+                //call handler
                 var e = new NtpPacketEventArgs(request);
-                Request?.Invoke(this, e);
-                if (!ReferenceEquals(request, e.Packet))
+                handler.Invoke(this, e);
+                //handle ?
+                if (!e.Discard)
                 {
                     request = e.Packet;
+                    return false;
                 }
-
-                return !e.Discard;
             }
-
             return true;
         }
 
@@ -137,18 +139,20 @@ namespace Cave.Net.Ntp
         /// <returns>Returns whether the answer shall be sent (true) or not (false).</returns>
         protected virtual bool OnAnswer(ref NtpPacket answer)
         {
-            if (Request != null)
+            var handler = Answer;
+            //has handler ?
+            if (handler != null)
             {
+                //call handler
                 var e = new NtpPacketEventArgs(answer);
-                Answer?.Invoke(this, e);
-                if (!ReferenceEquals(answer, e.Packet))
+                handler.Invoke(this, e);
+                //handle ?
+                if (!e.Discard)
                 {
                     answer = e.Packet;
+                    return false;
                 }
-
-                return !e.Discard;
             }
-
             return true;
         }
 
