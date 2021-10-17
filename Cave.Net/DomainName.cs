@@ -210,7 +210,7 @@ namespace Cave.Net
         public DomainName(params string[] parts)
         {
             Parts = parts ?? new string[0];
-            foreach (var part in parts)
+            foreach (var part in Parts)
             {
                 if (part.HasInvalidChars(SafeChars))
                 {
