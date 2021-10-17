@@ -336,16 +336,13 @@ namespace Cave.Net.Dns
         /// <param name="flags">Options for the query.</param>
         /// <returns>The complete response of the dns server.</returns>
         /// <exception cref="ArgumentNullException">Name must be provided.</exception>
-        public IList<DnsResponse> ResolveAll(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
+        public IList<DnsResponse> ResolveAll(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired) => ResolveAll(new DnsQuery()
         {
-            return ResolveAll(new DnsQuery()
-            {
-                Name = domainName,
-                RecordType = recordType,
-                RecordClass = recordClass,
-                Flags = flags,
-            });
-        }
+            Name = domainName,
+            RecordType = recordType,
+            RecordClass = recordClass,
+            Flags = flags,
+        });
 
         /// <summary>Queries the dns servers for the specified records.</summary>
         /// <remarks>This method works parallel and returns all results received from all <see cref="Servers" />.</remarks>
@@ -426,16 +423,13 @@ namespace Cave.Net.Dns
         /// <param name="flags">Options for the query.</param>
         /// <returns>The complete response of the dns server.</returns>
         /// <exception cref="ArgumentNullException">Name must be provided.</exception>
-        public DnsResponse ResolveSequential(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
+        public DnsResponse ResolveSequential(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired) => ResolveSequential(new DnsQuery()
         {
-            return ResolveSequential(new DnsQuery()
-            {
-                Name = domainName,
-                RecordType = recordType,
-                RecordClass = recordClass,
-                Flags = flags,
-            });
-        }
+            Name = domainName,
+            RecordType = recordType,
+            RecordClass = recordClass,
+            Flags = flags,
+        });
 
         /// <summary>Queries the dns servers for the specified records.</summary>
         /// <remarks>This method works sequential and may need up to <see cref="QueryTimeout" /> per <see cref="Servers" />.</remarks>
@@ -597,7 +591,7 @@ namespace Cave.Net.Dns
             }
         }
 
-        DnsResponse SelectBestResponse(IEnumerable<DnsResponse> responses, IEnumerable<Exception> errors)
+        static DnsResponse SelectBestResponse(IEnumerable<DnsResponse> responses, IEnumerable<Exception> errors)
         {
             var answers = responses.Where(r => r != null).ToList();
             return

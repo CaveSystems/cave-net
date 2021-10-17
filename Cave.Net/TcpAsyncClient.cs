@@ -7,9 +7,6 @@ using System.Net.Sockets;
 using System.Threading;
 using Cave.IO;
 using Cave.Net.Dns;
-#if NETSTANDARD13 || NETSTANDARD20 || NET45 || NET46 || NET47
-using System.Threading.Tasks;
-#endif
 
 namespace Cave.Net
 {
@@ -31,19 +28,16 @@ namespace Cave.Net
         int sendTimeout;
         short ttl = 255;
         bool nodelay;
-        LingerOption lingerState = new LingerOption(false, 0);
+        LingerOption lingerState = new(false, 0);
         Socket uncheckedSocket;
 
         bool Initialized => uncheckedSocket != null;
 
-        Socket CheckedSocket
-        {
-            get => uncheckedSocket == null
+        Socket CheckedSocket => uncheckedSocket == null
                 ? throw new InvalidOperationException("Not connected!")
                 : closing
                 ? throw new ObjectDisposedException(nameof(TcpAsyncClient))
                 : uncheckedSocket;
-        }
 
         T CachedValue<T>(ref T field, Func<T> func)
         {

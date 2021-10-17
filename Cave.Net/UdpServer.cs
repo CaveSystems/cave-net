@@ -108,6 +108,7 @@ namespace Cave.Net
             socket = null;
             buffer = null;
             client = null;
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>

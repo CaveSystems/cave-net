@@ -14,6 +14,10 @@
         <PackageReleaseNotes />
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(TargetFramework)'=='net20' OR '$(TargetFramework)'=='net35'">
+        <NoWarn>IDE0004</NoWarn>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     </PropertyGroup>
 
@@ -26,6 +30,7 @@
         <Reference Include="System.Core" />
         <Reference Include="Microsoft.CSharp" />
     </ItemGroup>
+    
     <ItemGroup Condition="'$(TargetFramework)'=='net20' OR '$(TargetFramework)'=='net35'">
         <Reference Include="System" />
     </ItemGroup>

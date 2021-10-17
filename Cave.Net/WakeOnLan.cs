@@ -49,7 +49,7 @@ namespace Cave.Net
             // 6 bytes 0xff
             // 16 repetitions of the 6 byte mac address
             // followed by the optional (in)SecureOnPassword
-            int size = 17 * 6;
+            var size = 17 * 6;
             byte[] buffer;
             if (secureOnPassword == null)
             {
@@ -61,7 +61,7 @@ namespace Cave.Net
                 buffer = new byte[size + passwordBytes.Length];
                 passwordBytes.CopyTo(buffer, size);
             }
-            for (int i = 0; i < 6; i++)
+            for (var i = 0; i < 6; i++)
             {
                 buffer[i] = 0xff;
             }
@@ -71,12 +71,12 @@ namespace Cave.Net
                 throw new ArgumentOutOfRangeException(nameof(macAddress), "Physical mac address bytes out of range (6)!");
             }
 
-            for (int i = 6; i < size; i += 6)
+            for (var i = 6; i < size; i += 6)
             {
                 macBytes.CopyTo(buffer, i);
             }
 
-            using UdpClient udp = new UdpClient();
+            using var udp = new UdpClient();
             udp.EnableBroadcast = true;
             foreach (var targetPort in new[] { 0, 7, 9 })
             {

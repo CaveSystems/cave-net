@@ -69,13 +69,13 @@ namespace Cave.Net.Dns
         {
             var result = new StringBuilder();
             result.Append(Name);
-            result.Append(" ");
+            result.Append(' ');
             result.Append(RecordClass);
-            result.Append(" ");
+            result.Append(' ');
             result.Append(RecordType);
             if (Value != null)
             {
-                result.Append(" ");
+                result.Append(' ');
                 result.Append(Value.ToString());
             }
             return result.ToString();

@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System;
+using System.Net;
 using System.Runtime.InteropServices;
 
 namespace Cave.Net.Ntp
@@ -7,8 +8,24 @@ namespace Cave.Net.Ntp
     /// Provides an ntp int 32 value.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 4)]
-    public struct NtpInt32
+    public struct NtpInt32 : IEquatable<NtpInt32>
     {
+        /// <summary>
+        /// Returns the result of <paramref name="left"/>.<see cref="Equals(NtpInt32)"/>(<paramref name="right"/>).
+        /// </summary>
+        /// <param name="left">left operand</param>
+        /// <param name="right">right operand</param>
+        /// <returns>True if the values are equal, false otherwise</returns>
+        public static bool operator ==(NtpInt32 left, NtpInt32 right) => left.Equals(right);
+
+        /// <summary>
+        /// Returns the result of !<paramref name="left"/>.<see cref="Equals(NtpInt32)"/>(<paramref name="right"/>).
+        /// </summary>
+        /// <param name="left">left operand</param>
+        /// <param name="right">right operand</param>
+        /// <returns>False if the values are equal, true otherwise</returns>
+        public static bool operator !=(NtpInt32 left, NtpInt32 right) => !(left == right);
+
         /// <summary>
         /// Implicit conversion from <see cref="NtpInt32"/> to int.
         /// </summary>
@@ -34,17 +51,13 @@ namespace Cave.Net.Ntp
         /// <returns>Returns a string that represents the current object.</returns>
         public override string ToString() => Value.ToString();
 
-        /// <summary>
-        /// Serves as the default hash function.
-        /// </summary>
-        /// <returns>Retruns a hash code for the current object.</returns>
+        /// <inheritdoc />
         public override int GetHashCode() => Value.GetHashCode();
 
-        /// <summary>
-        /// Determines whether the specified object is equal to the current object.
-        /// </summary>
-        /// <param name="obj">The object to compare with the current object.</param>
-        /// <returns>Returns true if the specified object is equal to the current object; otherwise, false.</returns>
-        public override bool Equals(object obj) => Equals(Value.ToString(), obj?.ToString());
+        /// <inheritdoc />
+        public override bool Equals(object obj) => obj is NtpInt32 other && Equals(other);
+
+        /// <inheritdoc />
+        public bool Equals(NtpInt32 other) => Value == other.Value;
     }
 }

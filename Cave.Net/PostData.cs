@@ -35,15 +35,12 @@ namespace Cave.Net
         /// <param name="name">Parameter name.</param>
         /// <param name="value">Content to send.</param>
         /// <returns>Returns a new <see cref="PostData"/> instance.</returns>
-        public static PostData Text(string name, string value)
+        public static PostData Text(string name, string value) => new()
         {
-            return new()
-            {
-                Source = new MemoryStream(Encoding.UTF8.GetBytes(value)),
-                Name = name ?? throw new ArgumentNullException(nameof(name)),
-                ContentType = "text/plain;charset=UTF-8",
-            };
-        }
+            Source = new MemoryStream(Encoding.UTF8.GetBytes(value)),
+            Name = name ?? throw new ArgumentNullException(nameof(name)),
+            ContentType = "text/plain;charset=UTF-8",
+        };
 
         /// <summary>
         /// Creates a new <see cref="PostData"/> instance using name value combination transmitted using utf-8 text/plain encoding.
@@ -51,15 +48,12 @@ namespace Cave.Net
         /// <param name="name">Parameter name.</param>
         /// <param name="data">Content to send.</param>
         /// <returns>Returns a new <see cref="PostData"/> instance.</returns>
-        public static PostData Binary(string name, byte[] data)
+        public static PostData Binary(string name, byte[] data) => new()
         {
-            return new()
-            {
-                Source = new MemoryStream(data),
-                Name = name ?? throw new ArgumentNullException(nameof(name)),
-                ContentType = "application/octet-stream",
-            };
-        }
+            Source = new MemoryStream(data),
+            Name = name ?? throw new ArgumentNullException(nameof(name)),
+            ContentType = "application/octet-stream",
+        };
 
         /// <summary>
         /// Source stream containing the data to be sent.

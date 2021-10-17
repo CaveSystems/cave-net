@@ -45,7 +45,7 @@ namespace Cave.Net
         /// <summary>
         /// Gets or sets a value indicating whether SSL is enabled for ftp access or not.
         /// </summary>
-        public bool EnableSSL { get; set; } = false;
+        public bool EnableSSL { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="FtpConnection"/> class.

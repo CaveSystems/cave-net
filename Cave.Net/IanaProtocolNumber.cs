@@ -1,8 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Cave.Net
 {
     /// <summary>
     /// http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml.
     /// </summary>
+    [SuppressMessage("Naming", "CA1707", Justification = "Underlines needed in names for parsing and compatibility.")]
     public enum IanaProtocolNumber : byte
     {
         /// <summary>
@@ -58,12 +61,12 @@ namespace Cave.Net
         /// <summary>
         /// BBN RCC Monitoring [Steve_Chipman]
         /// </summary>
-        BBN_RCC_MON,
+        BbnRccMon,
 
         /// <summary>
         /// Network Voice Protocol [RFC741][Steve_Casner]
         /// </summary>
-        NVP_II,
+        NvpII,
 
         /// <summary>
         /// [Boggs, D., J. Shoch, E. Taft, and R. Metcalfe, "PUP: An Internetwork Architecture", XEROX Palo Alto Research Center, CSL-79-10, July 1979; also in IEEE Transactions on Communication, Volume COM-28, Number 4, April 1980.][[XEROX]]
@@ -103,7 +106,7 @@ namespace Cave.Net
         /// <summary>
         /// DCN Measurement Subsystems [David_Mills]
         /// </summary>
-        DCN_MEAS,
+        DCN,
 
         /// <summary>
         /// Host Monitoring [RFC869][Bob_Hinden]
@@ -123,22 +126,22 @@ namespace Cave.Net
         /// <summary>
         /// Trunk-1 [Barry_Boehm]
         /// </summary>
-        TRUNK_1,
+        Trunk1,
 
         /// <summary>
         /// Trunk-2 [Barry_Boehm]
         /// </summary>
-        TRUNK_2,
+        Trunk2,
 
         /// <summary>
         /// Leaf-1 [Barry_Boehm]
         /// </summary>
-        LEAF_1,
+        Leaf1,
 
         /// <summary>
         /// Leaf-2 [Barry_Boehm]
         /// </summary>
-        LEAF_2,
+        Leaf2,
 
         /// <summary>
         /// Reliable Data Protocol [RFC908][Bob_Hinden]
@@ -153,7 +156,7 @@ namespace Cave.Net
         /// <summary>
         /// ISO Transport Protocol Class 4 [RFC905]
         /// </summary>
-        ISO_TP4,
+        IsoTP4,
 
         /// <summary>
         /// Bulk Data Transfer Protocol [RFC969][David_Clark]
@@ -163,12 +166,12 @@ namespace Cave.Net
         /// <summary>
         /// MFE Network Services Protocol [Shuttleworth, B., "A Documentary of MFENet, a National Computer Network", UCRL-52317, Lawrence Livermore Labs, Livermore, California, June 1977.][Barry_Howard]
         /// </summary>
-        MFE_NSP,
+        MFENSP,
 
         /// <summary>
         /// MERIT Internodal Protocol [Hans_Werner_Braun]
         /// </summary>
-        MERIT_INP,
+        MERITINP,
 
         /// <summary>
         /// Datagram Congestion Control Protocol [RFC4340]
@@ -198,12 +201,12 @@ namespace Cave.Net
         /// <summary>
         /// IDPR Control Message Transport Proto [Martha_Steenstrup]
         /// </summary>
-        IDPR_CMTP,
+        IDPRCMTP,
 
         /// <summary>
         /// TP++ Transport Protocol [Dirk_Fromhein]
         /// </summary>
-        TP_PlusPlus,
+        TPPlusPlus,
 
         /// <summary>
         /// IL Transport Protocol [Dave_Presotto]
@@ -223,7 +226,7 @@ namespace Cave.Net
         /// <summary>
         /// Routing Header for IPv6 [Steve_Deering]
         /// </summary>
-        IPv6_Route,
+        IPv6Route,
 
         /// <summary>
         /// Fragment Header for IPv6 [Steve_Deering]

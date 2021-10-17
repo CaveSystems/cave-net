@@ -188,7 +188,7 @@ namespace Cave.Net
 
         /// <summary>Gets the DNS root name (.)</summary>
         /// <value>The root.</value>
-        public static DomainName Root { get; } = new DomainName(new string[] { });
+        public static DomainName Root { get; } = new DomainName(null);
 
         /// <summary>Gets the parts of the domain name.</summary>
         /// <value>The parts.</value>
@@ -199,7 +199,7 @@ namespace Cave.Net
         /// </summary>
         /// <param name="parts">The parts of the DomainName.</param>
         public DomainName(IEnumerable<string> parts)
-            : this(parts.ToArray())
+            : this(parts?.ToArray())
         {
         }
 
@@ -209,7 +209,7 @@ namespace Cave.Net
         /// <param name="parts">The parts of the DomainName.</param>
         public DomainName(params string[] parts)
         {
-            Parts = parts;
+            Parts = parts ?? new string[0];
             foreach (var part in parts)
             {
                 if (part.HasInvalidChars(SafeChars))

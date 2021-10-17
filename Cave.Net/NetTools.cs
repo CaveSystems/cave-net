@@ -12,7 +12,7 @@ namespace Cave.Net
     /// </summary>
     public static class NetTools
     {
-        static string myHostName = null;
+        static string myHostName;
 
         /// <summary>Determines whether the specified address is localhost.</summary>
         /// <param name="address">The address.</param>
@@ -20,12 +20,12 @@ namespace Cave.Net
         public static bool IsLocalhost(this IPAddress address)
         {
             var stringAddress = address.ToString();
-            switch (address.AddressFamily)
+            return address.AddressFamily switch
             {
-                case AddressFamily.InterNetwork: return stringAddress.StartsWith("127.");
-                case AddressFamily.InterNetworkV6: return stringAddress.StartsWith("::ffff:127.") || stringAddress == "::1";
-            }
-            return false;
+                AddressFamily.InterNetwork => stringAddress.StartsWith("127."),
+                AddressFamily.InterNetworkV6 => stringAddress.StartsWith("::ffff:127.") || stringAddress == "::1",
+                _ => false
+            };
         }
 
         /// <summary>
@@ -168,9 +168,7 @@ namespace Cave.Net
 #if NET45 || NET46 || NET47 || NETSTANDARD20
                 var listener = TcpListener.Create(port);
 #elif NET20 || NET35 || NET40
-#pragma warning disable CS0618
                 var listener = new TcpListener(IPAddress.Any, port);
-#pragma warning restore CS0618
 #else
 #error No code defined for the current framework or NETXX version define missing!
 #endif

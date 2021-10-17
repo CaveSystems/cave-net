@@ -31,8 +31,24 @@ namespace Cave.Net.Ntp
     /// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+.
     /// </remarks>
     [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 8)]
-    public struct NtpTimestamp
+    public struct NtpTimestamp : IEquatable<NtpTimestamp>
     {
+        /// <summary>
+        /// Returns the result of <paramref name="left"/>.<see cref="Equals(NtpTimestamp)"/>(<paramref name="right"/>).
+        /// </summary>
+        /// <param name="left">left operand</param>
+        /// <param name="right">right operand</param>
+        /// <returns>True if the values are equal, false otherwise</returns>
+        public static bool operator ==(NtpTimestamp left, NtpTimestamp right) => left.Equals(right);
+
+        /// <summary>
+        /// Returns the result of !<paramref name="left"/>.<see cref="Equals(NtpTimestamp)"/>(<paramref name="right"/>).
+        /// </summary>
+        /// <param name="left">left operand</param>
+        /// <param name="right">right operand</param>
+        /// <returns>False if the values are equal, true otherwise</returns>
+        public static bool operator !=(NtpTimestamp left, NtpTimestamp right) => !(left == right);
+
         /// <summary>
         /// Provides the seconds per epoch.
         /// </summary>
@@ -66,7 +82,7 @@ namespace Cave.Net.Ntp
         /// <param name="dateTime">The dateTime value to convert.</param>
         public static implicit operator NtpTimestamp(DateTime dateTime) => new() { DateTime = dateTime };
 
-        void GetBaseEpoch(out DateTime baseEpoch, out long secondsOffset)
+        static void GetBaseEpoch(out DateTime baseEpoch, out long secondsOffset)
         {
             // split into quarters and move base fordward until we are sure we got the correct timeframe based on the current year. This works as long as we do not exceed a difference of more than (1 << 30) seconds.
             baseEpoch = NtpEpoch;
@@ -140,11 +156,10 @@ namespace Cave.Net.Ntp
         /// <returns>Retruns a hash code for the current object.</returns>
         public override int GetHashCode() => DateTime.GetHashCode();
 
-        /// <summary>
-        /// Determines whether the specified object is equal to the current object.
-        /// </summary>
-        /// <param name="obj">The object to compare with the current object.</param>
-        /// <returns>Returns true if the specified object is equal to the current object; otherwise, false.</returns>
-        public override bool Equals(object obj) => Equals(ToString(), obj?.ToString());
+        /// <inheritdoc />
+        public override bool Equals(object obj) => obj is NtpTimestamp other && Equals(other);
+
+        /// <inheritdoc />
+        public bool Equals(NtpTimestamp other) => Seconds == other.Seconds && Fraction == other.Fraction;
     }
 }
