@@ -1,43 +1,41 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net20;net35;net40;net45</TargetFrameworks>
-    <!--project-->
-    <RootNamespace>Cave.Net</RootNamespace>
-    <AssemblyOriginatorKeyFile>cave-net.snk</AssemblyOriginatorKeyFile>
-    <Product>CaveSystems Networking Library</Product>
-    <PackageTags>CaveSystems Networking TcpServer TcpAsyncClient UdpServer UdpAsyncClient DNS NTP</PackageTags>
-    <Description>CaveSystems Networking Library</Description>
-    <PackageProjectUrl>https://github.com/CaveSystems/cave-net</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/CaveSystems/cave-net</RepositoryUrl>
-    <!--settings-->
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageReleaseNotes />
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFrameworks>netstandard2.0;net20;net35;net40;net45</TargetFrameworks>
+        <!--project-->
+        <RootNamespace>Cave.Net</RootNamespace>
+        <AssemblyOriginatorKeyFile>cave-net.snk</AssemblyOriginatorKeyFile>
+        <Product>CaveSystems Networking Library</Product>
+        <PackageTags>CaveSystems Networking TcpServer TcpAsyncClient UdpServer UdpAsyncClient DNS NTP</PackageTags>
+        <Description>CaveSystems Networking Library</Description>
+        <PackageProjectUrl>https://github.com/CaveSystems/cave-net</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/CaveSystems/cave-net</RepositoryUrl>
+        <!--settings-->
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageReleaseNotes />
+    </PropertyGroup>
 
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <DefineConstants>TRACE;DEBUG;</DefineConstants>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>TRACE;DEBUG;</DefineConstants>
-  </PropertyGroup>
+    <ItemGroup Condition="'$(TargetFramework)'=='net40' OR '$(TargetFramework)'=='net45' OR '$(TargetFramework)'=='net46' OR '$(TargetFramework)'=='net47'">
+        <Reference Include="System" />
+        <Reference Include="System.Core" />
+        <Reference Include="Microsoft.CSharp" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)'=='net20' OR '$(TargetFramework)'=='net35'">
+        <Reference Include="System" />
+    </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='net40' OR '$(TargetFramework)'=='net45' OR '$(TargetFramework)'=='net46' OR '$(TargetFramework)'=='net47'">
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)'=='net20' OR '$(TargetFramework)'=='net35'">
-    <Reference Include="System" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Cave.Extensions" Version="2.0.13" />
-    <PackageReference Include="Cave.IO" Version="2.0.4" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.*">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Cave.Extensions" Version="2.0.17" />
+        <PackageReference Include="Cave.IO" Version="2.0.4" />
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.*">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
 </Project>
