@@ -17,7 +17,7 @@ namespace Cave.Net
         readonly TcpAsyncClient client;
         bool asyncSendInProgress;
 
-        void AsyncSendNext()
+        void AsyncSendNext(object unused)
         {
             try
             {
@@ -30,9 +30,11 @@ namespace Cave.Net
                         Monitor.Pulse(sendBuffer);
                         return;
                     }
+
                     buffer = sendBuffer.Dequeue(sendBuffer.Length);
                 }
-                client.SendAsync(buffer, AsyncSendNext);
+
+                client.SendAsync(buffer, () => AsyncSendNext(null));
             }
             catch (Exception ex)
             {
@@ -52,9 +54,14 @@ namespace Cave.Net
         /// <summary>
         /// Gets or sets a value indicating whether the stream use direct writes on the clients socket for each call to <see cref="Write(byte[], int, int)"/>.
         /// Default is false buffering all writes.
-        /// You need to set thit to true if you use the clients <see cref="TcpAsyncClient.Send(byte[])"/> function and stream writing.
+        /// You need to set this to true if you use the clients <see cref="TcpAsyncClient.Send(byte[])"/> function and stream writing at the same time.
         /// </summary>
         public bool DirectWrites { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the stream shall only be written to the underlying <see cref="TcpAsyncClient"/> when using <see cref="Flush"/>.
+        /// </summary>
+        public bool SendOnFlush { get; set; }
 
         /// <summary>
         /// Gets the number of bytes available for reading.
@@ -144,13 +151,34 @@ namespace Cave.Net
         {
             if (DirectWrites)
             {
+                if (SendOnFlush)
+                {
+                    byte[] bufferToSend;
+                    lock (sendBuffer)
+                    {
+                        bufferToSend = sendBuffer.ToArray();
+                        sendBuffer.Clear();
+                    }
+
+                    client.Send(bufferToSend);
+                }
+
                 return;
             }
 
-            for (; ;)
+            for (; ; )
             {
                 lock (sendBuffer)
                 {
+                    if (SendOnFlush)
+                    {
+                        if (!asyncSendInProgress)
+                        {
+                            asyncSendInProgress = true;
+                            ThreadPool.QueueUserWorkItem(AsyncSendNext);
+                        }
+                    }
+
                     if (!asyncSendInProgress && client.PendingAsyncSends == 0)
                     {
                         if (sendBuffer.Length > 0)
@@ -159,6 +187,7 @@ namespace Cave.Net
                         }
                         return;
                     }
+
                     if (!Monitor.Wait(sendBuffer, 1000))
                     {
                         if (!client.IsConnected)
@@ -230,7 +259,7 @@ namespace Cave.Net
         /// <param name="count">The number of bytes to be written to the current stream.</param>
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (DirectWrites)
+            if (DirectWrites && !SendOnFlush)
             {
                 client.Send(buffer, offset, count);
                 return;
@@ -239,10 +268,13 @@ namespace Cave.Net
             lock (sendBuffer)
             {
                 sendBuffer.Enqueue(buffer, offset, count);
-                if (!asyncSendInProgress)
+                if (!SendOnFlush)
                 {
-                    asyncSendInProgress = true;
-                    Task.Factory.StartNew(AsyncSendNext);
+                    if (!asyncSendInProgress)
+                    {
+                        asyncSendInProgress = true;
+                        ThreadPool.QueueUserWorkItem(AsyncSendNext);
+                    }
                 }
             }
         }
