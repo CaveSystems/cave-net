@@ -86,14 +86,17 @@ namespace Cave.Net.Dns
         {
             get
             {
-                if (defaultClient == null)
+                var google = defaultClient = new DnsClient()
                 {
-                    defaultClient = new DnsClient();
-                    long ip = BitConverter.IsLittleEndian ? 0x04040808 : 0x08080404;
-                    defaultClient.Servers = new[] { new IPAddress(0x08080808), new IPAddress(ip) };
-                }
-
-                return defaultClient;
+                    Servers = new[]
+                    {
+                        IPAddress.Parse("8.8.4.4"),
+                        IPAddress.Parse("8.8.8.8"),
+                        IPAddress.Parse("2001:4860:4860::8844"),
+                        IPAddress.Parse("2001:4860:4860::8888"),
+                    }
+                };
+                return google;
             }
         }
 
@@ -135,8 +138,16 @@ namespace Cave.Net.Dns
                 {
                     Trace.TraceWarning("Cannot use the default DNS servers of this system. Using public dns.");
                 }
-
+                //Deutsche Telekom AG
+                result.Add(IPAddress.Parse("194.25.0.60"));
+                //uunet germany
+                result.Add(IPAddress.Parse("193.101.111.10"));
+                //uunet france
+                result.Add(IPAddress.Parse("194.98.65.65"));
+                //cloudflare usa
                 result.Add(IPAddress.Parse("1.1.1.1"));
+                result.Add(IPAddress.Parse("2606:4700:4700::1001"));
+                //google
                 result.Add(IPAddress.Parse("8.8.4.4"));
                 result.Add(IPAddress.Parse("8.8.8.8"));
                 result.Add(IPAddress.Parse("2001:4860:4860::8844"));
@@ -154,7 +165,6 @@ namespace Cave.Net.Dns
         {
             UseUdp = true;
             UseTcp = true;
-            UseRandomCase = false;
             Port = 53;
             QueryTimeout = TimeSpan.FromSeconds(5);
         }
@@ -163,14 +173,10 @@ namespace Cave.Net.Dns
 
         #region Properties
 
-        /// <summary>Gets the name of the log source.</summary>
-        /// <value>The name of the log source.</value>
-        public string LogSourceName => "DnsClient";
-
         /// <summary>Gets a value indicating whether [use random case].</summary>
         /// <value><c>true</c> if [use random case]; otherwise, <c>false</c>.</value>
         /// <remarks><see href="https://tools.ietf.org/html/draft-vixie-dnsext-dns0x20-00" />.</remarks>
-        public bool UseRandomCase { get; }
+        public bool UseRandomCase { get; set; }
 
         /// <summary>Gets or sets the port.</summary>
         /// <value>The port.</value>
@@ -284,31 +290,41 @@ namespace Cave.Net.Dns
                 useTcp = true;
             }
 
-            var exceptions = new List<Exception>();
-            var responses = new List<DnsResponse>();
-            Parallel.ForEach(Servers, (server, state) =>
-            {
-                try
-                {
-                    var response = DoQuery(useTcp, query, server, messageID, message);
-                    if (response != null)
-                    {
-                        lock (responses)
-                        {
-                            responses.Add(response);
-                        }
+            var exceptions = new Exception[Servers.Length];
+            var responses = new DnsResponse[Servers.Length];
 
-                        if (response.ResponseCode == DnsResponseCode.NoError)
+            var tasks = new Task[Servers.Length];
+            for (var i = 0; i < Servers.Length; i++)
+            {
+                void Query(object state)
+                {
+                    var n = (int)state;
+                    try
+                    {
+                        var response = DoQuery(useTcp, query, Servers[n], messageID, message);
+                        if (response != null)
                         {
-                            state.Break();
+                            responses[n] = response;
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        exceptions[n] = ex;
+                    }
                 }
-                catch (Exception ex)
+                tasks[i] = Task.Factory.StartNew(Query, (object)i);
+            };
+
+            while (tasks.Length > 0)
+            {
+                Task.WaitAny(tasks);
+                var response = responses.FirstOrDefault(r => r?.ResponseCode == DnsResponseCode.NoError);
+                if (response != null)
                 {
-                    exceptions.Add(ex);
+                    return response;
                 }
-            });
+                tasks = tasks.Where(t => !t.IsCompleted).ToArray();
+            }
             return SelectBestResponse(responses, exceptions);
         }
 
@@ -320,15 +336,16 @@ namespace Cave.Net.Dns
         /// <param name="flags">Options for the query.</param>
         /// <returns>The complete response of the dns server.</returns>
         /// <exception cref="ArgumentNullException">Name must be provided.</exception>
-        public IList<DnsResponse> ResolveAll(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN,
-            DnsFlags flags = DnsFlags.RecursionDesired) =>
-            ResolveAll(new DnsQuery
+        public IList<DnsResponse> ResolveAll(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
+        {
+            return ResolveAll(new DnsQuery()
             {
                 Name = domainName,
                 RecordType = recordType,
                 RecordClass = recordClass,
-                Flags = flags
+                Flags = flags,
             });
+        }
 
         /// <summary>Queries the dns servers for the specified records.</summary>
         /// <remarks>This method works parallel and returns all results received from all <see cref="Servers" />.</remarks>
@@ -409,15 +426,16 @@ namespace Cave.Net.Dns
         /// <param name="flags">Options for the query.</param>
         /// <returns>The complete response of the dns server.</returns>
         /// <exception cref="ArgumentNullException">Name must be provided.</exception>
-        public DnsResponse ResolveSequential(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN,
-            DnsFlags flags = DnsFlags.RecursionDesired) =>
-            ResolveSequential(new DnsQuery
+        public DnsResponse ResolveSequential(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
+        {
+            return ResolveSequential(new DnsQuery()
             {
                 Name = domainName,
                 RecordType = recordType,
                 RecordClass = recordClass,
-                Flags = flags
+                Flags = flags,
             });
+        }
 
         /// <summary>Queries the dns servers for the specified records.</summary>
         /// <remarks>This method works sequential and may need up to <see cref="QueryTimeout" /> per <see cref="Servers" />.</remarks>
@@ -529,6 +547,7 @@ namespace Cave.Net.Dns
             }
         }
 
+
         DnsResponse QueryTcp(IPAddress srv, byte[] query)
         {
             var timeout = Math.Max(100, (int)QueryTimeout.TotalMilliseconds);
@@ -540,15 +559,15 @@ namespace Cave.Net.Dns
                 tcp.Connect(srv, 53);
                 tcp.SendTimeout = timeout;
                 tcp.ReceiveTimeout = timeout;
-                tcp.NoDelay = true;
-                using var stream = tcp.GetStream();
-                var writer = new DataWriter(stream, endian: EndianType.BigEndian);
+                tcp.Stream.DirectWrites = true;
+                var writer = new DataWriter(tcp.Stream, endian: EndianType.BigEndian);
                 writer.Write((ushort)query.Length);
                 writer.Write(query);
                 writer.Flush();
-                var reader = new DataReader(stream);
-                int length = reader.ReadUInt16();
-                return new DnsResponse(srv, reader.ReadBytes(length));
+                var reader = new DataReader(tcp.Stream, endian: EndianType.BigEndian);
+                var length = reader.ReadUInt16();
+                var data = reader.ReadBytes(length);
+                return new DnsResponse(srv, data);
             }
             finally
             {
@@ -578,11 +597,15 @@ namespace Cave.Net.Dns
             }
         }
 
-        DnsResponse SelectBestResponse(IList<DnsResponse> responses, IList<Exception> errors) =>
-            responses.FirstOrDefault(r => r.ResponseCode == DnsResponseCode.NoError) ??
-            responses.FirstOrDefault(r => r.Answers.Count > 0) ??
-            responses.FirstOrDefault() ??
-            throw new AggregateException("Could not reach any dns server!", errors);
+        DnsResponse SelectBestResponse(IEnumerable<DnsResponse> responses, IEnumerable<Exception> errors)
+        {
+            var answers = responses.Where(r => r != null).ToList();
+            return
+                answers.FirstOrDefault(r => r?.ResponseCode == DnsResponseCode.NoError) ??
+                answers.FirstOrDefault(r => r?.Answers.Count > 0) ??
+                answers.FirstOrDefault() ??
+                throw new AggregateException("Could not reach any dns server!", errors.Where(e => e is not null));
+        }
 
         #endregion
     }
