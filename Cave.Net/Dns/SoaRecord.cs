@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Mail;
 using System.Text;
@@ -17,10 +18,24 @@ namespace Cave.Net.Dns
         /// <returns>Returns a new <see cref="SoaRecord"/> structure.</returns>
         public static SoaRecord Parse(DataReader reader)
         {
+            DomainName masterName;
+            MailAddress responsibleName;
+            try
+            {
+                masterName = DomainName.Parse(reader);
+                responsibleName = ParseEmailAddress(reader);
+            }
+            catch (Exception ex)
+            {
+                masterName = null;
+                responsibleName = null;
+                Trace.TraceError(ex.ToString());
+            }
+
             var result = new SoaRecord
             {
-                MasterName = DomainName.Parse(reader),
-                ResponsibleName = ParseEmailAddress(reader),
+                MasterName = masterName,
+                ResponsibleName = responsibleName,
                 SerialNumber = reader.ReadUInt32(),
                 RefreshInterval = reader.ReadInt32(),
                 RetryInterval = reader.ReadInt32(),
@@ -45,7 +60,9 @@ namespace Cave.Net.Dns
                         reader.BaseStream.Position = endposition;
                     }
 
-                    return parts.Any(p => p.Contains("@"))
+                    return (parts.Count == 0)
+                        ? null
+                        : parts.Any(p => p.Contains("@"))
                         ? new MailAddress(parts.Join("."))
                         : new MailAddress(parts[0] + "@" + parts.SubRange(1).Join("."));
                 }
