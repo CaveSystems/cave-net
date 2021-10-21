@@ -267,17 +267,13 @@ namespace Cave.Net.Dns
                     var n = (int)state;
                     try
                     {
-                        var response = Resolve(new DnsQuery
+                        responses[n] = Resolve(new DnsQuery
                         {
-                            Name = $"{domainName}.{SearchSuffixes[i]}",
+                            Name = $"{domainName}.{SearchSuffixes[n]}",
                             RecordType = recordType,
                             RecordClass = recordClass,
                             Flags = flags
                         });
-                        if (response != null)
-                        {
-                            responses[n] = response;
-                        }
                     }
                     catch (Exception ex)
                     {
