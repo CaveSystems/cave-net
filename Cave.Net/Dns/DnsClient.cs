@@ -100,6 +100,27 @@ namespace Cave.Net.Dns
             }
         }
 
+        /// <summary>Gets a list of public DNS servers (EU and US).</summary>
+        public static IPAddress[] GetPulicDnsServers()
+        {
+            var result = new List<IPAddress>();
+            //Deutsche Telekom AG
+            result.Add(IPAddress.Parse("194.25.0.60"));
+            //uunet germany
+            result.Add(IPAddress.Parse("193.101.111.10"));
+            //uunet france
+            result.Add(IPAddress.Parse("194.98.65.65"));
+            //cloudflare usa
+            result.Add(IPAddress.Parse("1.1.1.1"));
+            result.Add(IPAddress.Parse("2606:4700:4700::1001"));
+            //google
+            result.Add(IPAddress.Parse("8.8.4.4"));
+            result.Add(IPAddress.Parse("8.8.8.8"));
+            result.Add(IPAddress.Parse("2001:4860:4860::8844"));
+            result.Add(IPAddress.Parse("2001:4860:4860::8888"));
+            return result.ToArray();
+        }
+
         /// <summary>Gets a list of the local configured DNS servers.</summary>
         /// <returns>Returns a array of <see cref="IPAddress" /> instances.</returns>
         public static IPAddress[] GetDefaultDnsServers()
@@ -132,27 +153,12 @@ namespace Cave.Net.Dns
                     break;
             }
 
-            // public dns as fallback
+            if (result.Count == 0)
             {
-                if (result.Count == 0)
-                {
-                    Trace.TraceWarning("Cannot use the default DNS servers of this system. Using public dns.");
-                }
-                //Deutsche Telekom AG
-                result.Add(IPAddress.Parse("194.25.0.60"));
-                //uunet germany
-                result.Add(IPAddress.Parse("193.101.111.10"));
-                //uunet france
-                result.Add(IPAddress.Parse("194.98.65.65"));
-                //cloudflare usa
-                result.Add(IPAddress.Parse("1.1.1.1"));
-                result.Add(IPAddress.Parse("2606:4700:4700::1001"));
-                //google
-                result.Add(IPAddress.Parse("8.8.4.4"));
-                result.Add(IPAddress.Parse("8.8.8.8"));
-                result.Add(IPAddress.Parse("2001:4860:4860::8844"));
-                result.Add(IPAddress.Parse("2001:4860:4860::8888"));
+                Trace.TraceWarning("Cannot use the default DNS servers of this system. Using public dns.");
+                return GetPulicDnsServers();
             }
+
             return result.ToArray();
         }
 
@@ -212,21 +218,16 @@ namespace Cave.Net.Dns
         /// <param name="flags">Options for the query.</param>
         /// <returns>The complete response of the dns server.</returns>
         /// <exception cref="ArgumentNullException">Name must be provided.</exception>
-        public DnsResponse Resolve(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN,
-            DnsFlags flags = DnsFlags.RecursionDesired)
+        public DnsResponse Resolve(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
         {
-            if ((domainName.Parts.Length == 1) && (SearchSuffixes?.Length > 0))
+            if (Servers == null)
             {
-                var responses = new List<DnsResponse>();
-                Parallel.ForEach(SearchSuffixes, suffix =>
-                {
-                    var answer = Resolve($"{domainName}.{suffix}", recordType, recordClass, flags);
-                    lock (responses)
-                    {
-                        responses.Add(answer);
-                    }
-                });
-                return SelectBestResponse(responses, null);
+                Servers = GetDefaultDnsServers();
+            }
+
+            if (domainName.Parts.Length == 1)
+            {
+                return ResolveWithSearchSuffix(domainName, recordType, recordClass, flags);
             }
 
             return Resolve(new DnsQuery
@@ -236,6 +237,67 @@ namespace Cave.Net.Dns
                 RecordClass = recordClass,
                 Flags = flags
             });
+        }
+
+        /// <summary>Queries the dns servers for the specified records using all <see cref="SearchSuffixes"/>.</summary>
+        /// <remarks>This method works parallel and returns the first result of any <see cref="Servers" />.</remarks>
+        /// <param name="domainName">Domain, that should be queried.</param>
+        /// <param name="recordType">Type the should be queried.</param>
+        /// <param name="recordClass">Class the should be queried.</param>
+        /// <param name="flags">Options for the query.</param>
+        /// <returns>The first successful response of the dns server.</returns>
+        /// <exception cref="ArgumentNullException">Name must be provided.</exception>
+        /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp.</exception>
+        /// <exception cref="AggregateException">Could not reach any dns server.</exception>
+        public DnsResponse ResolveWithSearchSuffix(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
+        {
+            if (SearchSuffixes == null)
+            {
+                SearchSuffixes = NetworkInterface.GetAllNetworkInterfaces().Select(i => i.GetIPProperties().DnsSuffix).Distinct().ToArray();
+            }
+
+            var exceptions = new Exception[SearchSuffixes.Length];
+            var responses = new DnsResponse[SearchSuffixes.Length];
+
+            var tasks = new Task[SearchSuffixes.Length];
+            for (var i = 0; i < SearchSuffixes.Length; i++)
+            {
+                void Query(object state)
+                {
+                    var n = (int)state;
+                    try
+                    {
+                        var response = Resolve(new DnsQuery
+                        {
+                            Name = $"{domainName}.{SearchSuffixes[i]}",
+                            RecordType = recordType,
+                            RecordClass = recordClass,
+                            Flags = flags
+                        });
+                        if (response != null)
+                        {
+                            responses[n] = response;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions[n] = ex;
+                    }
+                }
+                tasks[i] = Task.Factory.StartNew(Query, (object)i);
+            };
+
+            while (tasks.Length > 0)
+            {
+                Task.WaitAny(tasks);
+                var response = responses.FirstOrDefault(r => r?.ResponseCode == DnsResponseCode.NoError);
+                if (response != null)
+                {
+                    return response;
+                }
+                tasks = tasks.Where(t => !t.IsCompleted).ToArray();
+            }
+            return SelectBestResponse(responses, exceptions);
         }
 
         /// <summary>Queries the dns servers for the specified records.</summary>
