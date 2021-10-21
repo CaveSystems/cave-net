@@ -7,7 +7,7 @@ namespace Test
 {
     class Tools
     {
-        static int firstPort = 10000 + (Environment.TickCount % 10000) + (Thread.CurrentThread.ManagedThreadId.GetHashCode() % 10000);
+        static int firstPort = 60000 - (Environment.TickCount % 10000) - (Thread.CurrentThread.ManagedThreadId.GetHashCode() % 10000);
 
         public static int GetPort()
         {
@@ -15,7 +15,7 @@ namespace Test
             {
                 try
                 {
-                    var port = Interlocked.Increment(ref firstPort);
+                    var port = Interlocked.Decrement(ref firstPort);
                     var sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
                     {
                         LingerState = new LingerOption(false, 0),
@@ -38,7 +38,7 @@ namespace Test
             {
                 try
                 {
-                    port = Interlocked.Increment(ref firstPort);
+                    port = Interlocked.Decrement(ref firstPort);
 #pragma warning disable CS0618
                     var listen = new TcpListener(port);
 #pragma warning restore CS0618
