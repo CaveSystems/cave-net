@@ -1,3 +1,4 @@
+using Cave.Net;
 using Cave.Net.Dns;
 using NUnit.Framework;
 using System.Net;
@@ -56,7 +57,32 @@ namespace Test.Dns
         {
             TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true });
         }
+        [Test]
+        public void TcpPTRTest()
+        {
+            PTR_Test(new DnsClient() { UseTcp = true, UseUdp = false });
+        }
 
+        [Test]
+        public void UdpPTRTest()
+        {
+            PTR_Test(new DnsClient() { UseTcp = false, UseUdp = true });
+        }
+
+        static void PTR_Test(DnsClient testClient)
+        {
+            var response = testClient.Resolve("1.1.1.1.in-addr.arpa", DnsRecordType.PTR);
+            Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
+            Assert.GreaterOrEqual(response.Answers.Count, 1);
+            foreach (var record in response.Answers)
+            {
+                if (record.Value.Equals((DomainName)"one.one.one.one"))
+                {
+                    return;
+                }
+            }
+            Assert.Fail();
+        }
 
         static void A_Test(DnsClient testClient)
         {
