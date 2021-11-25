@@ -32,6 +32,17 @@ namespace Cave.Net.Dns
         /// <value>The additional records.</value>
         public IList<DnsRecord> AdditionalRecords { get; }
 
+        public DnsResponse(IPAddress sender, DnsFlags flags, DnsResponseCode code, int transactionId)
+        {
+            Sender = sender;
+            this.flags = (ushort)(((DnsFlags)code & DnsFlags.MaskResponseCode) | (flags & DnsFlags.MaskFlags));
+            Queries = new List<DnsQuery>();
+            Answers = new List<DnsRecord>();
+            Authorities = new List<DnsRecord>();
+            AdditionalRecords = new List<DnsRecord>();
+            TransactionID = transactionId;
+        }
+
         /// <summary>Initializes a new instance of the <see cref="DnsResponse"/> class.</summary>
         /// <param name="srv">The server.</param>
         /// <param name="data">The data.</param>
