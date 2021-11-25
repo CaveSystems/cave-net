@@ -1,4 +1,7 @@
-﻿using Cave.IO;
+﻿using System;
+using System.IO;
+using System.Linq;
+using Cave.IO;
 
 namespace Cave.Net.Dns
 {
@@ -55,17 +58,48 @@ namespace Cave.Net.Dns
         /// <summary>The flags.</summary>
         public DnsFlags Flags;
 
-        internal void Write(DataWriter writer)
+        public int Length
         {
+            get
+            {
+                return
+                    4   // transaction id
+                    + 2 // flags
+                    + 2 // question records
+                    + 2 // answer records
+                    + 2 // authority records
+                    + 2 // additional records
+                    + Name.Parts.Select(p => p.Length + 1).Sum() // name parts
+                    + 2 // record type
+                    + 2;// record class
+            }
+        }
+
+        public byte[] ToArray(ushort transactionId)
+        {
+            using var stream = new MemoryStream();
+            var writer = new DataWriter(stream, StringEncoding.ASCII, endian: EndianType.BigEndian);
+            writer.Write(transactionId); // transaction id
+            writer.Write((ushort)Flags); // flags
+            writer.Write((ushort)1); // question records
+            writer.Write((ushort)0); // answer records
+            writer.Write((ushort)0); // authority records
+            writer.Write((ushort)0); // additional records
             var name = Name;
+            foreach (var part in name.Parts)
+            {
+                writer.WritePrefixed(part);
+            }
+            /*
             while (name != DomainName.Root)
             {
                 writer.WritePrefixed(name.Parts[0]);
                 name = name.GetParent();
-            }
+            }*/
             writer.Write((byte)0);
             writer.Write((ushort)RecordType);
             writer.Write((ushort)RecordClass);
+            return stream.ToArray();
         }
 
         /// <summary>Randomizes the case.</summary>
