@@ -165,9 +165,9 @@ namespace Cave.Net
             var port = defaultPort;
             try
             {
-#if NET45 || NET46 || NET47 || NETSTANDARD20
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER || NET50
                 var listener = TcpListener.Create(port);
-#elif NET20 || NET35 || NET40
+#elif NET20_OR_GREATER
                 var listener = new TcpListener(IPAddress.Any, port);
 #else
 #error No code defined for the current framework or NETXX version define missing!

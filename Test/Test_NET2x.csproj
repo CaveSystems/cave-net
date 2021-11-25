@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net20;net35</TargetFrameworks>
+        <IsPackable>false</IsPackable>
+        <ApplicationIcon />
+        <OutputType>Exe</OutputType>
+        <StartupObject>Test.Program</StartupObject>
+        <RootNamespace>Test</RootNamespace>
+        <AssemblyName>Test</AssemblyName>
+        <NoWarn>CS1591,IDE0004</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="NUnit" Version="2.6.4" />
+        <PackageReference Include="NUnitTestAdapter" Version="2.3.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Cave.Net\Cave.Net.csproj" />
+    </ItemGroup>
+</Project>

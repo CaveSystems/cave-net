@@ -18,7 +18,7 @@ namespace Cave.Net
     {
         #region private class
         bool connectedEventTriggered;
-        bool closing;
+        volatile bool closing;
         bool disconnectedEventTriggered;
         long bytesReceived;
         long bytesSent;
@@ -144,6 +144,8 @@ namespace Cave.Net
                             Monitor.PulseAll(ReceiveBuffer);
                         }
                     }
+
+                    if (closing) return;
 
                     // read next
                     var isPending = CheckedSocket.ReceiveAsync(socketAsync);
