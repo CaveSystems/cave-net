@@ -109,3 +109,4 @@ UpgradeLog*.XML
 
 /.vs
 /wol-send/Properties/launchSettings.json
+/net-scan/Properties/launchSettings.json

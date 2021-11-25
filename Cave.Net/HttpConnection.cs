@@ -15,7 +15,7 @@ namespace Cave.Net
     /// </summary>
     public sealed class HttpConnection
     {
-#if !NETSTANDARD20
+#if !NETSTANDARD2_0_OR_GREATER && !NET50
         static HttpConnection()
         {
             try

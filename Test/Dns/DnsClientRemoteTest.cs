@@ -1,6 +1,7 @@
 using Cave.Net;
 using Cave.Net.Dns;
 using NUnit.Framework;
+using System.Linq;
 using System.Net;
 
 namespace Test.Dns
@@ -30,7 +31,7 @@ namespace Test.Dns
         [Test]
         public void TcpTXTTest()
         {
-            TXT_Test(new DnsClient() { UseTcp = true, UseUdp = false });
+            TXT_Test(new DnsClient() { UseTcp = true, UseUdp = false }, false);
         }
 
 
@@ -55,7 +56,7 @@ namespace Test.Dns
         [Test]
         public void UdpTXTTest()
         {
-            TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true });
+            TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true }, true);
         }
         [Test]
         public void TcpPTRTest()
@@ -106,14 +107,7 @@ namespace Test.Dns
             Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
             Assert.GreaterOrEqual(response.Answers.Count, 1);
             Assert.IsTrue(IPAddress.TryParse("2606:4700:4700::1111", out var ipOne));
-            foreach (var record in response.Answers)
-            {
-                if (record.Value.Equals(ipOne))
-                {
-                    return;
-                }
-            }
-            Assert.Fail();
+            Assert.IsTrue(response.Answers.Any(a => Equals(a.Value, ipOne)));
         }
 
         static void MX_Test(DnsClient testClient)
@@ -135,10 +129,10 @@ namespace Test.Dns
             Assert.AreEqual(5, counter);
         }
 
-        static void TXT_Test(DnsClient testClient)
+        static void TXT_Test(DnsClient testClient, bool truncated)
         {
             var response = testClient.Resolve("google.com.", DnsRecordType.TXT);
-            Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
+            Assert.AreEqual(truncated, response.IsTruncatedResponse);
             Assert.GreaterOrEqual(response.Answers.Count, 1);
             foreach (var record in response.Answers)
             {
@@ -149,7 +143,7 @@ namespace Test.Dns
                     return;
                 }
             }
-            Assert.Fail();
+            if (!truncated) Assert.Fail();
         }
     }
 }
