@@ -12,8 +12,8 @@
         <SignAssembly>true</SignAssembly>
         <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 
-        <!-- Nullable 
-        <nullable>enable</nullable>-->
+        <!-- Nullable -->
+        <!--<nullable>enable</nullable>-->
 
         <!-- Analyzer -->
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
@@ -31,8 +31,8 @@
 
         <!-- Package -->
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-        <!--PackageIconUrl>https://www.cavesystems.de/favicon.ico</PackageIconUrl-->
-        <PackageIcon>cavesystems.jpg</PackageIcon>
+        <PackageIcon>cavesystems.png</PackageIcon>
+        <PackageIconUrl>https://www.cavesystems.de/favicon.ico</PackageIconUrl>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
