@@ -16,7 +16,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Include="..\cavesystems.jpg" Pack="true" PackagePath="\" />
+        <None Include="..\cavesystems.png" Pack="true" Visible="false" PackagePath="\cavesystems.png" />
     </ItemGroup>
 
     <Target Name="ForceGenerationOfBindingRedirects" AfterTargets="ResolveAssemblyReferences" BeforeTargets="GenerateBindingRedirects" Condition="'$(AutoGenerateBindingRedirects)' == 'true'">
