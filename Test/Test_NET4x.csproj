@@ -8,7 +8,7 @@
         <StartupObject>Test.Program</StartupObject>
         <RootNamespace>Test</RootNamespace>
         <AssemblyName>Test</AssemblyName>
-        <NoWarn>CS1591;CA1806;CA1825;</NoWarn>
+        <NoWarn>IDE0130;CS1591;CA1806;CA1825;</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,27 +20,9 @@
         <ProjectReference Include="..\Cave.Net\Cave.Net.csproj" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
-        <PackageReference Include="Microsoft.TestPlatform.TestHost">
-            <Version>17.0.0</Version>
-        </PackageReference>
+    <ItemGroup Condition="'$(TargetFramework)' != 'net40'">
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.0.0" />
+        <PackageReference Include="Microsoft.TestPlatform.TestHost" Version="17.0.0" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
-        <PackageReference Include="Microsoft.TestPlatform.TestHost">
-            <Version>17.0.0</Version>
-        </PackageReference>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetFramework)' == 'net47'">
-        <PackageReference Include="Microsoft.TestPlatform.TestHost">
-            <Version>17.0.0</Version>
-        </PackageReference>
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
-        <PackageReference Include="Microsoft.TestPlatform.TestHost">
-            <Version>17.0.0</Version>
-        </PackageReference>
-    </ItemGroup>
 </Project>

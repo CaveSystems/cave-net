@@ -8,7 +8,7 @@
         <StartupObject>Test.Program</StartupObject>
         <RootNamespace>Test</RootNamespace>
         <AssemblyName>Test</AssemblyName>
-        <NoWarn>CS1591;CA1806;CA1825;</NoWarn>
+        <NoWarn>IDE0130;CS1591;CA1806;CA1825;</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -19,4 +19,5 @@
     <ItemGroup>
         <ProjectReference Include="..\Cave.Net\Cave.Net.csproj" />
     </ItemGroup>
+    
 </Project>
