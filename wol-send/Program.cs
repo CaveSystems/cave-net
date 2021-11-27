@@ -1,13 +1,15 @@
-﻿using Cave;
-using Cave.Net;
-using System;
+﻿using System;
 using System.Linq;
 using System.Net.NetworkInformation;
+using Cave;
+using Cave.Net;
 
 namespace WakeOnLanSend
 {
     class Program
     {
+        #region Private Methods
+
         static void Main(string[] args)
         {
             try
@@ -18,6 +20,15 @@ namespace WakeOnLanSend
             {
                 Console.WriteLine(ex.Message);
             }
+        }
+
+        void Help()
+        {
+            Console.WriteLine("wol-send <mac> [<mac> [..]] [--pwd=password]");
+            Console.WriteLine();
+            Console.WriteLine("Sends a wake on lan (magic packet) via network broadcast to the specified mac addesses");
+            Console.WriteLine("using an optional SecureOnPassword.");
+            Console.WriteLine();
         }
 
         void Run(string[] args)
@@ -56,13 +67,6 @@ namespace WakeOnLanSend
             }
         }
 
-        void Help()
-        {
-            Console.WriteLine("wol-send <mac> [<mac> [..]] [--pwd=password]");
-            Console.WriteLine();
-            Console.WriteLine("Sends a wake on lan (magic packet) via network broadcast to the specified mac addesses");
-            Console.WriteLine("using an optional SecureOnPassword.");
-            Console.WriteLine();
-        }
+        #endregion Private Methods
     }
 }

@@ -14,8 +14,10 @@ namespace Test.Ntp
             for (uint u = 0; u < int.MaxValue; u = (u * 3) + 1)
             {
                 var i = (int)u;
-                Assert.AreEqual(u, (uint)(NtpUInt32)u);
-                Assert.AreEqual(i, (int)(NtpInt32)i);
+                var test1 = (uint)(NtpUInt32)u;
+                Assert.AreEqual(u, test1);
+                var test2 = (int)(NtpInt32)i;
+                Assert.AreEqual(i, test2);
             }
 
             for (var testDate = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc); testDate.Year < 5000; testDate += TimeSpan.FromHours(100.0 / 3.0))

@@ -1,17 +1,17 @@
-﻿using Cave;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Cave;
 
 namespace SubnetScan
 {
     class Program
     {
+        #region Private Methods
+
         static void Main(string[] args)
         {
             try
@@ -24,6 +24,15 @@ namespace SubnetScan
             {
                 Console.WriteLine(ex.Message);
             }
+        }
+
+        void Help()
+        {
+            Console.WriteLine("subnet-scan [--dns]");
+            Console.WriteLine();
+            Console.WriteLine("Scans a subnet using icmp");
+            Console.WriteLine("--dns:  resolve addresses using dns.");
+            Console.WriteLine();
         }
 
         void Run(string[] args)
@@ -71,17 +80,8 @@ namespace SubnetScan
                     }
                 }
             }
+        }
 
-            
-        }
-      
-        void Help()
-        {
-            Console.WriteLine("subnet-scan [--dns]");
-            Console.WriteLine();
-            Console.WriteLine("Scans a subnet using icmp");
-            Console.WriteLine("--dns:  resolve addresses using dns.");
-            Console.WriteLine();
-        }
+        #endregion Private Methods
     }
 }

@@ -6,8 +6,7 @@ namespace SubnetScan
 {
     internal class Info
     {
-        public IPAddress Address { get; }
-        public string Hostname { get; private set; }
+        #region Public Constructors
 
         public Info(IPAddress address)
         {
@@ -20,9 +19,20 @@ namespace SubnetScan
             catch { }
         }
 
-        public override string ToString()
-        {
-            return $"{Address} {Hostname}";
-        }
+        #endregion Public Constructors
+
+        #region Public Properties
+
+        public IPAddress Address { get; }
+
+        public string Hostname { get; private set; }
+
+        #endregion Public Properties
+
+        #region Public Methods
+
+        public override string ToString() => $"{Address} {Hostname}";
+
+        #endregion Public Methods
     }
 }
