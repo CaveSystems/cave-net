@@ -1,12 +1,15 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Cache;
-using System.Reflection;
 using System.Text;
 using Cave.IO;
+#if !NETSTANDARD2_0_OR_GREATER && !NET50
+using System.Net.Configuration;
+using System.Diagnostics;
+using System.Reflection;
+#endif
 
 namespace Cave.Net
 {
@@ -20,7 +23,7 @@ namespace Cave.Net
         {
             try
             {
-                new System.Net.Configuration.HttpWebRequestElement().UseUnsafeHeaderParsing = true;
+                new HttpWebRequestElement().UseUnsafeHeaderParsing = true;
                 return;
             }
             catch (Exception ex)
@@ -29,7 +32,7 @@ namespace Cave.Net
             }
             try
             {
-                var outerType = typeof(System.Net.Configuration.SettingsSection);
+                var outerType = typeof(SettingsSection);
                 var asm = Assembly.GetAssembly(outerType);
                 if (asm != null)
                 {

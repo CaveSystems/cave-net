@@ -13,37 +13,7 @@ namespace Cave.Net.Dns
     /// </summary>
     public struct SoaRecord
     {
-        /// <summary>Parses the record using the specified reader.</summary>
-        /// <param name="reader">The reader.</param>
-        /// <returns>Returns a new <see cref="SoaRecord"/> structure.</returns>
-        public static SoaRecord Parse(DataReader reader)
-        {
-            DomainName masterName;
-            MailAddress responsibleName;
-            try
-            {
-                masterName = DomainName.Parse(reader);
-                responsibleName = ParseEmailAddress(reader);
-            }
-            catch (Exception ex)
-            {
-                masterName = null;
-                responsibleName = null;
-                Trace.TraceError(ex.ToString());
-            }
-
-            var result = new SoaRecord
-            {
-                MasterName = masterName,
-                ResponsibleName = responsibleName,
-                SerialNumber = reader.ReadUInt32(),
-                RefreshInterval = reader.ReadInt32(),
-                RetryInterval = reader.ReadInt32(),
-                ExpireInterval = reader.ReadInt32(),
-                NegativeCachingTTL = reader.ReadInt32(),
-            };
-            return result;
-        }
+        #region Private Methods
 
         private static MailAddress ParseEmailAddress(DataReader reader)
         {
@@ -116,29 +86,87 @@ namespace Cave.Net.Dns
             }
         }
 
-        /// <summary>The master name.</summary>
-        public DomainName MasterName;
+        #endregion Private Methods
 
-        /// <summary>The responsible name.</summary>
-        public MailAddress ResponsibleName;
+        #region Public Fields
 
-        /// <summary>The serial number.</summary>
-        public uint SerialNumber;
-
-        /// <summary>The refresh interval (seconds).</summary>
-        public int RefreshInterval;
-
-        /// <summary>The retry interval (seconds).</summary>
-        public int RetryInterval;
-
-        /// <summary>The expire interval (seconds).</summary>
+        /// <summary>
+        /// The expire interval (seconds).
+        /// </summary>
         public int ExpireInterval;
 
-        /// <summary>The negative caching TTL (seconds).</summary>
+        /// <summary>
+        /// The master name.
+        /// </summary>
+        public DomainName MasterName;
+
+        /// <summary>
+        /// The negative caching TTL (seconds).
+        /// </summary>
         public int NegativeCachingTTL;
 
-        /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
-        /// <returns>A <see cref="string" /> that represents this instance.</returns>
+        /// <summary>
+        /// The refresh interval (seconds).
+        /// </summary>
+        public int RefreshInterval;
+
+        /// <summary>
+        /// The responsible name.
+        /// </summary>
+        public MailAddress ResponsibleName;
+
+        /// <summary>
+        /// The retry interval (seconds).
+        /// </summary>
+        public int RetryInterval;
+
+        /// <summary>
+        /// The serial number.
+        /// </summary>
+        public uint SerialNumber;
+
+        #endregion Public Fields
+
+        #region Public Methods
+
+        /// <summary>
+        /// Parses the record using the specified reader.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns>Returns a new <see cref="SoaRecord"/> structure.</returns>
+        public static SoaRecord Parse(DataReader reader)
+        {
+            DomainName masterName;
+            MailAddress responsibleName;
+            try
+            {
+                masterName = DomainName.Parse(reader);
+                responsibleName = ParseEmailAddress(reader);
+            }
+            catch (Exception ex)
+            {
+                masterName = null;
+                responsibleName = null;
+                Trace.TraceError(ex.ToString());
+            }
+
+            var result = new SoaRecord
+            {
+                MasterName = masterName,
+                ResponsibleName = responsibleName,
+                SerialNumber = reader.ReadUInt32(),
+                RefreshInterval = reader.ReadInt32(),
+                RetryInterval = reader.ReadInt32(),
+                ExpireInterval = reader.ReadInt32(),
+                NegativeCachingTTL = reader.ReadInt32(),
+            };
+            return result;
+        }
+
+        /// <summary>
+        /// Returns a <see cref="string"/> that represents this instance.
+        /// </summary>
+        /// <returns>A <see cref="string"/> that represents this instance.</returns>
         public override string ToString() =>
             string.Format(
                 "{0}. {1}. (\n" +
@@ -154,5 +182,7 @@ namespace Cave.Net.Dns
                 RetryInterval,
                 ExpireInterval,
                 NegativeCachingTTL);
+
+        #endregion Public Methods
     }
 }

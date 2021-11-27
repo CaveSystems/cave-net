@@ -131,25 +131,23 @@ namespace Cave.Net.Dns
         /// <summary>
         /// Gets a list of public DNS servers (EU and US).
         /// </summary>
-        public static IPAddress[] GetPulicDnsServers()
+        public static IPAddress[] GetPulicDnsServers() => new IPAddress[]
         {
-            var result = new List<IPAddress>();
             //Deutsche Telekom AG
-            result.Add(IPAddress.Parse("194.25.0.60"));
+            IPAddress.Parse("194.25.0.60"),
             //uunet germany
-            result.Add(IPAddress.Parse("193.101.111.10"));
+            IPAddress.Parse("193.101.111.10"),
             //uunet france
-            result.Add(IPAddress.Parse("194.98.65.65"));
+            IPAddress.Parse("194.98.65.65"),
             //cloudflare usa
-            result.Add(IPAddress.Parse("1.1.1.1"));
-            result.Add(IPAddress.Parse("2606:4700:4700::1001"));
+            IPAddress.Parse("1.1.1.1"),
+            IPAddress.Parse("2606:4700:4700::1001"),
             //google
-            result.Add(IPAddress.Parse("8.8.4.4"));
-            result.Add(IPAddress.Parse("8.8.8.8"));
-            result.Add(IPAddress.Parse("2001:4860:4860::8844"));
-            result.Add(IPAddress.Parse("2001:4860:4860::8888"));
-            return result.ToArray();
-        }
+            IPAddress.Parse("8.8.4.4"),
+            IPAddress.Parse("8.8.8.8"),
+            IPAddress.Parse("2001:4860:4860::8844"),
+            IPAddress.Parse("2001:4860:4860::8888")
+        };
 
         #endregion static class
 
@@ -227,6 +225,7 @@ namespace Cave.Net.Dns
 
         bool QueryAllServers(DnsQuery query, Func<DnsResponse, bool> completed, out IList<DnsResponse> responses, out IList<Exception> exceptions)
         {
+            if (Servers.Length == 0) throw new("No Servers defined for query!");
             var maxTasks = Servers.Length * 2;
             var results = new object[maxTasks];
             var resultNumber = 0;
@@ -239,7 +238,7 @@ namespace Cave.Net.Dns
                 try
                 {
                     var response = QuerySingleServer(query, server, useTcp);
-                    if (response == null) throw new();
+                    if (response == null) throw new("No response after query single server!");
                     lock (results) results[resultNumber++] = response;
                     if (completed != null)
                     {
@@ -275,7 +274,7 @@ namespace Cave.Net.Dns
             {
                 exceptions = results.Select(r => r is Exception ex ? ex : null).Where(r => r is not null).Cast<Exception>().ToList();
                 responses = results.Select(r => r is DnsResponse d ? d : null).Where(r => r is not null).Cast<DnsResponse>().ToList();
-                if (exceptions.Count == 0 && responses.Count == 0) throw new();
+                if (exceptions.Count == 0 && responses.Count == 0) throw new("No exceptions and no responses received. This indicates a fatal bug at DnsClient!");
             }
             return done;
         }
@@ -465,9 +464,16 @@ namespace Cave.Net.Dns
             throw new AggregateException("Could not complete query.", exceptions);
         }
 
+        /// <summary>
+        /// Queries the dns servers for the specified ipadress returning matching PTR records.
+        /// </summary>
+        /// <remarks>This method works sequential and may need up to <see cref="QueryTimeout"/> per <see cref="Servers"/>.</remarks>
+        /// <param name="address">Address, that should be queried.</param>
+        /// <returns>The complete response of the dns server.</returns>
+        /// <exception cref="ArgumentNullException">Name must be provided.</exception>
         public DnsResponse ResolveSequential(IPAddress address)
              => ResolveSequential(address.GetReverseLookupZone(), DnsRecordType.PTR, DnsRecordClass.IN, DnsFlags.RecursionDesired);
-        
+
         /// <summary>
         /// Queries the dns servers for the specified records.
         /// </summary>
@@ -502,6 +508,7 @@ namespace Cave.Net.Dns
         /// </summary>
         /// <remarks>This method works sequential and may need up to <see cref="QueryTimeout"/> per <see cref="Servers"/>.</remarks>
         /// <param name="query">The query.</param>
+        /// <param name="predicate">A function to test each element for a condition.</param>
         /// <returns>The complete response of the dns server.</returns>
         /// <exception cref="ArgumentNullException">Name must be provided.</exception>
         /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp.</exception>
@@ -582,7 +589,8 @@ namespace Cave.Net.Dns
                         exceptions[n] = ex;
                     }
                 }
-                tasks[i] = Task.Factory.StartNew(Query, (object)i);
+                object parameter = i;
+                tasks[i] = Task.Factory.StartNew(Query, parameter);
             };
 
             while (tasks.Length > 0)

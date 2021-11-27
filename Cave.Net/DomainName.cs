@@ -14,6 +14,12 @@ namespace Cave.Net
     /// </summary>
     public sealed class DomainName
     {
+#if NETSTANDARD1_0_OR_GREATER || NET5_0_OR_GREATER
+        static readonly string[] empty = Array.Empty<string>();
+#else 
+        static readonly string[] empty = new string[0];
+#endif
+
         /// <summary>
         /// Provides the characters safe for domain names.
         /// </summary>
@@ -209,7 +215,7 @@ namespace Cave.Net
         /// <param name="parts">The parts of the DomainName.</param>
         public DomainName(params string[] parts)
         {
-            Parts = parts ?? new string[0];
+            Parts = parts ?? empty;
             foreach (var part in Parts)
             {
                 if (part.HasInvalidChars(SafeChars))
