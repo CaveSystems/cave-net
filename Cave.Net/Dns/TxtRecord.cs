@@ -9,7 +9,21 @@ namespace Cave.Net.Dns
     /// </summary>
     public class TxtRecord
     {
-        /// <summary>Parses the record using the specified reader.</summary>
+        #region Public Properties
+
+        /// <summary>
+        /// Gets the parts.
+        /// </summary>
+        /// <value>The parts.</value>
+        public string[] Parts { get; private set; }
+
+        #endregion Public Properties
+
+        #region Public Methods
+
+        /// <summary>
+        /// Parses the record using the specified reader.
+        /// </summary>
         /// <param name="reader">The reader.</param>
         /// <param name="length">The length.</param>
         /// <returns>Returns a new <see cref="TxtRecord"/> instance.</returns>
@@ -27,12 +41,10 @@ namespace Cave.Net.Dns
             return result;
         }
 
-        /// <summary>Gets the parts.</summary>
-        /// <value>The parts.</value>
-        public string[] Parts { get; private set; }
-
-        /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
-        /// <returns>A <see cref="string" /> that represents this instance.</returns>
+        /// <summary>
+        /// Returns a <see cref="string"/> that represents this instance.
+        /// </summary>
+        /// <returns>A <see cref="string"/> that represents this instance.</returns>
         public override string ToString()
         {
             var result = new StringBuilder();
@@ -56,5 +68,7 @@ namespace Cave.Net.Dns
             }
             return result.ToString();
         }
+
+        #endregion Public Methods
     }
 }
