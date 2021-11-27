@@ -5,14 +5,12 @@ using Cave.IO;
 
 namespace Cave.Net.Ntp
 {
-    /// <summary>
-    /// Provides functions to retrieve ntp timestamps.
-    /// </summary>
+    /// <summary>Provides functions to retrieve ntp timestamps.</summary>
     public class NtpClient
     {
-        /// <summary>
-        /// Sends a simple ntp query and returns the answer. The default timeout is 1s.
-        /// </summary>
+        #region Public Methods
+
+        /// <summary>Sends a simple ntp query and returns the answer. The default timeout is 1s.</summary>
         /// <param name="server">Server to send the request to.</param>
         /// <param name="timeoutMilliseconds">Time in milliseconds to wait until a <see cref="TimeoutException"/> occurs.</param>
         /// <exception cref="TimeoutException">Thrown if a timeout occurs while waiting for an answer.</exception>
@@ -43,5 +41,7 @@ namespace Cave.Net.Ntp
             var answer = MarshalStruct.GetStruct<NtpPacket>(dataRvd);
             return new NtpAnswer(answer);
         }
+
+        #endregion Public Methods
     }
 }

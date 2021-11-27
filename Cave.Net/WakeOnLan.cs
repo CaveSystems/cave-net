@@ -7,14 +7,12 @@ using System.Text;
 
 namespace Cave.Net
 {
-    /// <summary>
-    /// Provides a class for sending wake on lan packets.
-    /// </summary>
+    /// <summary>Provides a class for sending wake on lan packets.</summary>
     public class WakeOnLan
     {
-        /// <summary>
-        /// Sends a magic packet to a physical address.
-        /// </summary>
+        #region Public Methods
+
+        /// <summary>Sends a magic packet to a physical address.</summary>
         /// <param name="macAddress">Physical address to send packet to.</param>
         /// <param name="secureOnPassword">Secure on password. (This is sent in clear text!).</param>
         /// <returns>Returns a dictionary with used ip address and exception.</returns>
@@ -37,18 +35,13 @@ namespace Cave.Net
             return result;
         }
 
-        /// <summary>
-        /// Sends a magic packet to a physical address.
-        /// </summary>
+        /// <summary>Sends a magic packet to a physical address.</summary>
         /// <param name="broadcastAddress">Target address to send to.</param>
         /// <param name="macAddress">Physical address to send packet to.</param>
         /// <param name="secureOnPassword">Secure on password. (This is sent in clear text!).</param>
         public static void SendMagicPacket(IPAddress broadcastAddress, PhysicalAddress macAddress, string secureOnPassword = null)
         {
-            // build packet:
-            // 6 bytes 0xff
-            // 16 repetitions of the 6 byte mac address
-            // followed by the optional (in)SecureOnPassword
+            // build packet: 6 bytes 0xff 16 repetitions of the 6 byte mac address followed by the optional (in)SecureOnPassword
             var size = 17 * 6;
             byte[] buffer;
             if (secureOnPassword == null)
@@ -83,5 +76,7 @@ namespace Cave.Net
                 udp.Send(buffer, buffer.Length, new IPEndPoint(broadcastAddress, targetPort));
             }
         }
+
+        #endregion Public Methods
     }
 }

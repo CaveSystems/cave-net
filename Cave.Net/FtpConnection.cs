@@ -6,14 +6,28 @@ using Cave.IO;
 
 namespace Cave.Net
 {
-    /// <summary>
-    /// Provides a simple asynchronous http fetch.
-    /// </summary>
+    /// <summary>Provides a simple asynchronous http fetch.</summary>
     public sealed class FtpConnection
     {
-        /// <summary>
-        /// Directly obtains the data of the file represented by the specified connectionstring.
-        /// </summary>
+        #region Public Constructors
+
+        /// <summary>Initializes a new instance of the <see cref="FtpConnection"/> class.</summary>
+        public FtpConnection()
+        {
+        }
+
+        #endregion Public Constructors
+
+        #region Public Properties
+
+        /// <summary>Gets or sets a value indicating whether SSL is enabled for ftp access or not.</summary>
+        public bool EnableSSL { get; set; }
+
+        #endregion Public Properties
+
+        #region Public Methods
+
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
         /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <returns>Returns an array of byte.</returns>
         public static byte[] Get(ConnectionString connectionString)
@@ -22,12 +36,12 @@ namespace Cave.Net
             return connection.Download(connectionString);
         }
 
-        /// <summary>
-        /// Directly obtains the data of the specified fileName by using the specified connectionstring as string.
-        /// </summary>
+        /// <summary>Directly obtains the data of the specified fileName by using the specified connectionstring as string.</summary>
         /// <param name="connectionString">The full connectionstring for the download.</param>
         /// <returns>Returns the downloaded data as string (utf8).</returns>
         public static string GetString(ConnectionString connectionString) => Encoding.UTF8.GetString(Get(connectionString));
+
+        #endregion Public Methods
 
         #region private functionality
 
@@ -40,23 +54,81 @@ namespace Cave.Net
             request.Method = method;
             return request;
         }
-        #endregion
 
-        /// <summary>
-        /// Gets or sets a value indicating whether SSL is enabled for ftp access or not.
-        /// </summary>
-        public bool EnableSSL { get; set; }
+        #endregion private functionality
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="FtpConnection"/> class.
-        /// </summary>
-        public FtpConnection()
+        /// <summary>Downloads a file.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <returns>Returns an array of bytes.</returns>
+        public byte[] Download(ConnectionString connectionString)
         {
+            FtpWebResponse response = null;
+            try
+            {
+                var request = CreateRequest(WebRequestMethods.Ftp.DownloadFile, connectionString);
+                response = (FtpWebResponse)request.GetResponse();
+                switch (response.StatusCode)
+                {
+                    case FtpStatusCode.DataAlreadyOpen:
+                    case FtpStatusCode.OpeningData:
+                        break;
+
+                    default:
+                        throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
+                }
+                var responseStream = response.GetResponseStream();
+                var result = responseStream.ReadAllBytes();
+                responseStream.Close();
+                return response.StatusCode == FtpStatusCode.ClosingData
+                    ? result
+                    : throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
+            }
+            finally
+            {
+                if (response != null)
+                {
+                    response.Close();
+                }
+            }
         }
 
-        /// <summary>
-        /// Obtains a list of files and directories at the current path.
-        /// </summary>
+        /// <summary>Downloads a file.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <param name="stream">Target stream to download to.</param>
+        /// <returns>Returns the number of bytes downloaded.</returns>
+        public long Download(ConnectionString connectionString, Stream stream)
+        {
+            FtpWebResponse response = null;
+            try
+            {
+                var request = CreateRequest(WebRequestMethods.Ftp.DownloadFile, connectionString);
+                response = (FtpWebResponse)request.GetResponse();
+                switch (response.StatusCode)
+                {
+                    case FtpStatusCode.DataAlreadyOpen:
+                    case FtpStatusCode.OpeningData:
+                        break;
+
+                    default:
+                        throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
+                }
+                var responseStream = response.GetResponseStream();
+                var size = responseStream.CopyBlocksTo(stream);
+                responseStream.Close();
+                return response.StatusCode == FtpStatusCode.ClosingData
+                    ? size
+                    : throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
+            }
+            finally
+            {
+                if (response != null)
+                {
+                    response.Close();
+                }
+            }
+        }
+
+        /// <summary>Obtains a list of files and directories at the current path.</summary>
         /// <param name="connectionString">The full connectionstring for the path to list.</param>
         /// <returns>Returns a new array of strings. This is may be empty but is never null.</returns>
         public string[] List(ConnectionString connectionString)
@@ -92,9 +164,7 @@ namespace Cave.Net
             }
         }
 
-        /// <summary>
-        /// Uploads a file.
-        /// </summary>
+        /// <summary>Uploads a file.</summary>
         /// <param name="connectionString">The full connectionstring for the upload.</param>
         /// <param name="data">Byte array to upload.</param>
         public void Upload(ConnectionString connectionString, byte[] data)
@@ -120,9 +190,7 @@ namespace Cave.Net
             }
         }
 
-        /// <summary>
-        /// Uploads a file.
-        /// </summary>
+        /// <summary>Uploads a file.</summary>
         /// <param name="connectionString">The full connectionstring for the upload.</param>
         /// <param name="stream">The stream to upload.</param>
         /// <returns>Returns the number of bytes uploaded.</returns>
@@ -139,81 +207,6 @@ namespace Cave.Net
                 return response.StatusCode != FtpStatusCode.ClosingData
                     ? throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription))
                     : result;
-            }
-            finally
-            {
-                if (response != null)
-                {
-                    response.Close();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Downloads a file.
-        /// </summary>
-        /// <param name="connectionString">The full connectionstring for the download.</param>
-        /// <returns>Returns an array of bytes.</returns>
-        public byte[] Download(ConnectionString connectionString)
-        {
-            FtpWebResponse response = null;
-            try
-            {
-                var request = CreateRequest(WebRequestMethods.Ftp.DownloadFile, connectionString);
-                response = (FtpWebResponse)request.GetResponse();
-                switch (response.StatusCode)
-                {
-                    case FtpStatusCode.DataAlreadyOpen:
-                    case FtpStatusCode.OpeningData:
-                        break;
-
-                    default:
-                        throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
-                }
-                var responseStream = response.GetResponseStream();
-                var result = responseStream.ReadAllBytes();
-                responseStream.Close();
-                return response.StatusCode == FtpStatusCode.ClosingData
-                    ? result
-                    : throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
-            }
-            finally
-            {
-                if (response != null)
-                {
-                    response.Close();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Downloads a file.
-        /// </summary>
-        /// <param name="connectionString">The full connectionstring for the download.</param>
-        /// <param name="stream">Target stream to download to.</param>
-        /// <returns>Returns the number of bytes downloaded.</returns>
-        public long Download(ConnectionString connectionString, Stream stream)
-        {
-            FtpWebResponse response = null;
-            try
-            {
-                var request = CreateRequest(WebRequestMethods.Ftp.DownloadFile, connectionString);
-                response = (FtpWebResponse)request.GetResponse();
-                switch (response.StatusCode)
-                {
-                    case FtpStatusCode.DataAlreadyOpen:
-                    case FtpStatusCode.OpeningData:
-                        break;
-
-                    default:
-                        throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
-                }
-                var responseStream = response.GetResponseStream();
-                var size = responseStream.CopyBlocksTo(stream);
-                responseStream.Close();
-                return response.StatusCode == FtpStatusCode.ClosingData
-                    ? size
-                    : throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
             }
             finally
             {

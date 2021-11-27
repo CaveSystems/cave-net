@@ -17,6 +17,8 @@ namespace Test.Tcp
     [TestFixture]
     public class TcpServerTest2
     {
+        #region Private Methods
+
         static IPAddress[] GetMyAddresses(bool includeLoopback)
         {
             var interfaces = NetworkInterface.GetAllNetworkInterfaces().Where(i => i.OperationalStatus == OperationalStatus.Up);
@@ -25,6 +27,10 @@ namespace Test.Tcp
                .Where(a => a.Address.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6);
             return myAddresses.Select(a => a.Address).ToArray();
         }
+
+        #endregion Private Methods
+
+        #region Public Methods
 
         [Test]
         public void TestAccept()
@@ -44,7 +50,7 @@ namespace Test.Tcp
             {
                 Assert.AreEqual($"tcp://0.0.0.0:{port}", server.ToString());
             }
-            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             var addresses = GetMyAddresses(true);
             foreach (var addr in addresses)
@@ -55,7 +61,7 @@ namespace Test.Tcp
                     client.Send(new byte[1000]);
                     client.Close();
                 }
-                Console.WriteLine($"Test : info TP{port}: Test connect to {addr} successful.");
+                if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Test connect to {addr} successful.");
             }
 
             var count = 10000;
@@ -70,9 +76,9 @@ namespace Test.Tcp
             });
             watch.Stop();
 
-            Console.WriteLine($"Test : info TP{port}: {success} connections in {watch.Elapsed}");
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {success} connections in {watch.Elapsed}");
             var cps = Math.Round(success / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info TP{port}: {cps} connections/s");
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {cps} connections/s");
         }
 
         [Test]
@@ -93,7 +99,7 @@ namespace Test.Tcp
             {
                 Assert.AreEqual($"tcp://0.0.0.0:{port}", server.ToString());
             }
-            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             var addresses = GetMyAddresses(true);
             foreach (var addr in addresses)
@@ -104,7 +110,7 @@ namespace Test.Tcp
                     client.Send(new byte[1000]);
                     client.Close();
                 }
-                Console.WriteLine($"Test : info TP{port}: Test connect to {addr} successful.");
+                if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Test connect to {addr} successful.");
             }
 
             var busyCount = 0;
@@ -131,10 +137,101 @@ namespace Test.Tcp
             if (errors > 0 && busyCount == 0) throw new Exception($"BusyCount {busyCount}, Errors {errors}");
             Assert.IsTrue(success > errors, $"Errors {errors} > Success {success}");
             Assert.AreEqual(count, success + errors);
-            Console.WriteLine($"Test : info TP{port}: {success} connections in {watch.Elapsed}");
-            Console.WriteLine($"Test : info TP{port}: {errors} failed connections in {watch.Elapsed}");
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {success} connections in {watch.Elapsed}");
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {errors} failed connections in {watch.Elapsed}");
             var cps = Math.Round(success / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info TP{port}: {cps} connections/s");
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {cps} connections/s");
+        }
+
+        [Test]
+        public void TestDisconnectAsync()
+        {
+            var serverClientConnectedEventCount = 0;
+            var serverClientDisconnectedEventCount = 0;
+            var clientConnectedEventCount = 0;
+            var clientDisconnectedEventCount = 0;
+            var port = Tools.GetPort();
+            var server = new TcpServer()
+            {
+                AcceptThreads = 10,
+                AcceptBacklog = 100,
+            };
+            server.Listen(port);
+            server.ClientAccepted += (s1, e1) =>
+            {
+                e1.Client.Connected += (s2, e2) => Interlocked.Increment(ref serverClientConnectedEventCount);
+                e1.Client.Disconnected += (s2, e2) => Interlocked.Increment(ref serverClientDisconnectedEventCount);
+            };
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
+
+            var clients = new List<TcpAsyncClient>();
+            var ip = IPAddress.Parse("127.0.0.1");
+            Parallel.For(0, 1000, (n) =>
+            {
+                var client = new TcpAsyncClient();
+                client.Connected += (s1, e1) => Interlocked.Increment(ref clientConnectedEventCount);
+                client.Disconnected += (s1, e1) => Interlocked.Increment(ref clientDisconnectedEventCount);
+                client.Connect(ip, port);
+                lock (clients) clients.Add(client);
+            });
+            //all clients connected
+            Assert.AreEqual(1000, clientConnectedEventCount);
+            //no client disconnected
+            Assert.AreEqual(0, clientDisconnectedEventCount);
+
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: ConnectedEventCount ok.");
+
+            //give the server some more time
+            Thread.Sleep(2000);
+
+            //all clients connected
+            Assert.AreEqual(clientConnectedEventCount, serverClientConnectedEventCount);
+            Assert.AreEqual(1000, server.Clients.Length);
+            //no client disconnected
+            Assert.AreEqual(0, clientDisconnectedEventCount);
+            Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
+
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
+
+            //disconnect some
+            int i = 0, disconnected = 0;
+            lock (clients)
+            {
+                foreach (var client in clients)
+                {
+                    if (i++ % 3 == 0)
+                    {
+                        disconnected++;
+                        client?.Close();
+                    }
+                }
+            }
+
+            Assert.AreEqual(disconnected, clientDisconnectedEventCount);
+
+            //give the server some more time
+            Thread.Sleep(2000);
+
+            Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
+            Assert.AreEqual(clientConnectedEventCount - disconnected, server.Clients.Length);
+
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
+
+            lock (clients)
+            {
+                foreach (var client in clients)
+                {
+                    client?.Close();
+                }
+            }
+            Assert.AreEqual(clientConnectedEventCount, serverClientConnectedEventCount);
+
+            //give the server some more time
+            Thread.Sleep(2000);
+
+            Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
+
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
         }
 
         [Test]
@@ -149,7 +246,7 @@ namespace Test.Tcp
             Assert.AreEqual(false, server.IsListening);
             server.Listen(port);
             Assert.AreEqual(true, server.IsListening);
-            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
             try { server.AcceptBacklog = 10; }
             catch (Exception ex)
@@ -190,7 +287,7 @@ namespace Test.Tcp
             void QueueError(object sender, TcpServerClientExceptionEventArgs<TcpAsyncClient> e)
             {
                 lock (exceptions) exceptions.Add(e.Exception);
-                Console.WriteLine($"Test : info TP{port}: Client {e.Client} Error Test {e.Exception.Message}");
+                if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Client {e.Client} Error Test {e.Exception.Message}");
             }
             server.ClientAccepted += AcceptError;
             server.ClientException += QueueError;
@@ -204,7 +301,7 @@ namespace Test.Tcp
                     catch { }
                 }
             }
-            Console.WriteLine($"Test : info TP{port}: Test connect to ::1 successful.");
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Test connect to ::1 successful.");
 
             {
                 Assert.AreEqual(1, exceptions.Count);
@@ -232,7 +329,7 @@ namespace Test.Tcp
                     catch { }
                 }
             }
-            Console.WriteLine($"Test : info TP{port}: Test connect to ::1 successful.");
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Test connect to ::1 successful.");
 
             {
                 Assert.AreEqual(1, exceptions.Count);
@@ -248,221 +345,12 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSend()
-        {
-            var port = Tools.GetPort();
-            var server = new TcpServer();
-            server.Listen(port);
-            server.ClientAccepted += (s1, e1) => e1.Client.Received += (s2, e2) => e2.Handled = true;
-            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
-
-            long bytes = 0;
-            var watch = Stopwatch.StartNew();
-            var addresses = GetMyAddresses(true);
-
-            Parallel.For(0, Math.Max(16, addresses.Length), (n) =>
-           {
-               var addr = addresses[n % addresses.Length];
-               using (var client = new TcpAsyncClient())
-               {
-                   client.Connect(addr, port);
-                   for (var d = 0; d < 256; d++)
-                   {
-                       client.Send(new byte[1024 * 1024]);
-                       Interlocked.Add(ref bytes, 1024 * 1024);
-                   }
-                   client.Close();
-               }
-               Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
-           });
-            watch.Stop();
-
-            Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
-            var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
-        }
-
-        [Test]
-        public void TestStreamWrite()
-        {
-            var port = Tools.GetPort();
-            var server = new TcpServer();
-            server.Listen(port);
-            server.ClientAccepted += (s1, e1) => e1.Client.Buffered += (s2, e2) => e1.Client.Stream.ReadBlock(e1.Client.Stream.Available);
-            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
-
-            long bytes = 0;
-            var watch = Stopwatch.StartNew();
-            var addresses = GetMyAddresses(true);
-
-            Parallel.For(0, Math.Max(16, addresses.Length), (n) =>
-            {
-                var addr = addresses[n % addresses.Length];
-                using (var client = new TcpAsyncClient())
-                {
-                    client.Connect(addr, port);
-                    for (var x = 0; x < 256; x++)
-                    {
-                        for (var y = 0; y < 1024; y++)
-                        {
-                            client.Stream.Write(new byte[1024], 0, 1024);
-                            Interlocked.Add(ref bytes, 1024);
-                        }
-                        while (client.Stream.SendBufferLength > 10 * 1024 * 1024)
-                        {
-                            Thread.Sleep(1);
-                        }
-                    }
-                    client.Stream.Flush();
-                    client.Close();
-                }
-                Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
-            });
-            watch.Stop();
-
-            Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
-            var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
-        }
-
-        [Test]
-        public void TestStreamDirectWrite()
-        {
-            var port = Tools.GetPort();
-            var server = new TcpServer();
-            server.Listen(port);
-            server.ClientAccepted += (s1, e1) =>
-            {
-                e1.Client.Stream.DirectWrites = true;
-                e1.Client.Buffered += (s2, e2) => e1.Client.Stream.ReadBlock(e1.Client.Stream.Available);
-            };
-            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
-
-            long bytes = 0;
-            var watch = Stopwatch.StartNew();
-            var addresses = GetMyAddresses(true);
-
-            Parallel.For(0, Math.Max(16, addresses.Length), (n) =>
-            {
-                var addr = addresses[n % addresses.Length];
-                using (var client = new TcpAsyncClient())
-                {
-                    client.Connect(addr, port);
-                    client.Stream.DirectWrites = true;
-                    for (var d = 0; d < 256; d++)
-                    {
-                        client.Stream.Write(new byte[1024 * 1024], 0, 1024 * 1024);
-                        Interlocked.Add(ref bytes, 1024 * 1024);
-                    }
-                    client.Close();
-                }
-                Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
-            });
-            watch.Stop();
-
-            Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
-            var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
-            Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
-        }
-
-        [Test]
-        public void TestDisconnectAsync()
-        {
-            var serverClientConnectedEventCount = 0;
-            var serverClientDisconnectedEventCount = 0;
-            var clientConnectedEventCount = 0;
-            var clientDisconnectedEventCount = 0;
-            var port = Tools.GetPort();
-            var server = new TcpServer()
-            {
-                AcceptThreads = 10,
-                AcceptBacklog = 100,
-            };
-            server.Listen(port);
-            server.ClientAccepted += (s1, e1) =>
-            {
-                e1.Client.Connected += (s2, e2) => Interlocked.Increment(ref serverClientConnectedEventCount);
-                e1.Client.Disconnected += (s2, e2) => Interlocked.Increment(ref serverClientDisconnectedEventCount);
-            };
-            Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
-
-            var clients = new List<TcpAsyncClient>();
-            var ip = IPAddress.Parse("127.0.0.1");
-            Parallel.For(0, 1000, (n) =>
-            {
-                var client = new TcpAsyncClient();
-                client.Connected += (s1, e1) => Interlocked.Increment(ref clientConnectedEventCount);
-                client.Disconnected += (s1, e1) => Interlocked.Increment(ref clientDisconnectedEventCount);
-                client.Connect(ip, port);
-                lock (clients) clients.Add(client);
-            });
-            //all clients connected
-            Assert.AreEqual(1000, clientConnectedEventCount);
-            //no client disconnected
-            Assert.AreEqual(0, clientDisconnectedEventCount);
-
-            Console.WriteLine($"Test : info TP{port}: ConnectedEventCount ok.");
-
-            //give the server some more time
-            Thread.Sleep(2000);
-
-            //all clients connected
-            Assert.AreEqual(clientConnectedEventCount, serverClientConnectedEventCount);
-            Assert.AreEqual(1000, server.Clients.Length);
-            //no client disconnected
-            Assert.AreEqual(0, clientDisconnectedEventCount);
-            Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
-
-            Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
-
-            //disconnect some
-            int i = 0, disconnected = 0;
-            lock (clients)
-            {
-                foreach (var client in clients)
-                {
-                    if (i++ % 3 == 0)
-                    {
-                        disconnected++;
-                        client?.Close();
-                    }
-                }
-            }
-
-            Assert.AreEqual(disconnected, clientDisconnectedEventCount);
-
-            //give the server some more time
-            Thread.Sleep(2000);
-
-            Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
-            Assert.AreEqual(clientConnectedEventCount - disconnected, server.Clients.Length);
-
-            Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
-
-            lock (clients)
-            {
-                foreach (var client in clients)
-                {
-                    client?.Close();
-                }
-            }
-            Assert.AreEqual(clientConnectedEventCount, serverClientConnectedEventCount);
-
-            //give the server some more time
-            Thread.Sleep(2000);
-
-            Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
-
-            Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
-        }
-
-        [Test]
         public void TestPortAlreadyInUse1()
         {
             var port = Tools.GetPort();
 #pragma warning disable CS0618
             var listen = new TcpListener(port);
-#pragma warning restore CS0618 
+#pragma warning restore CS0618
             listen.Start();
             try
             {
@@ -503,76 +391,38 @@ namespace Test.Tcp
         }
 
         [Test]
-        public void TestSendAllBeforeCloseClient2TcpListener()
+        public void TestSend()
         {
             var port = Tools.GetPort();
-            var listen = new TcpListener(IPAddress.Loopback, port);
-            listen.Start();
-            try
-            {
-                var serverTask = Task.Factory.StartNew(delegate
-                {
-                    var client = listen.AcceptTcpClient();
-                    using var reader = new StreamReader(client.GetStream());
-                    for (var i = 0; i < 10000; i++)
-                    {
-                        var s = reader.ReadLine();
-                        Assert.AreEqual(i.ToString(), s);
-                    }
-                });
-                var clientTask = Task.Factory.StartNew(delegate
-                {
-                    using var client = new TcpAsyncClient();
-                    client.Connect(IPAddress.Loopback, port);
-                    using var writer = new StreamWriter(client.GetStream());
-                    for (var i = 0; i < 10000; i++)
-                    {
-                        writer.WriteLine(i);
-                    }
-                });
-                Task.WaitAll(serverTask, clientTask);
-            }
-            finally
-            {
-                listen.Stop();
-            }
-        }
+            var server = new TcpServer();
+            server.Listen(port);
+            server.ClientAccepted += (s1, e1) => e1.Client.Received += (s2, e2) => e2.Handled = true;
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
 
-        [Test]
-        public void TestSendAllBeforeCloseClient2TcpListenerDirectWrite()
-        {
-            var port = Tools.GetPort();
-            var listen = new TcpListener(IPAddress.Loopback, port);
-            listen.Start();
-            try
-            {
-                var serverTask = Task.Factory.StartNew(delegate
-                {
-                    var client = listen.AcceptTcpClient();
-                    using var reader = new StreamReader(client.GetStream());
-                    for (var i = 0; i < 10000; i++)
-                    {
-                        var s = reader.ReadLine();
-                        Assert.AreEqual(i.ToString(), s);
-                    }
-                });
-                var clientTask = Task.Factory.StartNew(delegate
-                {
-                    using var client = new TcpAsyncClient();
-                    client.Connect(IPAddress.Loopback, port);
-                    client.Stream.DirectWrites = true;
-                    using var writer = new StreamWriter(client.GetStream());
-                    for (var i = 0; i < 10000; i++)
-                    {
-                        writer.WriteLine(i);
-                    }
-                });
-                Task.WaitAll(serverTask, clientTask);
-            }
-            finally
-            {
-                listen.Stop();
-            }
+            long bytes = 0;
+            var watch = Stopwatch.StartNew();
+            var addresses = GetMyAddresses(true);
+
+            Parallel.For(0, Math.Max(16, addresses.Length), (n) =>
+           {
+               var addr = addresses[n % addresses.Length];
+               using (var client = new TcpAsyncClient())
+               {
+                   client.Connect(addr, port);
+                   for (var d = 0; d < 256; d++)
+                   {
+                       client.Send(new byte[1024 * 1024]);
+                       Interlocked.Add(ref bytes, 1024 * 1024);
+                   }
+                   client.Close();
+               }
+               if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
+           });
+            watch.Stop();
+
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
+            var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
         }
 
         [Test]
@@ -600,45 +450,6 @@ namespace Test.Tcp
                 using (var client = new TcpAsyncClient())
                 {
                     client.Connect(IPAddress.Loopback, port);
-                    using var writer = new StreamWriter(client.GetStream());
-                    for (var i = 0; i < 10000; i++)
-                    {
-                        writer.WriteLine(i);
-                    }
-                }
-                if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
-            }
-            finally
-            {
-                server.Close();
-            }
-        }
-
-        [Test]
-        public void TestSendAllBeforeCloseClient2ServerDirectWrites()
-        {
-            var port = Tools.GetPort();
-            var server = new TcpServer();
-            server.Listen(port);
-            using var completed = new ManualResetEvent(false);
-            try
-            {
-                server.ClientAccepted += (sender, eventArgs) => Task.Factory.StartNew((c) =>
-                {
-                    var client = (TcpAsyncClient)c;
-                    client.Stream.DirectWrites = true;
-                    using var reader = new StreamReader(client.GetStream());
-                    for (var i = 0; i < 10000; i++)
-                    {
-                        var s = reader.ReadLine();
-                        Assert.AreEqual(i.ToString(), s);
-                    }
-                    completed.Set();
-                }, eventArgs.Client);
-                using (var client = new TcpAsyncClient())
-                {
-                    client.Connect(IPAddress.Loopback, port);
-                    client.Stream.DirectWrites = true;
                     using var writer = new StreamWriter(client.GetStream());
                     for (var i = 0; i < 10000; i++)
                     {
@@ -752,6 +563,118 @@ namespace Test.Tcp
         }
 
         [Test]
+        public void TestSendAllBeforeCloseClient2ServerDirectWrites()
+        {
+            var port = Tools.GetPort();
+            var server = new TcpServer();
+            server.Listen(port);
+            using var completed = new ManualResetEvent(false);
+            try
+            {
+                server.ClientAccepted += (sender, eventArgs) => Task.Factory.StartNew((c) =>
+                {
+                    var client = (TcpAsyncClient)c;
+                    client.Stream.DirectWrites = true;
+                    using var reader = new StreamReader(client.GetStream());
+                    for (var i = 0; i < 10000; i++)
+                    {
+                        var s = reader.ReadLine();
+                        Assert.AreEqual(i.ToString(), s);
+                    }
+                    completed.Set();
+                }, eventArgs.Client);
+                using (var client = new TcpAsyncClient())
+                {
+                    client.Connect(IPAddress.Loopback, port);
+                    client.Stream.DirectWrites = true;
+                    using var writer = new StreamWriter(client.GetStream());
+                    for (var i = 0; i < 10000; i++)
+                    {
+                        writer.WriteLine(i);
+                    }
+                }
+                if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
+            }
+            finally
+            {
+                server.Close();
+            }
+        }
+
+        [Test]
+        public void TestSendAllBeforeCloseClient2TcpListener()
+        {
+            var port = Tools.GetPort();
+            var listen = new TcpListener(IPAddress.Loopback, port);
+            listen.Start();
+            try
+            {
+                var serverTask = Task.Factory.StartNew(delegate
+                {
+                    var client = listen.AcceptTcpClient();
+                    using var reader = new StreamReader(client.GetStream());
+                    for (var i = 0; i < 10000; i++)
+                    {
+                        var s = reader.ReadLine();
+                        Assert.AreEqual(i.ToString(), s);
+                    }
+                });
+                var clientTask = Task.Factory.StartNew(delegate
+                {
+                    using var client = new TcpAsyncClient();
+                    client.Connect(IPAddress.Loopback, port);
+                    using var writer = new StreamWriter(client.GetStream());
+                    for (var i = 0; i < 10000; i++)
+                    {
+                        writer.WriteLine(i);
+                    }
+                });
+                Task.WaitAll(serverTask, clientTask);
+            }
+            finally
+            {
+                listen.Stop();
+            }
+        }
+
+        [Test]
+        public void TestSendAllBeforeCloseClient2TcpListenerDirectWrite()
+        {
+            var port = Tools.GetPort();
+            var listen = new TcpListener(IPAddress.Loopback, port);
+            listen.Start();
+            try
+            {
+                var serverTask = Task.Factory.StartNew(delegate
+                {
+                    var client = listen.AcceptTcpClient();
+                    using var reader = new StreamReader(client.GetStream());
+                    for (var i = 0; i < 10000; i++)
+                    {
+                        var s = reader.ReadLine();
+                        Assert.AreEqual(i.ToString(), s);
+                    }
+                });
+                var clientTask = Task.Factory.StartNew(delegate
+                {
+                    using var client = new TcpAsyncClient();
+                    client.Connect(IPAddress.Loopback, port);
+                    client.Stream.DirectWrites = true;
+                    using var writer = new StreamWriter(client.GetStream());
+                    for (var i = 0; i < 10000; i++)
+                    {
+                        writer.WriteLine(i);
+                    }
+                });
+                Task.WaitAll(serverTask, clientTask);
+            }
+            finally
+            {
+                listen.Stop();
+            }
+        }
+
+        [Test]
         public void TestSendAllBeforeCloseServer2Client()
         {
             var port = Tools.GetPort();
@@ -832,5 +755,90 @@ namespace Test.Tcp
                 server.Close();
             }
         }
+
+        [Test]
+        public void TestStreamDirectWrite()
+        {
+            var port = Tools.GetPort();
+            var server = new TcpServer();
+            server.Listen(port);
+            server.ClientAccepted += (s1, e1) =>
+            {
+                e1.Client.Stream.DirectWrites = true;
+                e1.Client.Buffered += (s2, e2) => e1.Client.Stream.ReadBlock(e1.Client.Stream.Available);
+            };
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
+
+            long bytes = 0;
+            var watch = Stopwatch.StartNew();
+            var addresses = GetMyAddresses(true);
+
+            Parallel.For(0, Math.Max(16, addresses.Length), (n) =>
+            {
+                var addr = addresses[n % addresses.Length];
+                using (var client = new TcpAsyncClient())
+                {
+                    client.Connect(addr, port);
+                    client.Stream.DirectWrites = true;
+                    for (var d = 0; d < 256; d++)
+                    {
+                        client.Stream.Write(new byte[1024 * 1024], 0, 1024 * 1024);
+                        Interlocked.Add(ref bytes, 1024 * 1024);
+                    }
+                    client.Close();
+                }
+                if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
+            });
+            watch.Stop();
+
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
+            var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
+        }
+
+        [Test]
+        public void TestStreamWrite()
+        {
+            var port = Tools.GetPort();
+            var server = new TcpServer();
+            server.Listen(port);
+            server.ClientAccepted += (s1, e1) => e1.Client.Buffered += (s2, e2) => e1.Client.Stream.ReadBlock(e1.Client.Stream.Available);
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Opened Server at port {port}.");
+
+            long bytes = 0;
+            var watch = Stopwatch.StartNew();
+            var addresses = GetMyAddresses(true);
+
+            Parallel.For(0, Math.Max(16, addresses.Length), (n) =>
+            {
+                var addr = addresses[n % addresses.Length];
+                using (var client = new TcpAsyncClient())
+                {
+                    client.Connect(addr, port);
+                    for (var x = 0; x < 256; x++)
+                    {
+                        for (var y = 0; y < 1024; y++)
+                        {
+                            client.Stream.Write(new byte[1024], 0, 1024);
+                            Interlocked.Add(ref bytes, 1024);
+                        }
+                        while (client.Stream.SendBufferLength > 10 * 1024 * 1024)
+                        {
+                            Thread.Sleep(1);
+                        }
+                    }
+                    client.Stream.Flush();
+                    client.Close();
+                }
+                if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
+            });
+            watch.Stop();
+
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
+            var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
+            if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");
+        }
+
+        #endregion Public Methods
     }
 }

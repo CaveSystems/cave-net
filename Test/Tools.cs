@@ -7,7 +7,13 @@ namespace Test
 {
     class Tools
     {
+        #region Private Fields
+
         static int firstPort = 60000 - (Environment.TickCount % 10000) - (Thread.CurrentThread.ManagedThreadId.GetHashCode() % 10000);
+
+        #endregion Private Fields
+
+        #region Public Methods
 
         public static int GetPort()
         {
@@ -50,5 +56,7 @@ namespace Test
                 }
             }
         }
+
+        #endregion Public Methods
     }
 }

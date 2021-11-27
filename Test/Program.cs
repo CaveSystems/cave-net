@@ -8,7 +8,6 @@ namespace Test
     class Program
     {
         #region Private Methods
-        public static bool Verbose { get; private set; }
 
         static int Main(string[] args)
         {
@@ -83,6 +82,8 @@ namespace Test
                 ;
             }
         }
+
+        public static bool Verbose { get; private set; }
 
         #endregion Private Methods
     }

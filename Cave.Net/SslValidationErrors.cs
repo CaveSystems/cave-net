@@ -2,9 +2,7 @@ using System;
 
 namespace Cave.Net
 {
-    /// <summary>
-    /// Provides ssl validation errors.
-    /// </summary>
+    /// <summary>Provides ssl validation errors.</summary>
     [Flags]
     public enum SslValidationErrors
     {

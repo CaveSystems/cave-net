@@ -8,14 +8,15 @@ using System.Threading.Tasks;
 
 namespace Cave.Net
 {
-    /// <summary>
-    /// Provides a ssl server implementation accepting and authenticating <see cref="SslClient"/> connections.
-    /// </summary>
+    /// <summary>Provides a ssl server implementation accepting and authenticating <see cref="SslClient"/> connections.</summary>
     public class SslServer
     {
         #region private implementation
+
         readonly List<TcpListener> listeners = new();
         bool isClosed;
+
+        void ClientAuthenticate(object sender, SslAuthenticationEventArgs e) => OnAuthenticate(e);
 
         void Listen(object obj)
         {
@@ -59,15 +60,15 @@ namespace Cave.Net
             }
         }
 
-        void ClientAuthenticate(object sender, SslAuthenticationEventArgs e) => OnAuthenticate(e);
-
-        #endregion
+        #endregion private implementation
 
         #region event starters
 
-        /// <summary>
-        /// Handles the incoming connection and calls the <see cref="Connected"/> event.
-        /// </summary>
+        /// <summary>Calls the <see cref="Authenticate"/> event.</summary>
+        /// <param name="eventArgs">Event arguments.</param>
+        protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs) => Authenticate?.Invoke(this, eventArgs);
+
+        /// <summary>Handles the incoming connection and calls the <see cref="Connected"/> event.</summary>
         /// <param name="client">The client.</param>
         protected virtual void OnConnected(SslClient client)
         {
@@ -94,83 +95,31 @@ namespace Cave.Net
             }
         }
 
-        /// <summary>
-        /// Calls the <see cref="Authenticate"/> event.
-        /// </summary>
-        /// <param name="eventArgs">Event arguments.</param>
-        protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs) => Authenticate?.Invoke(this, eventArgs);
-
-        #endregion
+        #endregion event starters
 
         #region public events
 
         /// <summary>
-        /// Event to be executed on each new incoming connection
-        /// </summary>
-        public event EventHandler<SslClientEventArgs> Connected;
-
-        /// <summary>
-        /// Event to be executed on each new incoming connection to be authenticated. The event may prohibit authentication
-        /// based on the certificate, chain and errors encountered
+        /// Event to be executed on each new incoming connection to be authenticated. The event may prohibit authentication based on the certificate, chain and
+        /// errors encountered
         /// </summary>
         public event EventHandler<SslAuthenticationEventArgs> Authenticate;
-        #endregion
+
+        /// <summary>Event to be executed on each new incoming connection</summary>
+        public event EventHandler<SslClientEventArgs> Connected;
+
+        #endregion public events
 
         #region public functionality
 
-        /// <summary>
-        /// Gets the certificate the server uses.
-        /// </summary>
-        public X509Certificate2 Certificate { get; private set; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SslServer"/> class.
-        /// </summary>
+        /// <summary>Initializes a new instance of the <see cref="SslServer"/> class.</summary>
         /// <param name="certificate">The certificate.</param>
         public SslServer(X509Certificate2 certificate) => Certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
 
-        /// <summary>
-        /// Starts listening at the specified port (IPv4).
-        /// </summary>
-        /// <param name="address">The ip address to listen at.</param>
-        /// <param name="port">The port (1..65534) to listen at.</param>
-        public void Listen(IPAddress address, int port)
-        {
-            if (isClosed)
-            {
-                throw new ObjectDisposedException("SslServer");
-            }
+        /// <summary>Gets the certificate the server uses.</summary>
+        public X509Certificate2 Certificate { get; private set; }
 
-            var listener = new TcpListener(address, port)
-            {
-                ExclusiveAddressUse = true,
-            };
-            Task.Factory.StartNew(new Action<object>(Listen), listener);
-            listeners.Add(listener);
-        }
-
-        /// <summary>
-        /// Starts listening at the specified local <see cref="IPEndPoint"/>.
-        /// </summary>
-        /// <param name="iPEndPoint">The local IPEndPoint to listen at.</param>
-        public void Listen(IPEndPoint iPEndPoint)
-        {
-            if (isClosed)
-            {
-                throw new ObjectDisposedException("SslServer");
-            }
-
-            var listener = new TcpListener(iPEndPoint)
-            {
-                ExclusiveAddressUse = true,
-            };
-            Task.Factory.StartNew(new Action<object>(Listen), listener);
-            listeners.Add(listener);
-        }
-
-        /// <summary>
-        /// Gets a list of local IPEndPoints currently listened at.
-        /// </summary>
+        /// <summary>Gets a list of local IPEndPoints currently listened at.</summary>
         public IPEndPoint[] LocalEndPoints
         {
             get
@@ -185,9 +134,7 @@ namespace Cave.Net
             }
         }
 
-        /// <summary>
-        /// Stops listening and closes all client connections and the server.
-        /// </summary>
+        /// <summary>Stops listening and closes all client connections and the server.</summary>
         public void Close()
         {
             if (isClosed)
@@ -205,6 +152,42 @@ namespace Cave.Net
                 listeners.Clear();
             }
         }
-        #endregion
+
+        /// <summary>Starts listening at the specified port (IPv4).</summary>
+        /// <param name="address">The ip address to listen at.</param>
+        /// <param name="port">The port (1..65534) to listen at.</param>
+        public void Listen(IPAddress address, int port)
+        {
+            if (isClosed)
+            {
+                throw new ObjectDisposedException("SslServer");
+            }
+
+            var listener = new TcpListener(address, port)
+            {
+                ExclusiveAddressUse = true,
+            };
+            Task.Factory.StartNew(new Action<object>(Listen), listener);
+            listeners.Add(listener);
+        }
+
+        /// <summary>Starts listening at the specified local <see cref="IPEndPoint"/>.</summary>
+        /// <param name="iPEndPoint">The local IPEndPoint to listen at.</param>
+        public void Listen(IPEndPoint iPEndPoint)
+        {
+            if (isClosed)
+            {
+                throw new ObjectDisposedException("SslServer");
+            }
+
+            var listener = new TcpListener(iPEndPoint)
+            {
+                ExclusiveAddressUse = true,
+            };
+            Task.Factory.StartNew(new Action<object>(Listen), listener);
+            listeners.Add(listener);
+        }
+
+        #endregion public functionality
     }
 }

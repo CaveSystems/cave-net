@@ -4,40 +4,20 @@ using System.Net.Sockets;
 
 namespace Cave.Net
 {
-    /// <summary>
-    /// Provides a udp packet client for synchronous packet sending.
-    /// </summary>
+    /// <summary>Provides a udp packet client for synchronous packet sending.</summary>
     public sealed class UdpPacketClient : IDisposable
     {
-        static AddressFamily GetAddressFamily(IPEndPoint endPoint) => endPoint == null ? throw new ArgumentNullException(nameof(endPoint)) : endPoint.AddressFamily;
+        #region Private Fields
 
         readonly bool usesServerSocket;
+
         Socket socket;
 
-        /// <summary>
-        /// Gets the remote endpoint this client is primarily "connected" to. Be aware that udp does not support
-        /// connections the way tcp does.
-        /// </summary>
-        public IPEndPoint RemoteEndPoint { get; private set; }
+        #endregion Private Fields
 
-        /// <summary>
-        /// Gets the number of bytes a package may contain maximally until it may get fragmented.
-        /// </summary>
-        public readonly int MaximumPayloadSize;
+        #region Private Constructors
 
-        /// <summary>
-        /// Gets the local IPEndPoint.
-        /// </summary>
-        public IPEndPoint LocalEndPoint => (IPEndPoint)socket.LocalEndPoint;
-
-        /// <summary>
-        /// Gets or sets access to the last activity date time.
-        /// </summary>
-        public DateTime LastActivity { get; set; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UdpPacketClient"/> class.
-        /// </summary>
+        /// <summary>Initializes a new instance of the <see cref="UdpPacketClient"/> class.</summary>
         /// <param name="addressFamily">The address familiy.</param>
         UdpPacketClient(AddressFamily addressFamily)
         {
@@ -53,9 +33,17 @@ namespace Cave.Net
             };
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UdpPacketClient"/> class.
-        /// </summary>
+        #endregion Private Constructors
+
+        #region Private Methods
+
+        static AddressFamily GetAddressFamily(IPEndPoint endPoint) => endPoint == null ? throw new ArgumentNullException(nameof(endPoint)) : endPoint.AddressFamily;
+
+        #endregion Private Methods
+
+        #region Internal Constructors
+
+        /// <summary>Initializes a new instance of the <see cref="UdpPacketClient"/> class.</summary>
         /// <param name="remoteEndPoint">The remote endpoint.</param>
         /// <param name="serverSocket">The server socket instance.</param>
         internal UdpPacketClient(IPEndPoint remoteEndPoint, Socket serverSocket)
@@ -70,9 +58,18 @@ namespace Cave.Net
             }
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UdpPacketClient"/> class.
-        /// </summary>
+        #endregion Internal Constructors
+
+        #region Public Fields
+
+        /// <summary>Gets the number of bytes a package may contain maximally until it may get fragmented.</summary>
+        public readonly int MaximumPayloadSize;
+
+        #endregion Public Fields
+
+        #region Public Constructors
+
+        /// <summary>Initializes a new instance of the <see cref="UdpPacketClient"/> class.</summary>
         /// <param name="remoteEndPoint">Remote endpoint.</param>
         public UdpPacketClient(IPEndPoint remoteEndPoint)
             : this(GetAddressFamily(remoteEndPoint))
@@ -84,81 +81,61 @@ namespace Cave.Net
             RemoteEndPoint = remoteEndPoint;
         }
 
-        /// <summary>
-        /// Sends a packet to the specified <paramref name="remote"/>.
-        /// </summary>
-        /// <param name="remote">Remote endpoint to send packet to.</param>
-        /// <param name="data">Byte array to send.</param>
-        /// <param name="offset">Offset at buffer to start sending at.</param>
-        /// <param name="size">Number of bytes to send.</param>
-        public void Send(IPEndPoint remote, byte[] data, int offset, int size)
-        {
-            if (Closed)
-            {
-                throw new InvalidOperationException(string.Format("Client already closed!"));
-            }
+        #endregion Public Constructors
 
-            lock (socket)
+        #region Public Properties
+
+        /// <summary>Gets a value indicating whether the client was closed or not.</summary>
+        public bool Closed { get; private set; }
+
+        /// <summary>Gets or sets access to the last activity date time.</summary>
+        public DateTime LastActivity { get; set; }
+
+        /// <summary>Gets the local IPEndPoint.</summary>
+        public IPEndPoint LocalEndPoint => (IPEndPoint)socket.LocalEndPoint;
+
+        /// <summary>Gets the remote endpoint this client is primarily "connected" to. Be aware that udp does not support connections the way tcp does.</summary>
+        public IPEndPoint RemoteEndPoint { get; private set; }
+
+        #endregion Public Properties
+
+        #region Public Methods
+
+        /// <summary>Closes the <see cref="UdpPacketClient"/>.</summary>
+        public void Close()
+        {
+            Closed = true;
+            if (!usesServerSocket)
             {
-                socket.SendTo(data, offset, size, SocketFlags.None, remote);
+                socket.Close();
             }
-            LastActivity = DateTime.UtcNow;
         }
 
-        /// <summary>
-        /// Sends a packet to the specified <paramref name="remote"/>.
-        /// </summary>
-        /// <param name="remote">Remote endpoint to send packet to.</param>
-        /// <param name="data">Byte array to send.</param>
-        /// <param name="size">Number of bytes to send.</param>
-        public void Send(IPEndPoint remote, byte[] data, int size) => Send(remote, data, 0, size);
-
-        /// <summary>
-        /// Sends a packet to the specified <paramref name="remote"/>.
-        /// </summary>
-        /// <param name="remote">Remote endpoint to send packet to.</param>
-        /// <param name="data">Byte array to send.</param>
-        public void Send(IPEndPoint remote, byte[] data) => Send(remote, data, 0, data.Length);
-
-        /// <summary>
-        /// Sends a packet to the default <see cref="RemoteEndPoint"/>.
-        /// </summary>
-        /// <param name="data">Byte array to send.</param>
-        /// <param name="offset">Offset at buffer to start sending at.</param>
-        /// <param name="size">Number of bytes to send.</param>
-        public void Send(byte[] data, int offset, int size) => Send(RemoteEndPoint, data, offset, size);
-
-        /// <summary>
-        /// Sends a packet to the default <see cref="RemoteEndPoint"/>.
-        /// </summary>
-        /// <param name="data">Byte array to send.</param>
-        /// <param name="size">Number of bytes to send.</param>
-        public void Send(byte[] data, int size) => Send(RemoteEndPoint, data, 0, size);
-
-        /// <summary>
-        /// Sends a packet to the default <see cref="RemoteEndPoint"/>.
-        /// </summary>
-        /// <param name="data">Byte array to send.</param>
-        public void Send(byte[] data) => Send(RemoteEndPoint, data, 0, data.Length);
-
-        /// <summary>
-        /// Directly sends a packet.
-        /// </summary>
-        /// <param name="packet">Packet to send.</param>
-        public void Send(UdpPacket packet)
+        /// <summary>Disposes this instance.</summary>
+        public void Dispose()
         {
-            if (packet == null)
+            if (socket != null)
             {
-                throw new ArgumentNullException(nameof(packet));
+                if (!usesServerSocket)
+                {
+                    ((IDisposable)socket).Dispose();
+                }
+                socket = null;
             }
-
-            Send(packet.Data, 0, packet.Size);
-            LastActivity = DateTime.UtcNow;
+            GC.SuppressFinalize(this);
         }
 
+        /// <summary>Determines whether two object instances are equal.</summary>
+        /// <param name="obj">The object to compare with the current object.</param>
+        /// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
+        public override bool Equals(object obj) => (obj is UdpPacketClient other) && RemoteEndPoint.Equals(other.RemoteEndPoint);
+
+        /// <summary>Returns a hash value for a System.Net.IPEndPoint instance.</summary>
+        /// <returns>An integer hash value.</returns>
+        public override int GetHashCode() => RemoteEndPoint.GetHashCode();
+
         /// <summary>
-        /// Reads a packet from the client. It is not possible to use polling and events to receive packets.
-        /// Use the PacketIncomingEvent or polling with Read()!
+        /// Reads a packet from the client. It is not possible to use polling and events to receive packets. Use the PacketIncomingEvent or polling with Read()!
         /// Attention: UdpPacketClient may receive packets from any source no only the initial remote endpoint.
         /// </summary>
         /// <returns>An <see cref="UdpPacket"/> or null.</returns>
@@ -187,50 +164,64 @@ namespace Cave.Net
             return packet;
         }
 
-        /// <summary>
-        /// Gets a value indicating whether the client was closed or not.
-        /// </summary>
-        public bool Closed { get; private set; }
-
-        /// <summary>
-        /// Determines whether two object instances are equal.
-        /// </summary>
-        /// <param name="obj">The object to compare with the current object.</param>
-        /// <returns>true if the specified object is equal to the current object; otherwise, false.</returns>
-        public override bool Equals(object obj) => (obj is UdpPacketClient other) && RemoteEndPoint.Equals(other.RemoteEndPoint);
-
-        /// <summary>
-        /// Returns a hash value for a System.Net.IPEndPoint instance.
-        /// </summary>
-        /// <returns>An integer hash value.</returns>
-        public override int GetHashCode() => RemoteEndPoint.GetHashCode();
-
-        /// <summary>
-        /// Closes the <see cref="UdpPacketClient"/>.
-        /// </summary>
-        public void Close()
+        /// <summary>Sends a packet to the specified <paramref name="remote"/>.</summary>
+        /// <param name="remote">Remote endpoint to send packet to.</param>
+        /// <param name="data">Byte array to send.</param>
+        /// <param name="offset">Offset at buffer to start sending at.</param>
+        /// <param name="size">Number of bytes to send.</param>
+        public void Send(IPEndPoint remote, byte[] data, int offset, int size)
         {
-            Closed = true;
-            if (!usesServerSocket)
+            if (Closed)
             {
-                socket.Close();
+                throw new InvalidOperationException(string.Format("Client already closed!"));
             }
+
+            lock (socket)
+            {
+                socket.SendTo(data, offset, size, SocketFlags.None, remote);
+            }
+            LastActivity = DateTime.UtcNow;
         }
 
-        /// <summary>
-        /// Disposes this instance.
-        /// </summary>
-        public void Dispose()
+        /// <summary>Sends a packet to the specified <paramref name="remote"/>.</summary>
+        /// <param name="remote">Remote endpoint to send packet to.</param>
+        /// <param name="data">Byte array to send.</param>
+        /// <param name="size">Number of bytes to send.</param>
+        public void Send(IPEndPoint remote, byte[] data, int size) => Send(remote, data, 0, size);
+
+        /// <summary>Sends a packet to the specified <paramref name="remote"/>.</summary>
+        /// <param name="remote">Remote endpoint to send packet to.</param>
+        /// <param name="data">Byte array to send.</param>
+        public void Send(IPEndPoint remote, byte[] data) => Send(remote, data, 0, data.Length);
+
+        /// <summary>Sends a packet to the default <see cref="RemoteEndPoint"/>.</summary>
+        /// <param name="data">Byte array to send.</param>
+        /// <param name="offset">Offset at buffer to start sending at.</param>
+        /// <param name="size">Number of bytes to send.</param>
+        public void Send(byte[] data, int offset, int size) => Send(RemoteEndPoint, data, offset, size);
+
+        /// <summary>Sends a packet to the default <see cref="RemoteEndPoint"/>.</summary>
+        /// <param name="data">Byte array to send.</param>
+        /// <param name="size">Number of bytes to send.</param>
+        public void Send(byte[] data, int size) => Send(RemoteEndPoint, data, 0, size);
+
+        /// <summary>Sends a packet to the default <see cref="RemoteEndPoint"/>.</summary>
+        /// <param name="data">Byte array to send.</param>
+        public void Send(byte[] data) => Send(RemoteEndPoint, data, 0, data.Length);
+
+        /// <summary>Directly sends a packet.</summary>
+        /// <param name="packet">Packet to send.</param>
+        public void Send(UdpPacket packet)
         {
-            if (socket != null)
+            if (packet == null)
             {
-                if (!usesServerSocket)
-                {
-                    ((IDisposable)socket).Dispose();
-                }
-                socket = null;
+                throw new ArgumentNullException(nameof(packet));
             }
-            GC.SuppressFinalize(this);
+
+            Send(packet.Data, 0, packet.Size);
+            LastActivity = DateTime.UtcNow;
         }
+
+        #endregion Public Methods
     }
 }

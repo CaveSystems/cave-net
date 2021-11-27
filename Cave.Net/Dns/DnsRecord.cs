@@ -6,40 +6,28 @@ using Cave.IO;
 
 namespace Cave.Net.Dns
 {
-    /// <summary>
-    /// Provides a dns record.
-    /// </summary>
+    /// <summary>Provides a dns record.</summary>
     public class DnsRecord
     {
         #region Public Properties
 
-        /// <summary>
-        /// Gets the domain name.
-        /// </summary>
+        /// <summary>Gets the domain name.</summary>
         /// <value>The name.</value>
         public DomainName Name { get; private set; }
 
-        /// <summary>
-        /// Gets the record class.
-        /// </summary>
+        /// <summary>Gets the record class.</summary>
         /// <value>The record class.</value>
         public DnsRecordClass RecordClass { get; private set; }
 
-        /// <summary>
-        /// Gets the type of the record.
-        /// </summary>
+        /// <summary>Gets the type of the record.</summary>
         /// <value>The type of the record.</value>
         public DnsRecordType RecordType { get; private set; }
 
-        /// <summary>
-        /// Gets the time to live.
-        /// </summary>
+        /// <summary>Gets the time to live.</summary>
         /// <value>The time to live.</value>
         public int TimeToLive { get; private set; }
 
-        /// <summary>
-        /// Gets the value.
-        /// </summary>
+        /// <summary>Gets the value.</summary>
         /// <value>The value.</value>
         public object Value { get; private set; }
 
@@ -47,9 +35,7 @@ namespace Cave.Net.Dns
 
         #region Public Methods
 
-        /// <summary>
-        /// Parses a record from the specified reader.
-        /// </summary>
+        /// <summary>Parses a record from the specified reader.</summary>
         /// <param name="reader">The reader.</param>
         /// <returns>Returns the dns record found.</returns>
         /// <exception cref="NotImplementedException">RecordType not implemented.</exception>
@@ -86,9 +72,7 @@ namespace Cave.Net.Dns
             return result;
         }
 
-        /// <summary>
-        /// Returns a <see cref="string"/> that represents this instance.
-        /// </summary>
+        /// <summary>Returns a <see cref="string"/> that represents this instance.</summary>
         /// <returns>A <see cref="string"/> that represents this instance.</returns>
         public override string ToString()
         {

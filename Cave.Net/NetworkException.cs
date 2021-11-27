@@ -2,13 +2,14 @@ using System;
 
 namespace Cave.Net
 {
-    /// <summary>
-    /// Provides network exceptions.
-    /// </summary>
-    /// <seealso cref="Exception" />
+    /// <summary>Provides network exceptions.</summary>
+    /// <seealso cref="Exception"/>
     public class NetworkException : Exception
     {
-        /// <summary>Initializes a new instance of the <see cref="NetworkException"/> class.
+        #region Public Constructors
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NetworkException"/> class.
         /// Message: Network problem.
         /// </summary>
         public NetworkException()
@@ -30,5 +31,7 @@ namespace Cave.Net
             : base(msg, innerException)
         {
         }
+
+        #endregion Public Constructors
     }
 }
