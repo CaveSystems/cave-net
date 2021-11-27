@@ -9,64 +9,70 @@ namespace Test.Dns
     [TestFixture]
     public class ResolveAllRemoteTest
     {
+        IPAddress[] GetDnsServers()
+        {
+            //azure build server does not support ipv6
+            return DnsClient.GetPulicDnsServers().Where(i => i.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToArray();
+        }
+
         [Test]
         public void TcpATest()
         {
-            A_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = DnsClient.Google.Servers });
+            A_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() });
         }
 
         [Test]
         public void TcpAAAATest()
         {
-            AAAA_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = DnsClient.Google.Servers });
+            AAAA_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() });
         }
 
         [Test]
         public void TcpMXTest()
         {
-            MX_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = DnsClient.Google.Servers });
+            MX_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() });
         }
 
         [Test]
         public void TcpTXTTest()
         {
-            TXT_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = DnsClient.Google.Servers }, false);
+            TXT_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() }, false);
         }
 
 
         [Test]
         public void UdpATest()
         {
-            A_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = DnsClient.Google.Servers });
+            A_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() });
         }
 
         [Test]
         public void UdpAAAATest()
         {
-            AAAA_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = DnsClient.Google.Servers });
+            AAAA_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() });
         }
 
         [Test]
         public void UdpMXTest()
         {
-            MX_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = DnsClient.Google.Servers });
+            MX_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() });
         }
 
         [Test]
         public void UdpTXTTest()
         {
-            TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = DnsClient.Google.Servers }, true);
+            TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() }, true);
         }
         [Test]
         public void TcpPTRTest()
         {
-            PTR_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = DnsClient.Google.Servers });
+            PTR_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() });
         }
 
         [Test]
         public void UdpPTRTest()
         {
-            PTR_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = DnsClient.Google.Servers });
+            PTR_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() });
         }
 
         static void PTR_Test(DnsClient testClient)
