@@ -129,10 +129,10 @@ namespace Test.Dns
             Assert.AreEqual(5, counter);
         }
 
-        static void TXT_Test(DnsClient testClient, bool truncated)
+        static void TXT_Test(DnsClient testClient, bool canBeTruncated)
         {
             var response = testClient.Resolve("google.com.", DnsRecordType.TXT);
-            Assert.AreEqual(truncated, response.IsTruncatedResponse);
+            if (!canBeTruncated) Assert.IsFalse(response.IsTruncatedResponse);
             Assert.GreaterOrEqual(response.Answers.Count, 1);
             foreach (var record in response.Answers)
             {
@@ -143,7 +143,7 @@ namespace Test.Dns
                     return;
                 }
             }
-            if (!truncated) Assert.Fail();
+            if (!canBeTruncated) Assert.Fail();
         }
     }
 }
