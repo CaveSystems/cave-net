@@ -350,6 +350,8 @@ namespace Test.Tcp
 
             Assert.AreEqual(clientDisconnectedEventCount, serverClientDisconnectedEventCount);
 
+            server.Close();
+
             Console.WriteLine($"Test : info TP{port}: DisconnectedEventCount ({clientDisconnectedEventCount}) ok.");
         }
 
@@ -622,6 +624,7 @@ namespace Test.Tcp
                 Assert.AreEqual(true, testClient.ReceiveBuffer.Contains(1));
                 Assert.AreEqual(false, testClient.ReceiveBuffer.Contains(0));
                 Assert.AreEqual(1, testClient.ReceiveBuffer.ReadByte());
+                server.Close();
             }
         }
     }
