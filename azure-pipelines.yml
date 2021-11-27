@@ -81,7 +81,7 @@ steps:
 - task: VSTest@2
   displayName: Test netcore, net5+
   inputs:
-    runInParallel: true
+    runInParallel: false
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
     codeCoverageEnabled: true
@@ -91,7 +91,7 @@ steps:
 - task: VSTest@2
   displayName: Test net2x, net3x, net4x
   inputs:
-    runInParallel: true
+    runInParallel: false
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
     codeCoverageEnabled: true
