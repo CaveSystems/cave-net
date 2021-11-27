@@ -8,9 +8,7 @@ using Cave.IO;
 
 namespace Cave.Net.Dns
 {
-    /// <summary>
-    /// Provides a soa record.
-    /// </summary>
+    /// <summary>Provides a soa record.</summary>
     public struct SoaRecord
     {
         #region Private Methods
@@ -90,48 +88,32 @@ namespace Cave.Net.Dns
 
         #region Public Fields
 
-        /// <summary>
-        /// The expire interval (seconds).
-        /// </summary>
+        /// <summary>The expire interval (seconds).</summary>
         public int ExpireInterval;
 
-        /// <summary>
-        /// The master name.
-        /// </summary>
+        /// <summary>The master name.</summary>
         public DomainName MasterName;
 
-        /// <summary>
-        /// The negative caching TTL (seconds).
-        /// </summary>
+        /// <summary>The negative caching TTL (seconds).</summary>
         public int NegativeCachingTTL;
 
-        /// <summary>
-        /// The refresh interval (seconds).
-        /// </summary>
+        /// <summary>The refresh interval (seconds).</summary>
         public int RefreshInterval;
 
-        /// <summary>
-        /// The responsible name.
-        /// </summary>
+        /// <summary>The responsible name.</summary>
         public MailAddress ResponsibleName;
 
-        /// <summary>
-        /// The retry interval (seconds).
-        /// </summary>
+        /// <summary>The retry interval (seconds).</summary>
         public int RetryInterval;
 
-        /// <summary>
-        /// The serial number.
-        /// </summary>
+        /// <summary>The serial number.</summary>
         public uint SerialNumber;
 
         #endregion Public Fields
 
         #region Public Methods
 
-        /// <summary>
-        /// Parses the record using the specified reader.
-        /// </summary>
+        /// <summary>Parses the record using the specified reader.</summary>
         /// <param name="reader">The reader.</param>
         /// <returns>Returns a new <see cref="SoaRecord"/> structure.</returns>
         public static SoaRecord Parse(DataReader reader)
@@ -163,9 +145,7 @@ namespace Cave.Net.Dns
             return result;
         }
 
-        /// <summary>
-        /// Returns a <see cref="string"/> that represents this instance.
-        /// </summary>
+        /// <summary>Returns a <see cref="string"/> that represents this instance.</summary>
         /// <returns>A <see cref="string"/> that represents this instance.</returns>
         public override string ToString() =>
             string.Format(

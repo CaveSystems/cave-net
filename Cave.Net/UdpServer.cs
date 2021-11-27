@@ -5,14 +5,18 @@ using System.Threading.Tasks;
 
 namespace Cave.Net
 {
-    /// <summary>
-    /// Provides a simple udp server socket.
-    /// </summary>
+    /// <summary>Provides a simple udp server socket.</summary>
     public class UdpServer : IDisposable
     {
-        Socket socket;
+        #region Private Fields
+
         byte[] buffer = new byte[2048];
         EndPoint client = new IPEndPoint(0, 0);
+        Socket socket;
+
+        #endregion Private Fields
+
+        #region Private Methods
 
         void OnReceived(IAsyncResult ar)
         {
@@ -43,26 +47,60 @@ namespace Cave.Net
             socket?.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref client, OnReceived, null);
         }
 
-        /// <summary>
-        /// Calls the <see cref="Received"/> event.
-        /// </summary>
+        #endregion Private Methods
+
+        #region Protected Methods
+
+        /// <summary>Calls the <see cref="Received"/> event.</summary>
         /// <param name="packet">The received udp packet.</param>
         protected virtual void OnReceived(UdpPacket packet) => Received?.Invoke(this, new UdpPacketEventArgs(packet));
 
-        /// <summary>
-        /// Calls the <see cref="Sent"/> event after the package has been sent.
-        /// </summary>
+        /// <summary>Calls the <see cref="Sent"/> event after the package has been sent.</summary>
         /// <param name="packet">The sent udp packet.</param>
         protected virtual void OnSent(UdpPacket packet) => Sent?.Invoke(this, new UdpPacketEventArgs(packet));
 
-        /// <summary>
-        /// Gets or sets a value indicating whether async callbacks are used for received packets.
-        /// </summary>
+        #endregion Protected Methods
+
+        #region Public Events
+
+        /// <summary>Provides an event for each received package.</summary>
+        public event EventHandler<UdpPacketEventArgs> Received;
+
+        /// <summary>Provides an event for each sent package.</summary>
+        public event EventHandler<UdpPacketEventArgs> Sent;
+
+        #endregion Public Events
+
+        #region Public Properties
+
+        /// <summary>Gets or sets a value indicating whether async callbacks are used for received packets.</summary>
         public bool AsyncCallback { get; set; }
 
-        /// <summary>
-        /// Listens for incoming packages at the specified port.
-        /// </summary>
+        #endregion Public Properties
+
+        #region Public Methods
+
+        /// <summary>Closes the socket.</summary>
+        public void Close()
+        {
+            socket?.Close();
+            Dispose();
+        }
+
+        /// <summary>Releases all resources.</summary>
+        public void Dispose()
+        {
+            if (socket is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+            socket = null;
+            buffer = null;
+            client = null;
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>Listens for incoming packages at the specified port.</summary>
         /// <param name="port">The port number to listen at.</param>
         public void Listen(int port)
         {
@@ -77,9 +115,7 @@ namespace Cave.Net
             socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref client, OnReceived, null);
         }
 
-        /// <summary>
-        /// Sends a packet to the specified endpoint.
-        /// </summary>
+        /// <summary>Sends a packet to the specified endpoint.</summary>
         /// <param name="packet">Packet to send.</param>
         public void Send(UdpPacket packet)
         {
@@ -87,38 +123,6 @@ namespace Cave.Net
             OnSent(packet);
         }
 
-        /// <summary>
-        /// Closes the socket.
-        /// </summary>
-        public void Close()
-        {
-            socket?.Close();
-            Dispose();
-        }
-
-        /// <summary>
-        /// Releases all resources.
-        /// </summary>
-        public void Dispose()
-        {
-            if (socket is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
-            socket = null;
-            buffer = null;
-            client = null;
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Provides an event for each received package.
-        /// </summary>
-        public event EventHandler<UdpPacketEventArgs> Received;
-
-        /// <summary>
-        /// Provides an event for each sent package.
-        /// </summary>
-        public event EventHandler<UdpPacketEventArgs> Sent;
+        #endregion Public Methods
     }
 }

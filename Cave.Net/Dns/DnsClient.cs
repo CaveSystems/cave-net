@@ -11,9 +11,7 @@ using Cave.IO;
 
 namespace Cave.Net.Dns
 {
-    /// <summary>
-    /// Provides a client for querying dns records.
-    /// </summary>
+    /// <summary>Provides a client for querying dns records.</summary>
     public class DnsClient
     {
         #region static class
@@ -84,9 +82,7 @@ namespace Cave.Net.Dns
             }
         }
 
-        /// <summary>
-        /// Gets a list of the local configured DNS servers.
-        /// </summary>
+        /// <summary>Gets a list of the local configured DNS servers.</summary>
         /// <returns>Returns a array of <see cref="IPAddress"/> instances.</returns>
         public static IPAddress[] GetDefaultDnsServers()
         {
@@ -128,9 +124,7 @@ namespace Cave.Net.Dns
             return result.ToArray();
         }
 
-        /// <summary>
-        /// Gets a list of public DNS servers (EU and US).
-        /// </summary>
+        /// <summary>Gets a list of public DNS servers (EU and US).</summary>
         public static IPAddress[] GetPulicDnsServers() => new IPAddress[]
         {
             //Deutsche Telekom AG
@@ -153,9 +147,7 @@ namespace Cave.Net.Dns
 
         #region Constructors
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DnsClient"/> class.
-        /// </summary>
+        /// <summary>Initializes a new instance of the <see cref="DnsClient"/> class.</summary>
         public DnsClient()
         {
             UseUdp = true;
@@ -168,45 +160,31 @@ namespace Cave.Net.Dns
 
         #region Properties
 
-        /// <summary>
-        /// Gets or sets the port.
-        /// </summary>
+        /// <summary>Gets or sets the port.</summary>
         /// <value>The port.</value>
         public ushort Port { get; set; }
 
-        /// <summary>
-        /// Gets or sets the query timeout.
-        /// </summary>
+        /// <summary>Gets or sets the query timeout.</summary>
         /// <value>The query timeout.</value>
         public TimeSpan QueryTimeout { get; set; }
 
-        /// <summary>
-        /// Gets or sets the search suffixes for short names.
-        /// </summary>
+        /// <summary>Gets or sets the search suffixes for short names.</summary>
         /// <value>The dns suffixes.</value>
         public string[] SearchSuffixes { get; set; }
 
-        /// <summary>
-        /// Gets or sets the servers.
-        /// </summary>
+        /// <summary>Gets or sets the servers.</summary>
         /// <value>The servers.</value>
         public IPAddress[] Servers { get; set; }
 
-        /// <summary>
-        /// Gets a value indicating whether [use random case].
-        /// </summary>
+        /// <summary>Gets a value indicating whether [use random case].</summary>
         /// <value><c>true</c> if [use random case]; otherwise, <c>false</c>.</value>
         /// <remarks><see href="https://tools.ietf.org/html/draft-vixie-dnsext-dns0x20-00"/>.</remarks>
         public bool UseRandomCase { get; set; }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether queries can be sent using TCP.
-        /// </summary>
+        /// <summary>Gets or sets a value indicating whether queries can be sent using TCP.</summary>
         public bool UseTcp { get; set; }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether queries can be sent using UDP.
-        /// </summary>
+        /// <summary>Gets or sets a value indicating whether queries can be sent using UDP.</summary>
         public bool UseUdp { get; set; }
 
         #endregion Properties
@@ -341,9 +319,7 @@ namespace Cave.Net.Dns
             }
         }
 
-        /// <summary>
-        /// Queries the dns servers for the specified records.
-        /// </summary>
+        /// <summary>Queries the dns servers for the specified records.</summary>
         /// <remarks>This method works parallel and returns the first result of any <see cref="Servers"/>.</remarks>
         /// <param name="domainName">Domain, that should be queried.</param>
         /// <param name="recordType">Type the should be queried.</param>
@@ -372,9 +348,7 @@ namespace Cave.Net.Dns
             });
         }
 
-        /// <summary>
-        /// Queries the dns servers for the specified records.
-        /// </summary>
+        /// <summary>Queries the dns servers for the specified records.</summary>
         /// <remarks>This method works parallel and returns the first result of any <see cref="Servers"/>.</remarks>
         /// <param name="query">The query.</param>
         /// <returns>The complete response of the dns server.</returns>
@@ -409,9 +383,7 @@ namespace Cave.Net.Dns
             throw new AggregateException("Could not complete query.", exceptions);
         }
 
-        /// <summary>
-        /// Queries the dns servers for the specified records.
-        /// </summary>
+        /// <summary>Queries the dns servers for the specified records.</summary>
         /// <remarks>This method works parallel and returns all results received from all <see cref="Servers"/>.</remarks>
         /// <param name="domainName">Domain, that should be queried.</param>
         /// <param name="recordType">Type the should be queried.</param>
@@ -427,9 +399,7 @@ namespace Cave.Net.Dns
             Flags = flags,
         });
 
-        /// <summary>
-        /// Queries the dns servers for the specified records.
-        /// </summary>
+        /// <summary>Queries the dns servers for the specified records.</summary>
         /// <remarks>This method works parallel and returns all results received from all <see cref="Servers"/>.</remarks>
         /// <param name="query">The query.</param>
         /// <returns>The complete response of the dns server.</returns>
@@ -464,9 +434,7 @@ namespace Cave.Net.Dns
             throw new AggregateException("Could not complete query.", exceptions);
         }
 
-        /// <summary>
-        /// Queries the dns servers for the specified ipadress returning matching PTR records.
-        /// </summary>
+        /// <summary>Queries the dns servers for the specified ipadress returning matching PTR records.</summary>
         /// <remarks>This method works sequential and may need up to <see cref="QueryTimeout"/> per <see cref="Servers"/>.</remarks>
         /// <param name="address">Address, that should be queried.</param>
         /// <returns>The complete response of the dns server.</returns>
@@ -474,9 +442,7 @@ namespace Cave.Net.Dns
         public DnsResponse ResolveSequential(IPAddress address)
              => ResolveSequential(address.GetReverseLookupZone(), DnsRecordType.PTR, DnsRecordClass.IN, DnsFlags.RecursionDesired);
 
-        /// <summary>
-        /// Queries the dns servers for the specified records.
-        /// </summary>
+        /// <summary>Queries the dns servers for the specified records.</summary>
         /// <remarks>This method works sequential and may need up to <see cref="QueryTimeout"/> per <see cref="Servers"/>.</remarks>
         /// <param name="domainName">Domain, that should be queried.</param>
         /// <param name="recordType">Type the should be queried.</param>
@@ -492,9 +458,7 @@ namespace Cave.Net.Dns
             Flags = flags,
         });
 
-        /// <summary>
-        /// Queries the dns servers for the specified records.
-        /// </summary>
+        /// <summary>Queries the dns servers for the specified records.</summary>
         /// <remarks>This method works sequential and may need up to <see cref="QueryTimeout"/> per <see cref="Servers"/>.</remarks>
         /// <param name="query">The query.</param>
         /// <returns>The complete response of the dns server.</returns>
@@ -503,9 +467,7 @@ namespace Cave.Net.Dns
         /// <exception cref="AggregateException">Could not reach any dns server.</exception>
         public DnsResponse ResolveSequential(DnsQuery query) => ResolveSequential(query, (r) => r.ResponseCode == DnsResponseCode.NoError);
 
-        /// <summary>
-        /// Queries the dns servers for the specified records.
-        /// </summary>
+        /// <summary>Queries the dns servers for the specified records.</summary>
         /// <remarks>This method works sequential and may need up to <see cref="QueryTimeout"/> per <see cref="Servers"/>.</remarks>
         /// <param name="query">The query.</param>
         /// <param name="predicate">A function to test each element for a condition.</param>
@@ -546,9 +508,7 @@ namespace Cave.Net.Dns
             throw new AggregateException("Could not resolve query!", exceptions);
         }
 
-        /// <summary>
-        /// Queries the dns servers for the specified records using all <see cref="SearchSuffixes"/>.
-        /// </summary>
+        /// <summary>Queries the dns servers for the specified records using all <see cref="SearchSuffixes"/>.</summary>
         /// <remarks>This method works parallel and returns the first result of any <see cref="Servers"/>.</remarks>
         /// <param name="domainName">Domain, that should be queried.</param>
         /// <param name="recordType">Type the should be queried.</param>

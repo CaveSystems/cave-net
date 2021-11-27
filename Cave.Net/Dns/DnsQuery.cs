@@ -4,40 +4,28 @@ using Cave.IO;
 
 namespace Cave.Net.Dns
 {
-    /// <summary>
-    /// Provides a dns query.
-    /// </summary>
+    /// <summary>Provides a dns query.</summary>
     public struct DnsQuery
     {
         #region Public Fields
 
-        /// <summary>
-        /// The flags.
-        /// </summary>
+        /// <summary>The flags.</summary>
         public DnsFlags Flags;
 
-        /// <summary>
-        /// The name.
-        /// </summary>
+        /// <summary>The name.</summary>
         public DomainName Name;
 
-        /// <summary>
-        /// The record class.
-        /// </summary>
+        /// <summary>The record class.</summary>
         public DnsRecordClass RecordClass;
 
-        /// <summary>
-        /// The record type.
-        /// </summary>
+        /// <summary>The record type.</summary>
         public DnsRecordType RecordType;
 
         #endregion Public Fields
 
         #region Public Properties
 
-        /// <summary>
-        /// Gets the length of the query in bytes. (An udp query has to be smaller than or equal to 512 bytes.)
-        /// </summary>
+        /// <summary>Gets the length of the query in bytes. (An udp query has to be smaller than or equal to 512 bytes.)</summary>
         public int Length =>
             4   // transaction id
             + 2 // flags
@@ -53,9 +41,7 @@ namespace Cave.Net.Dns
 
         #region Public Methods
 
-        /// <summary>
-        /// Implements the operator !=.
-        /// </summary>
+        /// <summary>Implements the operator !=.</summary>
         /// <param name="a">a.</param>
         /// <param name="b">The b.</param>
         /// <returns>The result of the operator.</returns>
@@ -66,9 +52,7 @@ namespace Cave.Net.Dns
                 || a.RecordType != b.RecordType;
         }
 
-        /// <summary>
-        /// Implements the operator ==.
-        /// </summary>
+        /// <summary>Implements the operator ==.</summary>
         /// <param name="a">a.</param>
         /// <param name="b">The b.</param>
         /// <returns>The result of the operator.</returns>
@@ -79,9 +63,7 @@ namespace Cave.Net.Dns
                 && a.RecordType == b.RecordType;
         }
 
-        /// <summary>
-        /// Parses the specified reader.
-        /// </summary>
+        /// <summary>Parses the specified reader.</summary>
         /// <param name="reader">The reader.</param>
         /// <returns>Returns a new <see cref="DnsQuery"/> structure.</returns>
         public static DnsQuery Parse(DataReader reader)
@@ -97,27 +79,19 @@ namespace Cave.Net.Dns
 
         // record class
 
-        /// <summary>
-        /// Determines whether the specified <see cref="object"/>, is equal to this instance.
-        /// </summary>
+        /// <summary>Determines whether the specified <see cref="object"/>, is equal to this instance.</summary>
         /// <param name="obj">The <see cref="object"/> to compare with this instance.</param>
         /// <returns><c>true</c> if the specified <see cref="object"/> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object obj) => obj is DnsQuery other && this == other;
 
-        /// <summary>
-        /// Returns a hash code for this instance.
-        /// </summary>
+        /// <summary>Returns a hash code for this instance.</summary>
         /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public override int GetHashCode() => RecordClass.GetHashCode() ^ RecordType.GetHashCode() ^ Name.GetHashCode() ^ Flags.GetHashCode();
 
-        /// <summary>
-        /// Randomizes the case.
-        /// </summary>
+        /// <summary>Randomizes the case.</summary>
         public void RandomizeCase() => Name = Name.RandomCase();
 
-        /// <summary>
-        /// Gets the query as byte[] array.
-        /// </summary>
+        /// <summary>Gets the query as byte[] array.</summary>
         /// <param name="transactionId">The transaction identifer.</param>
         /// <returns>Returns a new byte array containing the query data.</returns>
         public byte[] ToArray(ushort transactionId)
@@ -147,9 +121,7 @@ namespace Cave.Net.Dns
             return stream.ToArray();
         }
 
-        /// <summary>
-        /// Returns a <see cref="string"/> that represents this instance.
-        /// </summary>
+        /// <summary>Returns a <see cref="string"/> that represents this instance.</summary>
         /// <returns>A <see cref="string"/> that represents this instance.</returns>
         public override string ToString() => RecordClass + " " + RecordType + " " + Name;
 

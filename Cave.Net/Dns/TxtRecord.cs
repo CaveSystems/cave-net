@@ -4,16 +4,12 @@ using Cave.IO;
 
 namespace Cave.Net.Dns
 {
-    /// <summary>
-    /// Provides a txt record.
-    /// </summary>
+    /// <summary>Provides a txt record.</summary>
     public class TxtRecord
     {
         #region Public Properties
 
-        /// <summary>
-        /// Gets the parts.
-        /// </summary>
+        /// <summary>Gets the parts.</summary>
         /// <value>The parts.</value>
         public string[] Parts { get; private set; }
 
@@ -21,9 +17,7 @@ namespace Cave.Net.Dns
 
         #region Public Methods
 
-        /// <summary>
-        /// Parses the record using the specified reader.
-        /// </summary>
+        /// <summary>Parses the record using the specified reader.</summary>
         /// <param name="reader">The reader.</param>
         /// <param name="length">The length.</param>
         /// <returns>Returns a new <see cref="TxtRecord"/> instance.</returns>
@@ -41,9 +35,7 @@ namespace Cave.Net.Dns
             return result;
         }
 
-        /// <summary>
-        /// Returns a <see cref="string"/> that represents this instance.
-        /// </summary>
+        /// <summary>Returns a <see cref="string"/> that represents this instance.</summary>
         /// <returns>A <see cref="string"/> that represents this instance.</returns>
         public override string ToString()
         {

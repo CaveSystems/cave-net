@@ -1,12 +1,9 @@
-
 // TODO START LOCAL DNS SERVER IN TEST
 #if false
 
 namespace Test.Dns
 {
-    /// <summary>
-    /// Test require a local dns server with the zone file provided in zone.txt
-    /// </summary>
+    /// <summary>Test require a local dns server with the zone file provided in zone.txt</summary>
     [TestFixture]
     public class DNSClientLocalTest
     {
@@ -35,7 +32,6 @@ namespace Test.Dns
         {
             TXT_Test(new DnsClient() { UseTcp = true, UseUdp = false, Port = 8053, Servers = new IPAddress[] { ServerAddress } });
         }
-
 
         [Test]
         public void UdpATest()
@@ -103,7 +99,6 @@ namespace Test.Dns
 
         void TXT_Test(DnsClient testClient)
         {
-
             DnsResponse response = testClient.Resolve("example.com.", DnsRecordType.TXT);
             Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
             Assert.GreaterOrEqual(response.Answers.Count, 1);

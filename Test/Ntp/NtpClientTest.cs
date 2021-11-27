@@ -8,6 +8,8 @@ namespace Test.Ntp
     [TestFixture]
     public class NtpClientTest
     {
+        #region Public Methods
+
         [Test]
         public void TestMethod1()
         {
@@ -75,10 +77,12 @@ namespace Test.Ntp
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"{i}.pool.ntp.org - {ex}");
+                    if (Program.Verbose) Console.WriteLine($"{i}.pool.ntp.org - {ex}");
                 }
             }
             Assert.Fail("Could not connect to any x.pool.ntp.org!");
         }
+
+        #endregion Public Methods
     }
 }

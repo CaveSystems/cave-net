@@ -9,45 +9,24 @@ using Cave.IO;
 
 namespace Cave.Net
 {
-    /// <summary>
-    /// Provides domain name parsing.
-    /// </summary>
+    /// <summary>Provides domain name parsing.</summary>
     public sealed class DomainName
     {
+        #region Private Fields
+
 #if NETSTANDARD1_0_OR_GREATER || NET5_0_OR_GREATER
         static readonly string[] empty = Array.Empty<string>();
-#else 
+#else
         static readonly string[] empty = new string[0];
 #endif
 
-        /// <summary>
-        /// Provides the characters safe for domain names.
-        /// </summary>
-        public const string SafeChars = ASCII.Strings.Letters + ASCII.Strings.Digits + "_-";
-
-        /// <summary>Performs an implicit conversion from <see cref="string"/> to <see cref="DomainName"/>.</summary>
-        /// <param name="value">The value.</param>
-        /// <returns>The result of the conversion.</returns>
-        /// <exception cref="InvalidDataException">{0} is not a valid domain name.</exception>
-        public static implicit operator DomainName(string value) =>
-            TryParse(value, out var name)
-            ? name
-            : throw new InvalidDataException(string.Format("{0} is not a valid domain name!", value));
-
-        /// <summary>Implements the operator ==.</summary>
-        /// <param name="a">a.</param>
-        /// <param name="b">The b.</param>
-        /// <returns>The result of the operator.</returns>
-        public static bool operator ==(DomainName a, DomainName b) => b is null ? a is null : !(a is null) && a.ToString() == b.ToString();
-
-        /// <summary>Implements the operator !=.</summary>
-        /// <param name="a">a.</param>
-        /// <param name="b">The b.</param>
-        /// <returns>The result of the operator.</returns>
-        public static bool operator !=(DomainName a, DomainName b) => b is null ? a is object : a is null || a.ToString() != b.ToString();
+        static readonly Regex asciiNameRegex = new("^[a-zA-Z0-9_-]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         static readonly IdnMapping idnParser = new() { UseStd3AsciiRules = true };
-        static readonly Regex asciiNameRegex = new("^[a-zA-Z0-9_-]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        #endregion Private Fields
+
+        #region Private Methods
 
         static bool TryParsePart(string value, out string label)
         {
@@ -71,55 +50,74 @@ namespace Cave.Net
             }
         }
 
-        /// <summary>Tries to parse a domain name.</summary>
-        /// <param name="value">The value.</param>
-        /// <param name="name">The name.</param>
-        /// <returns>Returns true if the value was parsed correctly, false otherwise.</returns>
-        public static bool TryParse(string value, out DomainName name)
-        {
-            if (value == ".")
-            {
-                name = Root;
-                return true;
-            }
+        #endregion Private Methods
 
-            var parts = new List<string>();
-            var start = 0;
-            string part;
-            for (var i = 0; i < value.Length; ++i)
+        #region Public Fields
+
+        /// <summary>Provides the characters safe for domain names.</summary>
+        public const string SafeChars = ASCII.Strings.Letters + ASCII.Strings.Digits + "_-";
+
+        #endregion Public Fields
+
+        #region Public Constructors
+
+        /// <summary>Initializes a new instance of the <see cref="DomainName"/> class.</summary>
+        /// <param name="parts">The parts of the DomainName.</param>
+        public DomainName(IEnumerable<string> parts)
+            : this(parts?.ToArray())
+        {
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="DomainName"/> class.</summary>
+        /// <param name="parts">The parts of the DomainName.</param>
+        public DomainName(params string[] parts)
+        {
+            Parts = parts ?? empty;
+            foreach (var part in Parts)
             {
-                if (value[i] == '.' && (i == 0 || value[i - 1] != '\\'))
+                if (part.HasInvalidChars(SafeChars))
                 {
-                    if (TryParsePart(value.Substring(start, i - start), out part) && (part.Length <= 64))
-                    {
-                        parts.Add(part);
-                        start = i + 1;
-                    }
-                    else
-                    {
-                        name = null;
-                        return false;
-                    }
+                    throw new InvalidDataException("Invalid characters at domain name!");
                 }
             }
-
-            if (value.Length == start)
-            {
-                // empty label --> name ends with dot
-            }
-            else if (TryParsePart(value.Substring(start, value.Length - start), out part) && (part.Length <= 64))
-            {
-                parts.Add(part);
-            }
-            else
-            {
-                name = null;
-                return false;
-            }
-
-            name = new DomainName(parts.ToArray());
-            return true;
         }
+
+        #endregion Public Constructors
+
+        #region Public Properties
+
+        /// <summary>Gets the DNS root name (.)</summary>
+        /// <value>The root.</value>
+        public static DomainName Root { get; } = new DomainName(null);
+
+        /// <summary>Gets the parts of the domain name.</summary>
+        /// <value>The parts.</value>
+        public string[] Parts { get; private set; }
+
+        #endregion Public Properties
+
+        #region Public Methods
+
+        /// <summary>Performs an implicit conversion from <see cref="string"/> to <see cref="DomainName"/>.</summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        /// <exception cref="InvalidDataException">{0} is not a valid domain name.</exception>
+        public static implicit operator DomainName(string value) =>
+            TryParse(value, out var name)
+            ? name
+            : throw new InvalidDataException(string.Format("{0} is not a valid domain name!", value));
+
+        /// <summary>Implements the operator !=.</summary>
+        /// <param name="a">a.</param>
+        /// <param name="b">The b.</param>
+        /// <returns>The result of the operator.</returns>
+        public static bool operator !=(DomainName a, DomainName b) => b is null ? a is object : a is null || a.ToString() != b.ToString();
+
+        /// <summary>Implements the operator ==.</summary>
+        /// <param name="a">a.</param>
+        /// <param name="b">The b.</param>
+        /// <returns>The result of the operator.</returns>
+        public static bool operator ==(DomainName a, DomainName b) => b is null ? a is null : !(a is null) && a.ToString() == b.ToString();
 
         /// <summary>Parses a domain name using the specified reader.</summary>
         /// <param name="reader">The reader.</param>
@@ -192,37 +190,72 @@ namespace Cave.Net
             }
         }
 
-        /// <summary>Gets the DNS root name (.)</summary>
-        /// <value>The root.</value>
-        public static DomainName Root { get; } = new DomainName(null);
-
-        /// <summary>Gets the parts of the domain name.</summary>
-        /// <value>The parts.</value>
-        public string[] Parts { get; private set; }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DomainName"/> class.
-        /// </summary>
-        /// <param name="parts">The parts of the DomainName.</param>
-        public DomainName(IEnumerable<string> parts)
-            : this(parts?.ToArray())
+        /// <summary>Tries to parse a domain name.</summary>
+        /// <param name="value">The value.</param>
+        /// <param name="name">The name.</param>
+        /// <returns>Returns true if the value was parsed correctly, false otherwise.</returns>
+        public static bool TryParse(string value, out DomainName name)
         {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DomainName"/> class.
-        /// </summary>
-        /// <param name="parts">The parts of the DomainName.</param>
-        public DomainName(params string[] parts)
-        {
-            Parts = parts ?? empty;
-            foreach (var part in Parts)
+            if (value == ".")
             {
-                if (part.HasInvalidChars(SafeChars))
+                name = Root;
+                return true;
+            }
+
+            var parts = new List<string>();
+            var start = 0;
+            string part;
+            for (var i = 0; i < value.Length; ++i)
+            {
+                if (value[i] == '.' && (i == 0 || value[i - 1] != '\\'))
                 {
-                    throw new InvalidDataException("Invalid characters at domain name!");
+                    if (TryParsePart(value.Substring(start, i - start), out part) && (part.Length <= 64))
+                    {
+                        parts.Add(part);
+                        start = i + 1;
+                    }
+                    else
+                    {
+                        name = null;
+                        return false;
+                    }
                 }
             }
+
+            if (value.Length == start)
+            {
+                // empty label --> name ends with dot
+            }
+            else if (TryParsePart(value.Substring(start, value.Length - start), out part) && (part.Length <= 64))
+            {
+                parts.Add(part);
+            }
+            else
+            {
+                name = null;
+                return false;
+            }
+
+            name = new DomainName(parts.ToArray());
+            return true;
+        }
+
+        /// <summary>Determines whether the specified <see cref="object"/>, is equal to this instance.</summary>
+        /// <param name="obj">The <see cref="object"/> to compare with this instance.</param>
+        /// <returns><c>true</c> if the specified <see cref="object"/> is equal to this instance; otherwise, <c>false</c>.</returns>
+        public override bool Equals(object obj) => obj is DomainName other && ToString().ToLower() == other.ToString().ToLower();
+
+        /// <summary>Returns a hash code for this instance.</summary>
+        /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
+        public override int GetHashCode()
+        {
+            var hash = Parts.Length.GetHashCode();
+            foreach (var p in Parts)
+            {
+                hash ^= p.GetHashCode();
+            }
+
+            return hash;
         }
 
         /// <summary>Gets the parent zone of the domain name.</summary>
@@ -252,30 +285,10 @@ namespace Cave.Net
             return new DomainName(parts);
         }
 
-        /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
-        /// <returns>A <see cref="string" /> that represents this instance.</returns>
+        /// <summary>Returns a <see cref="string"/> that represents this instance.</summary>
+        /// <returns>A <see cref="string"/> that represents this instance.</returns>
         public override string ToString() => string.Join(".", Parts);
 
-        /// <summary>Returns a hash code for this instance.</summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
-        /// </returns>
-        public override int GetHashCode()
-        {
-            var hash = Parts.Length.GetHashCode();
-            foreach (var p in Parts)
-            {
-                hash ^= p.GetHashCode();
-            }
-
-            return hash;
-        }
-
-        /// <summary>Determines whether the specified <see cref="object" />, is equal to this instance.</summary>
-        /// <param name="obj">The <see cref="object" /> to compare with this instance.</param>
-        /// <returns>
-        /// <c>true</c> if the specified <see cref="object" /> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
-        public override bool Equals(object obj) => obj is DomainName other && ToString().ToLower() == other.ToString().ToLower();
+        #endregion Public Methods
     }
 }

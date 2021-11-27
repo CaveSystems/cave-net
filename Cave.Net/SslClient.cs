@@ -12,14 +12,13 @@ using System.Text;
 
 namespace Cave.Net
 {
-    /// <summary>
-    /// Provides a ssl client implementation.
-    /// </summary>
+    /// <summary>Provides a ssl client implementation.</summary>
     public class SslClient : IDisposable
     {
         #region private implementation
-        SslStream stream;
+
         TcpClient client;
+        SslStream stream;
 
         /// <summary>Called when [select local cert].</summary>
         /// <param name="sender">The sender.</param>
@@ -90,11 +89,34 @@ namespace Cave.Net
             return e.Validated;
         }
 
-        #endregion
+        #endregion private implementation
+
+        #region Protected Methods
+
+        /// <summary>Releases the unmanaged resources used by this instance and optionally releases the managed resources.</summary>
+        /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // free managed resources
+                if (stream != null)
+                {
+                    stream.Dispose();
+                    stream = null;
+                }
+                if (client != null)
+                {
+                    ((IDisposable)client).Dispose();
+                    client = null;
+                }
+            }
+
+            // free native resources if there are any.
+        }
 
         /// <summary>
-        /// This function will be called while authenticating a connection to another sslclient instance and runs the
-        /// <see cref="Authenticate"/> event.
+        /// This function will be called while authenticating a connection to another sslclient instance and runs the <see cref="Authenticate"/> event.
         /// </summary>
         /// <param name="eventArgs">Ssl authentication arguments.</param>
         protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs)
@@ -123,27 +145,26 @@ namespace Cave.Net
             }
         }
 
+        #endregion Protected Methods
+
         #region public events
 
         /// <summary>
-        /// Event to be executed on each new incoming connection to be authenticated. The event may prohibit authentication
-        /// based on the certificate, chain and errors encountered
+        /// Event to be executed on each new incoming connection to be authenticated. The event may prohibit authentication based on the certificate, chain and
+        /// errors encountered
         /// </summary>
         public event EventHandler<SslAuthenticationEventArgs> Authenticate;
-        #endregion
+
+        #endregion public events
 
         #region constructors
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SslClient"/> class.
-        /// </summary>
+        /// <summary>Initializes a new instance of the <see cref="SslClient"/> class.</summary>
         public SslClient()
         {
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SslClient"/> class.
-        /// </summary>
+        /// <summary>Initializes a new instance of the <see cref="SslClient"/> class.</summary>
         /// <param name="client">Client to use.</param>
         public SslClient(TcpClient client)
         {
@@ -151,80 +172,105 @@ namespace Cave.Net
             RemoteEndPoint = (IPEndPoint)this.client.Client.RemoteEndPoint;
         }
 
-        #endregion
+        #endregion constructors
 
-        /// <summary>
-        /// Check certificate revocation.
-        /// </summary>
+        #region Public Fields
+
+        /// <summary>Check certificate revocation.</summary>
         public bool CheckRevocation;
+
+        #endregion Public Fields
+
+        #region Public Properties
 
         /// <summary>Allow client authentication without cert.</summary>
         public bool AllowClientAuthWithoutCert { get; set; } = true;
 
-        /// <summary>
-        /// Gets the remote <see cref="IPEndPoint"/> this client is/was connected to.
-        /// </summary>
-        public IPEndPoint RemoteEndPoint { get; private set; }
-
-        /// <summary>
-        /// Gets a value indicating whether the client is connected or not.
-        /// </summary>
+        /// <summary>Gets a value indicating whether the client is connected or not.</summary>
         public bool Connected => (client != null) && client.Client.Connected;
 
-        /// <summary>
-        /// Starts TLS negotiation and authenticates as server. Use the Authenticate event to implement user defined policy checking!
-        /// By default SslPolicyErrors will be ignored.
-        /// </summary>
-        /// <param name="certificate">Certificate to use for the server instance.</param>
-        public void DoServerTLS(X509Certificate2 certificate)
-        {
-            if (certificate == null)
-            {
-                throw new ArgumentNullException(nameof(certificate), "Certificate required!");
-            }
+        /// <summary>Gets the name of the log source.</summary>
+        /// <value>The name of the log source.</value>
+        public string LogSourceName => Connected ? $"SslClient <{RemoteEndPoint}>" : "SslClient <not connected>";
 
+        /// <summary>Gets the policy errors found while authenticating.</summary>
+        public SslPolicyErrors PolicyErrors { get; private set; }
+
+        /// <summary>Gets the remote <see cref="IPEndPoint"/> this client is/was connected to.</summary>
+        public IPEndPoint RemoteEndPoint { get; private set; }
+
+        /// <summary>Gets the <see cref="Stream"/> instance for the client.</summary>
+        public Stream Stream => stream ?? throw new InvalidOperationException(string.Format("TLS negotiation not jet started!"));
+
+        /// <summary>Gets the validation errors.</summary>
+        /// <value>The validation errors.</value>
+        public SslValidationErrors ValidationErrors { get; private set; }
+
+        #endregion Public Properties
+
+        #region Public Methods
+
+        /// <summary>Closes the connection.</summary>
+        public void Close()
+        {
+            if (client != null)
+            {
+                client.Close();
+                client = null;
+            }
             if (stream != null)
             {
-                throw new InvalidOperationException("TLS negotiation already started!");
-            }
-
-            if (client == null)
-            {
-                throw new InvalidOperationException("Please establish connection first!");
-            }
-
-            if (!certificate.Verify())
-            {
-                throw new SecurityException("Certificate is invalid!");
-            }
-
-            PolicyErrors = 0;
-            ValidationErrors = 0;
-            stream = new SslStream(client.GetStream(), false, new RemoteCertificateValidationCallback(OnValidateRemoteCert), new LocalCertificateSelectionCallback(OnSelectLocalCert));
-            // Let the operating system decide what TLS protocol version to use.
-            // See https://docs.microsoft.com/dotnet/framework/network-programming/tls
-            stream.AuthenticateAsServer(certificate, false, SslProtocols.None, CheckRevocation);
-            if (!stream.IsEncrypted)
-            {
-                throw new CryptographicException("Stream is not encrypted!");
-            }
-
-            if (!stream.IsAuthenticated)
-            {
-                throw new CryptographicException("Stream is not authenticated!");
+                stream.Close();
+                stream = null;
             }
         }
 
+        /// <summary>Creates a connection to the specified host and port.</summary>
+        /// <param name="host">The hostname or ipaddress.</param>
+        /// <param name="port">The port to connect to.</param>
+        public void Connect(string host, int port)
+        {
+            if (client != null)
+            {
+                throw new InvalidOperationException(string.Format("Connection already established!"));
+            }
+
+            client = new TcpClient(host, port);
+            RemoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
+        }
+
+        /// <summary>Creates a connection to the specified host and port.</summary>
+        /// <param name="address">The ipaddress.</param>
+        /// <param name="port">The port to connect to.</param>
+        public void Connect(IPAddress address, int port)
+        {
+            if (client != null)
+            {
+                throw new InvalidOperationException(string.Format("Connection already established!"));
+            }
+
+            client = new TcpClient();
+            client.Connect(address, port);
+            RemoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
+        }
+
+        /// <summary>Releases all resources used by the this instance.</summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         /// <summary>
-        /// Starts TLS negotiation and authenticates as client. Use the Authenticate event to implement user defined policy checking!
-        /// By default SslPolicyErrors will be ignored.
+        /// Starts TLS negotiation and authenticates as client. Use the Authenticate event to implement user defined policy checking! By default SslPolicyErrors
+        /// will be ignored.
         /// </summary>
         /// <param name="serverCN">Server common name (has to be present at the server certificate).</param>
         public void DoClientTLS(string serverCN) => DoClientTLS(serverCN, null);
 
         /// <summary>
-        /// Starts TLS negotiation and authenticates as client. Use the Authenticate event to implement user defined policy checking!
-        /// By default SslPolicyErrors will be ignored.
+        /// Starts TLS negotiation and authenticates as client. Use the Authenticate event to implement user defined policy checking! By default SslPolicyErrors
+        /// will be ignored.
         /// </summary>
         /// <param name="serverCN">The servers common name (this is checked against the server certificate).</param>
         /// <param name="certificate">The clients certificate.</param>
@@ -254,8 +300,7 @@ namespace Cave.Net
 
                 certificates.Add(certificate);
             }
-            // Let the operating system decide what TLS protocol version to use.
-            // See https://docs.microsoft.com/dotnet/framework/network-programming/tls
+            // Let the operating system decide what TLS protocol version to use. See https://docs.microsoft.com/dotnet/framework/network-programming/tls
             stream.AuthenticateAsClient(serverCN, certificates, SslProtocols.None, CheckRevocation);
             if (!stream.IsEncrypted)
             {
@@ -264,76 +309,53 @@ namespace Cave.Net
         }
 
         /// <summary>
-        /// Creates a connection to the specified host and port.
+        /// Starts TLS negotiation and authenticates as server. Use the Authenticate event to implement user defined policy checking! By default SslPolicyErrors
+        /// will be ignored.
         /// </summary>
-        /// <param name="host">The hostname or ipaddress.</param>
-        /// <param name="port">The port to connect to.</param>
-        public void Connect(string host, int port)
+        /// <param name="certificate">Certificate to use for the server instance.</param>
+        public void DoServerTLS(X509Certificate2 certificate)
         {
-            if (client != null)
+            if (certificate == null)
             {
-                throw new InvalidOperationException(string.Format("Connection already established!"));
+                throw new ArgumentNullException(nameof(certificate), "Certificate required!");
             }
 
-            client = new TcpClient(host, port);
-            RemoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
-        }
-
-        /// <summary>
-        /// Creates a connection to the specified host and port.
-        /// </summary>
-        /// <param name="address">The ipaddress.</param>
-        /// <param name="port">The port to connect to.</param>
-        public void Connect(IPAddress address, int port)
-        {
-            if (client != null)
-            {
-                throw new InvalidOperationException(string.Format("Connection already established!"));
-            }
-
-            client = new TcpClient();
-            client.Connect(address, port);
-            RemoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
-        }
-
-        /// <summary>
-        /// Gets the <see cref="Stream"/> instance for the client.
-        /// </summary>
-        public Stream Stream => stream ?? throw new InvalidOperationException(string.Format("TLS negotiation not jet started!"));
-
-        /// <summary>Gets the validation errors.</summary>
-        /// <value>The validation errors.</value>
-        public SslValidationErrors ValidationErrors { get; private set; }
-
-        /// <summary>
-        /// Gets the policy errors found while authenticating.
-        /// </summary>
-        public SslPolicyErrors PolicyErrors { get; private set; }
-
-        /// <summary>Gets the name of the log source.</summary>
-        /// <value>The name of the log source.</value>
-        public string LogSourceName => Connected ? $"SslClient <{RemoteEndPoint}>" : "SslClient <not connected>";
-
-        /// <summary>
-        /// Closes the connection.
-        /// </summary>
-        public void Close()
-        {
-            if (client != null)
-            {
-                client.Close();
-                client = null;
-            }
             if (stream != null)
             {
-                stream.Close();
-                stream = null;
+                throw new InvalidOperationException("TLS negotiation already started!");
+            }
+
+            if (client == null)
+            {
+                throw new InvalidOperationException("Please establish connection first!");
+            }
+
+            if (!certificate.Verify())
+            {
+                throw new SecurityException("Certificate is invalid!");
+            }
+
+            PolicyErrors = 0;
+            ValidationErrors = 0;
+            stream = new SslStream(client.GetStream(), false, new RemoteCertificateValidationCallback(OnValidateRemoteCert), new LocalCertificateSelectionCallback(OnSelectLocalCert));
+            // Let the operating system decide what TLS protocol version to use. See https://docs.microsoft.com/dotnet/framework/network-programming/tls
+            stream.AuthenticateAsServer(certificate, false, SslProtocols.None, CheckRevocation);
+            if (!stream.IsEncrypted)
+            {
+                throw new CryptographicException("Stream is not encrypted!");
+            }
+
+            if (!stream.IsAuthenticated)
+            {
+                throw new CryptographicException("Stream is not authenticated!");
             }
         }
 
-        /// <summary>
-        /// Obtains an identification string for the object.
-        /// </summary>
+        /// <summary>Obtains a hashcode for this instance.</summary>
+        /// <returns>Returns the hashcode for the remote endpoint.</returns>
+        public override int GetHashCode() => RemoteEndPoint.GetHashCode();
+
+        /// <summary>Obtains an identification string for the object.</summary>
         /// <returns>SSL://{RemoteEndPoint}.</returns>
         public override string ToString()
         {
@@ -354,41 +376,6 @@ namespace Cave.Net
             return result.ToString();
         }
 
-        /// <summary>
-        /// Obtains a hashcode for this instance.
-        /// </summary>
-        /// <returns>Returns the hashcode for the remote endpoint.</returns>
-        public override int GetHashCode() => RemoteEndPoint.GetHashCode();
-
-        /// <summary>Releases the unmanaged resources used by this instance and optionally releases the managed resources.</summary>
-        /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                // free managed resources
-                if (stream != null)
-                {
-                    stream.Dispose();
-                    stream = null;
-                }
-                if (client != null)
-                {
-                    ((IDisposable)client).Dispose();
-                    client = null;
-                }
-            }
-
-            // free native resources if there are any.
-        }
-
-        /// <summary>
-        /// Releases all resources used by the this instance.
-        /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+        #endregion Public Methods
     }
 }

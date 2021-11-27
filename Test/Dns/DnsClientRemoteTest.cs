@@ -1,89 +1,15 @@
+using System.Linq;
+using System.Net;
 using Cave.Net;
 using Cave.Net.Dns;
 using NUnit.Framework;
-using System.Linq;
-using System.Net;
 
 namespace Test.Dns
 {
     [TestFixture]
     public class DnsClientRemoteTest
     {
-
-        [Test]
-        public void TcpATest()
-        {
-            A_Test(new DnsClient() { UseTcp = true, UseUdp = false });
-        }
-
-        [Test]
-        public void TcpAAAATest()
-        {
-            AAAA_Test(new DnsClient() { UseTcp = true, UseUdp = false });
-        }
-
-        [Test]
-        public void TcpMXTest()
-        {
-            MX_Test(new DnsClient() { UseTcp = true, UseUdp = false });
-        }
-
-        [Test]
-        public void TcpTXTTest()
-        {
-            TXT_Test(new DnsClient() { UseTcp = true, UseUdp = false }, false);
-        }
-
-
-        [Test]
-        public void UdpATest()
-        {
-            A_Test(new DnsClient() { UseTcp = false, UseUdp = true });
-        }
-
-        [Test]
-        public void UdpAAAATest()
-        {
-            AAAA_Test(new DnsClient() { UseTcp = false, UseUdp = true });
-        }
-
-        [Test]
-        public void UdpMXTest()
-        {
-            MX_Test(new DnsClient() { UseTcp = false, UseUdp = true });
-        }
-
-        [Test]
-        public void UdpTXTTest()
-        {
-            TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true }, true);
-        }
-        [Test]
-        public void TcpPTRTest()
-        {
-            PTR_Test(new DnsClient() { UseTcp = true, UseUdp = false });
-        }
-
-        [Test]
-        public void UdpPTRTest()
-        {
-            PTR_Test(new DnsClient() { UseTcp = false, UseUdp = true });
-        }
-
-        static void PTR_Test(DnsClient testClient)
-        {
-            var response = testClient.Resolve("1.1.1.1.in-addr.arpa", DnsRecordType.PTR);
-            Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
-            Assert.GreaterOrEqual(response.Answers.Count, 1);
-            foreach (var record in response.Answers)
-            {
-                if (record.Value.Equals((DomainName)"one.one.one.one"))
-                {
-                    return;
-                }
-            }
-            Assert.Fail();
-        }
+        #region Private Methods
 
         static void A_Test(DnsClient testClient)
         {
@@ -129,6 +55,21 @@ namespace Test.Dns
             Assert.AreEqual(5, counter);
         }
 
+        static void PTR_Test(DnsClient testClient)
+        {
+            var response = testClient.Resolve("1.1.1.1.in-addr.arpa", DnsRecordType.PTR);
+            Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
+            Assert.GreaterOrEqual(response.Answers.Count, 1);
+            foreach (var record in response.Answers)
+            {
+                if (record.Value.Equals((DomainName)"one.one.one.one"))
+                {
+                    return;
+                }
+            }
+            Assert.Fail();
+        }
+
         static void TXT_Test(DnsClient testClient, bool canBeTruncated)
         {
             var response = testClient.Resolve("google.com.", DnsRecordType.TXT);
@@ -145,5 +86,71 @@ namespace Test.Dns
             }
             if (!canBeTruncated) Assert.Fail();
         }
+
+        #endregion Private Methods
+
+        #region Public Methods
+
+        [Test]
+        public void TcpAAAATest()
+        {
+            AAAA_Test(new DnsClient() { UseTcp = true, UseUdp = false });
+        }
+
+        [Test]
+        public void TcpATest()
+        {
+            A_Test(new DnsClient() { UseTcp = true, UseUdp = false });
+        }
+
+        [Test]
+        public void TcpMXTest()
+        {
+            MX_Test(new DnsClient() { UseTcp = true, UseUdp = false });
+        }
+
+        [Test]
+        public void TcpPTRTest()
+        {
+            PTR_Test(new DnsClient() { UseTcp = true, UseUdp = false });
+        }
+
+        [Test]
+        public void TcpTXTTest()
+        {
+            TXT_Test(new DnsClient() { UseTcp = true, UseUdp = false }, false);
+        }
+
+        [Test]
+        public void UdpAAAATest()
+        {
+            AAAA_Test(new DnsClient() { UseTcp = false, UseUdp = true });
+        }
+
+        [Test]
+        public void UdpATest()
+        {
+            A_Test(new DnsClient() { UseTcp = false, UseUdp = true });
+        }
+
+        [Test]
+        public void UdpMXTest()
+        {
+            MX_Test(new DnsClient() { UseTcp = false, UseUdp = true });
+        }
+
+        [Test]
+        public void UdpPTRTest()
+        {
+            PTR_Test(new DnsClient() { UseTcp = false, UseUdp = true });
+        }
+
+        [Test]
+        public void UdpTXTTest()
+        {
+            TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true }, true);
+        }
+
+        #endregion Public Methods
     }
 }
