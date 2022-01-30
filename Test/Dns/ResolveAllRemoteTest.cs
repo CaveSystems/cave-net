@@ -42,7 +42,13 @@ namespace Test.Dns
         static IPAddress[] GetDnsServers()
         {
             //azure build server does not support ipv6
-            return DnsClient.GetPulicDnsServers().Where(i => i.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).ToArray();
+            //azure build server refuses connection to some public dns, use specific ones
+            return new IPAddress[]
+            {
+                IPAddress.Parse("1.1.1.1"),
+                IPAddress.Parse("8.8.4.4"),
+                IPAddress.Parse("8.8.8.8"),
+            };
         }
 
         static void MX_Test(DnsClient testClient)
