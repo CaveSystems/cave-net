@@ -21,7 +21,9 @@ namespace Test.Tcp
 
         static IPAddress[] GetMyAddresses(bool includeLoopback)
         {
-            var interfaces = NetworkInterface.GetAllNetworkInterfaces().Where(i => i.OperationalStatus == OperationalStatus.Up);
+            var interfaces = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(i => i.OperationalStatus == OperationalStatus.Up)
+                .Where(i => !i.Description.ToLower().Contains("virtual"));
             if (!includeLoopback) interfaces = interfaces.Where(i => i.NetworkInterfaceType != NetworkInterfaceType.Loopback);
             var myAddresses = interfaces.SelectMany(i => i.GetIPProperties().UnicastAddresses)
                .Where(a => a.Address.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6);
@@ -39,7 +41,7 @@ namespace Test.Tcp
             var server = new TcpServer
             {
                 AcceptThreads = 10,
-                AcceptBacklog = 1000,
+                AcceptBacklog = 10000,
             };
             server.Listen(port);
             if (server.LocalEndPoint.AddressFamily == AddressFamily.InterNetworkV6)
@@ -70,9 +72,23 @@ namespace Test.Tcp
 
             Parallel.For(0, count, (n) =>
             {
-                using var client = new TcpAsyncClient();
-                client.Connect(addresses[n % addresses.Length], port);
-                Interlocked.Increment(ref success);
+                var addr = addresses[n % addresses.Length];
+                for (var test = 0; ; test++)
+                {
+                    try
+                    {
+                        using var client = new TcpAsyncClient();
+                        client.Connect(addr, port);
+                        client.Close();
+                        Interlocked.Increment(ref success);
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Test : warning TP{port}: Client {n + 1} {addr} failed: {ex.Message}");
+                        if (test > 5) throw;
+                    }
+                }
             });
             watch.Stop();
 
@@ -772,25 +788,35 @@ namespace Test.Tcp
             long bytes = 0;
             var watch = Stopwatch.StartNew();
             var addresses = GetMyAddresses(true);
+            var failed = 0;
 
-            Parallel.For(0, Math.Max(16, addresses.Length), (n) =>
+            Parallel.For(0, addresses.Length, (n) =>
             {
                 var addr = addresses[n % addresses.Length];
-                using (var client = new TcpAsyncClient())
+                try
                 {
-                    client.Connect(addr, port);
-                    client.Stream.DirectWrites = true;
-                    for (var d = 0; d < 256; d++)
+                    using (var client = new TcpAsyncClient())
                     {
-                        client.Stream.Write(new byte[1024 * 1024], 0, 1024 * 1024);
-                        Interlocked.Add(ref bytes, 1024 * 1024);
+                        client.Connect(addr, port);
+                        client.Stream.DirectWrites = true;
+                        for (var d = 0; d < 256; d++)
+                        {
+                            client.Stream.Write(new byte[1024 * 1024], 0, 1024 * 1024);
+                            Interlocked.Add(ref bytes, 1024 * 1024);
+                        }
+                        client.Close();
                     }
-                    client.Close();
+                    if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
                 }
-                if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Client {n + 1} {addr} completed.");
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Test : warning TP{port}: Client {n + 1} {addr} failed: {ex.Message}");
+                    Interlocked.Increment(ref failed);
+                }
             });
             watch.Stop();
 
+            if (failed > addresses.Length / 2) Assert.Fail("Could not connect to >50% of local addresses!");
             if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {bytes:N} bytes in {watch.Elapsed}");
             var bps = Math.Round(bytes / watch.Elapsed.TotalSeconds, 2);
             if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {bps:N} bytes/s");

@@ -74,7 +74,7 @@ namespace Test.Dns
         {
             var response = testClient.Resolve("google.com.", DnsRecordType.TXT);
             if (!canBeTruncated) Assert.IsFalse(response.IsTruncatedResponse);
-            Assert.GreaterOrEqual(response.Answers.Count, 1);
+            if (!response.IsTruncatedResponse) Assert.GreaterOrEqual(response.Answers.Count, 1);
             foreach (var record in response.Answers)
             {
                 Assert.AreEqual(DnsRecordType.TXT, record.RecordType);
