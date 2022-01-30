@@ -21,7 +21,9 @@ namespace Test.Tcp
 
         static IPAddress[] GetMyAddresses(bool includeLoopback)
         {
-            var interfaces = NetworkInterface.GetAllNetworkInterfaces().Where(i => i.OperationalStatus == OperationalStatus.Up);
+            var interfaces = NetworkInterface.GetAllNetworkInterfaces()
+                .Where(i => i.OperationalStatus == OperationalStatus.Up)
+                .Where(i => !i.Description.ToLower().Contains("virtual"));
             if (!includeLoopback) interfaces = interfaces.Where(i => i.NetworkInterfaceType != NetworkInterfaceType.Loopback);
             var myAddresses = interfaces.SelectMany(i => i.GetIPProperties().UnicastAddresses)
                .Where(a => a.Address.AddressFamily is AddressFamily.InterNetwork or AddressFamily.InterNetworkV6);
@@ -67,6 +69,7 @@ namespace Test.Tcp
             var count = 10000;
             var watch = Stopwatch.StartNew();
             var success = 0;
+            var failed = 0;
 
             Parallel.For(0, count, (n) =>
             {
