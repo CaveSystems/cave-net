@@ -41,7 +41,7 @@ namespace Test.Tcp
             var server = new TcpServer
             {
                 AcceptThreads = 10,
-                AcceptBacklog = 1000,
+                AcceptBacklog = 10000,
             };
             server.Listen(port);
             if (server.LocalEndPoint.AddressFamily == AddressFamily.InterNetworkV6)
@@ -69,27 +69,29 @@ namespace Test.Tcp
             var count = 10000;
             var watch = Stopwatch.StartNew();
             var success = 0;
-            var failed = 0;
 
             Parallel.For(0, count, (n) =>
             {
                 var addr = addresses[n % addresses.Length];
-                try
+                for (var test = 0; ; test++)
                 {
-                    using var client = new TcpAsyncClient();
-                    client.Connect(addr, port);
-                    client.Close();
-                    Interlocked.Increment(ref success);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Test : warning TP{port}: Client {n + 1} {addr} failed: {ex.Message}");
-                    Interlocked.Increment(ref failed);
+                    try
+                    {
+                        using var client = new TcpAsyncClient();
+                        client.Connect(addr, port);
+                        client.Close();
+                        Interlocked.Increment(ref success);
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Test : warning TP{port}: Client {n + 1} {addr} failed: {ex.Message}");
+                        if (test > 5) throw;
+                    }
                 }
             });
             watch.Stop();
 
-            if (failed > addresses.Length / 2) Assert.Fail("Could not connect to >50% of local addresses!");
             if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {success} connections in {watch.Elapsed}");
             var cps = Math.Round(success / watch.Elapsed.TotalSeconds, 2);
             if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {cps} connections/s");
