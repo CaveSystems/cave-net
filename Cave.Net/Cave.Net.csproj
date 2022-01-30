@@ -5,8 +5,8 @@
         <RootNamespace>Cave.Net</RootNamespace>
         <AssemblyOriginatorKeyFile>cave-net.snk</AssemblyOriginatorKeyFile>
         <Product>CaveSystems Networking Library</Product>
-        <PackageTags>CaveSystems Networking TcpServer TcpAsyncClient UdpServer UdpAsyncClient DNS NTP</PackageTags>
-        <Description>CaveSystems Networking Library</Description>
+        <PackageTags>CaveSystems Networking TcpServer TcpAsyncClient UdpServer UdpAsyncClient DNS NTP WakeOnLan</PackageTags>
+        <Description>CaveSystems Networking Library provides classes for fast and easy access to fast async tcp streaming, dns client, ssl client and server and ntp client and server implementations.</Description>
         <PackageProjectUrl>https://github.com/CaveSystems/cave-net</PackageProjectUrl>
         <RepositoryUrl>https://github.com/CaveSystems/cave-net</RepositoryUrl>
         <!--settings-->
