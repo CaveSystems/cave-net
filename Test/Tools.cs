@@ -9,7 +9,7 @@ namespace Test
     {
         #region Private Fields
 
-        static int firstPort = 60000 - (Environment.TickCount % 10000) - (Thread.CurrentThread.ManagedThreadId.GetHashCode() % 10000);
+        static int currentPort;
 
         #endregion Private Fields
 
@@ -21,7 +21,7 @@ namespace Test
             {
                 try
                 {
-                    var port = Interlocked.Decrement(ref firstPort);
+                    var port = 10000 + Interlocked.Increment(ref currentPort) % 10000;
                     var sock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)
                     {
                         LingerState = new LingerOption(false, 0),
@@ -44,7 +44,7 @@ namespace Test
             {
                 try
                 {
-                    port = Interlocked.Decrement(ref firstPort);
+                    port = 10000 + Interlocked.Increment(ref currentPort) % 10000;
 #pragma warning disable CS0618
                     var listen = new TcpListener(port);
 #pragma warning restore CS0618
