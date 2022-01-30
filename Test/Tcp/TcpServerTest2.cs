@@ -73,12 +73,23 @@ namespace Test.Tcp
 
             Parallel.For(0, count, (n) =>
             {
-                using var client = new TcpAsyncClient();
-                client.Connect(addresses[n % addresses.Length], port);
-                Interlocked.Increment(ref success);
+                var addr = addresses[n % addresses.Length];
+                try
+                {
+                    using var client = new TcpAsyncClient();
+                    client.Connect(addr, port);
+                    client.Close();
+                    Interlocked.Increment(ref success);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Test : warning TP{port}: Client {n + 1} {addr} failed: {ex.Message}");
+                    Interlocked.Increment(ref failed);
+                }
             });
             watch.Stop();
 
+            if (failed > addresses.Length / 2) Assert.Fail("Could not connect to >50% of local addresses!");
             if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {success} connections in {watch.Elapsed}");
             var cps = Math.Round(success / watch.Elapsed.TotalSeconds, 2);
             if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: {cps} connections/s");
