@@ -27,7 +27,7 @@
 
     <ItemGroup>
         <PackageReference Include="Cave.Extensions" Version="2.1.4" />
-        <PackageReference Include="Cave.IO" Version="2.1.2" />
+        <PackageReference Include="Cave.IO" Version="2.1.4" />
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.*">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
