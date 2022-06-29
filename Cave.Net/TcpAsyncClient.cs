@@ -16,6 +16,7 @@ namespace Cave.Net
     {
         #region private class
 
+        readonly object syncRoot = new();
         long bytesReceived;
         long bytesSent;
         volatile bool closing;
@@ -70,13 +71,13 @@ namespace Cave.Net
 
         void EnterLock()
         {
-            if (!Monitor.TryEnter(this, DeadLockTimeout))
+            if (!Monitor.TryEnter(syncRoot, DeadLockTimeout))
             {
                 throw new TimeoutException($"DeadLock timeout exceeded. This can be caused by inproper use of {nameof(TcpAsyncClient)} events!");
             }
         }
 
-        void ExitLock() => Monitor.Exit(this);
+        void ExitLock() => Monitor.Exit(syncRoot);
 
         void InitializeSocket(Socket socket)
         {
