@@ -6,7 +6,7 @@ using System.Net.Cache;
 using System.Text;
 using Cave.IO;
 
-#if !NETSTANDARD2_0_OR_GREATER && !NET50
+#if !NETSTANDARD2_0_OR_GREATER && !NET5_0_OR_GREATER
 using System.Net.Configuration;
 using System.Diagnostics;
 using System.Reflection;
@@ -17,7 +17,7 @@ namespace Cave.Net
     /// <summary>Provides a simple asynchronous http fetch.</summary>
     public sealed class HttpConnection
     {
-#if !NETSTANDARD2_0_OR_GREATER && !NET50
+#if !NETSTANDARD2_0_OR_GREATER && !NET5_0_OR_GREATER
         static HttpConnection()
         {
             try
