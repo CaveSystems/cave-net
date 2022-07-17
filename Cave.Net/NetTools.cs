@@ -189,7 +189,7 @@ namespace Cave.Net
             var port = defaultPort;
             try
             {
-#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER || NET50
+#if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER || NET5_0_OR_GREATER
                 var listener = TcpListener.Create(port);
 #elif NET20_OR_GREATER
                 var listener = new TcpListener(IPAddress.Any, port);

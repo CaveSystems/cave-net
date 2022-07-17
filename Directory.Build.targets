@@ -10,11 +10,6 @@
         <DefineConstants>TRACE;DEBUG;</DefineConstants>
     </PropertyGroup>
 
-    <PropertyGroup>
-        <DefineConstants Condition=" !$(DefineConstants.Contains(';NET')) ">$(DefineConstants);NET$(TargetFramework.ToUpper().Replace("_", "").Replace(".", "").Replace("NET", ""))</DefineConstants>
-        <DefineConstants Condition=" $(DefineConstants.Contains(';NET')) ">$(DefineConstants.Remove($(DefineConstants.LastIndexOf(";NET"))));NET$(TargetFramework.ToUpper().Replace("_", "").Replace(".", "").Replace("NET", ""))</DefineConstants>
-    </PropertyGroup>
-
     <ItemGroup>
         <None Include="..\cavesystems.png" Pack="true" Visible="false" PackagePath="\cavesystems.png" />
     </ItemGroup>

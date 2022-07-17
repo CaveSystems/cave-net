@@ -745,7 +745,7 @@ namespace Cave.Net
             }
             finally
             {
-                Monitor.Exit(this);
+                ExitLock();
             }
             Interlocked.Add(ref bytesSent, length - offset);
         }
