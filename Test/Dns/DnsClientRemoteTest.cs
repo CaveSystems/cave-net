@@ -41,18 +41,19 @@ namespace Test.Dns
             var response = testClient.Resolve("google.com.", DnsRecordType.MX);
             Assert.AreEqual(DnsResponseCode.NoError, response.ResponseCode);
             Assert.GreaterOrEqual(response.Answers.Count, 1);
-            var counter = 0;
             foreach (var record in response.Answers)
             {
                 Assert.AreEqual(DnsRecordType.MX, record.RecordType);
                 Assert.AreEqual(DnsRecordClass.IN, record.RecordClass);
-                if (record.Value.ToString() == "10, aspmx.l.google.com") counter++;
-                if (record.Value.ToString() == "20, alt1.aspmx.l.google.com") counter++;
-                if (record.Value.ToString() == "30, alt2.aspmx.l.google.com") counter++;
-                if (record.Value.ToString() == "40, alt3.aspmx.l.google.com") counter++;
-                if (record.Value.ToString() == "50, alt4.aspmx.l.google.com") counter++;
+                if (record.Value is not MxRecord mx)
+                {
+                    Assert.Fail($"Record {record} is not an mx record!");
+                }
+                else
+                {
+                    Assert.AreEqual((DomainName)"smtp.google.com", mx.ExchangeDomainName);
+                }
             }
-            Assert.AreEqual(5, counter);
         }
 
         static void PTR_Test(DnsClient testClient)

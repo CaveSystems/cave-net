@@ -10,7 +10,7 @@ trigger:
 - feature/*
 
 pool:
-  vmImage: 'windows-latest'
+  vmImage: 'windows-2022'
 
 variables:
   fixedBuildVersion: '2.1'
@@ -61,6 +61,34 @@ steps:
       echo "gitTag = '$gitTag'"
       echo "build version = '$version'"
       Write-Host "##vso[task.setvariable variable=Version]$version"
+
+- task: UseDotNet@2
+  displayName: 'Use .NET Core sdk 2.x'
+  inputs:
+    packageType: sdk
+    version: 2.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- task: UseDotNet@2
+  displayName: 'Use .NET Core sdk 3.x'
+  inputs:
+    packageType: sdk
+    version: 3.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- task: UseDotNet@2
+  displayName: 'Use .NET Core sdk 5.x'
+  inputs:
+    packageType: sdk
+    version: 5.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- task: UseDotNet@2
+  displayName: 'Use .NET Core sdk 6.x'
+  inputs:
+    packageType: sdk
+    version: 6.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
 
 - task: NuGetToolInstaller@0
   inputs:

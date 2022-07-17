@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Cave.Collections.Generic;
 using Cave.IO;
 
 namespace Cave.Net.Dns
@@ -16,7 +17,7 @@ namespace Cave.Net.Dns
     {
         #region static class
 
-        static void LoadEtcResolvConf(List<IPAddress> result)
+        static void LoadEtcResolvConf(IItemSet<IPAddress> result)
         {
             if (File.Exists("/etc/resolv.conf"))
             {
@@ -43,7 +44,7 @@ namespace Cave.Net.Dns
                             {
                                 if (IPAddress.TryParse(parts[n], out var addr))
                                 {
-                                    result.Add(addr);
+                                    result.Include(addr);
                                 }
                             }
                         }
@@ -86,14 +87,14 @@ namespace Cave.Net.Dns
         /// <returns>Returns a array of <see cref="IPAddress"/> instances.</returns>
         public static IPAddress[] GetDefaultDnsServers()
         {
-            var result = new List<IPAddress>();
+            var result = new Set<IPAddress>();
             try
             {
                 foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
                 {
                     if ((nic.OperationalStatus == OperationalStatus.Up) && (nic.NetworkInterfaceType != NetworkInterfaceType.Loopback))
                     {
-                        result.AddRange(nic.GetIPProperties().DnsAddresses);
+                        result.IncludeRange(nic.GetIPProperties().DnsAddresses);
                     }
                 }
             }
