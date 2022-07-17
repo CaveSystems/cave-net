@@ -14,10 +14,9 @@ namespace Test.Dns
         static void A_Test(DnsClient testClient)
         {
             var responses = testClient.ResolveAll("one.one.one.one", DnsRecordType.A);
-            Assert.AreEqual(testClient.Servers.Length, responses.Count);
+            Assert.IsTrue(responses.Any(), "No response!");
             Assert.IsTrue(responses.All(r => r.ResponseCode == DnsResponseCode.NoError));
-            Assert.IsTrue(responses.All(r => r.Answers.Count >= 1));
-            Assert.IsTrue(responses.Any());
+            Assert.IsTrue(responses.All(r => r.Answers.Count >= 1), "At least one response has no answer!");
             var ipOne = new IPAddress(new byte[] { 1, 1, 1, 1 });
             foreach (var response in responses)
             {
@@ -28,10 +27,9 @@ namespace Test.Dns
         static void AAAA_Test(DnsClient testClient)
         {
             var responses = testClient.ResolveAll("one.one.one.one", DnsRecordType.AAAA);
-            Assert.AreEqual(testClient.Servers.Length, responses.Count);
+            Assert.IsTrue(responses.Any(), "No response!");
             Assert.IsTrue(responses.All(r => r.ResponseCode == DnsResponseCode.NoError));
-            Assert.IsTrue(responses.All(r => r.Answers.Count >= 1));
-            Assert.IsTrue(responses.Any());
+            Assert.IsTrue(responses.All(r => r.Answers.Count >= 1), "At least one response has no answer!");
             Assert.IsTrue(IPAddress.TryParse("2606:4700:4700::1111", out var ipOne));
             foreach (var response in responses)
             {
@@ -54,33 +52,33 @@ namespace Test.Dns
         static void MX_Test(DnsClient testClient)
         {
             var responses = testClient.ResolveAll("google.com.", DnsRecordType.MX);
-            Assert.AreEqual(testClient.Servers.Length, responses.Count);
+            Assert.IsTrue(responses.Any(), "No response!");
             Assert.IsTrue(responses.All(r => r.ResponseCode == DnsResponseCode.NoError));
-            Assert.IsTrue(responses.All(r => r.Answers.Count >= 1));
+            Assert.IsTrue(responses.All(r => r.Answers.Count >= 1), "At least one response has no answer!");
             foreach (var response in responses)
             {
-                var flags = 0;
                 foreach (var record in response.Answers)
                 {
                     Assert.AreEqual(DnsRecordType.MX, record.RecordType);
                     Assert.AreEqual(DnsRecordClass.IN, record.RecordClass);
-                    if (record.Value.ToString() == "10, aspmx.l.google.com") flags ^= 1;
-                    if (record.Value.ToString() == "20, alt1.aspmx.l.google.com") flags ^= 2;
-                    if (record.Value.ToString() == "30, alt2.aspmx.l.google.com") flags ^= 4;
-                    if (record.Value.ToString() == "40, alt3.aspmx.l.google.com") flags ^= 8;
-                    if (record.Value.ToString() == "50, alt4.aspmx.l.google.com") flags ^= 16;
+                    if (record.Value is not MxRecord mx)
+                    {
+                        Assert.Fail($"Record {record} is not an mx record!");
+                    }
+                    else
+                    {
+                        Assert.AreEqual((DomainName)"smtp.google.com", mx.ExchangeDomainName);
+                    }
                 }
-                Assert.AreEqual(0x1f, flags);
             }
         }
 
         static void PTR_Test(DnsClient testClient)
         {
             var responses = testClient.ResolveAll("1.1.1.1.in-addr.arpa", DnsRecordType.PTR);
-            Assert.AreEqual(testClient.Servers.Length, responses.Count);
+            Assert.IsTrue(responses.Any(), "No response!");
             Assert.IsTrue(responses.All(r => r.ResponseCode == DnsResponseCode.NoError));
-            Assert.IsTrue(responses.All(r => r.Answers.Count == 1));
-            Assert.IsTrue(responses.Any());
+            Assert.IsTrue(responses.All(r => r.Answers.Count >= 1), "At least one response has no answer!");
             foreach (var response in responses)
             {
                 foreach (var record in response.Answers)
@@ -93,7 +91,7 @@ namespace Test.Dns
         static void TXT_Test(DnsClient testClient, bool truncated)
         {
             var responses = testClient.ResolveAll("google.com.", DnsRecordType.TXT);
-            Assert.AreEqual(testClient.Servers.Length, responses.Count);
+            Assert.IsTrue(responses.Any(), "No response!");
             Assert.IsTrue(responses.All(r => r.IsTruncatedResponse == truncated));
             Assert.IsTrue(responses.All(r => r.ResponseCode == DnsResponseCode.NoError));
             if (!truncated)
