@@ -163,26 +163,20 @@ namespace Cave.Net
         /// <summary>Waits until all buffered data is sent.</summary>
         public override void Flush()
         {
-            if (DirectWrites)
+            lock (sendBuffer)
             {
-                if (SendOnFlush)
+                if (DirectWrites)
                 {
-                    byte[] bufferToSend;
-                    lock (sendBuffer)
+                    if (SendOnFlush)
                     {
-                        bufferToSend = sendBuffer.ToArray();
+                        var bufferToSend = sendBuffer.ToArray();
+                        client.Send(bufferToSend);
                         sendBuffer.Clear();
                     }
-
-                    client.Send(bufferToSend);
+                    return;
                 }
 
-                return;
-            }
-
-            for (; ; )
-            {
-                lock (sendBuffer)
+                for (; DirectWrites && sendBuffer.Length > 0; )
                 {
                     if (SendOnFlush)
                     {
