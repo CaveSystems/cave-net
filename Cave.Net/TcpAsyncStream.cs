@@ -42,7 +42,10 @@ namespace Cave.Net
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
-                asyncSendInProgress = false;
+                lock (sendBuffer)
+                {
+                    asyncSendInProgress = false;
+                }
                 client.OnError(ex);
                 client.Close();
             }
@@ -165,42 +168,51 @@ namespace Cave.Net
         {
             lock (sendBuffer)
             {
+                if (SendOnFlush)
+                {
+                    var bufferToSend = sendBuffer.ToArray();
+                    client.Send(bufferToSend);
+                    sendBuffer.Clear();
+                    return;
+                }
+
                 if (DirectWrites)
                 {
-                    if (SendOnFlush)
+                    if (sendBuffer.Length > 0)
                     {
-                        var bufferToSend = sendBuffer.ToArray();
-                        client.Send(bufferToSend);
-                        sendBuffer.Clear();
+                        throw new InvalidOperationException("Buffer is not empty but DirectWrites and SendOnFlush is true. This can happen in a multithreaded environment when changing the SendOfFlush bool during writes!");
                     }
                     return;
                 }
 
-                for (; DirectWrites && sendBuffer.Length > 0; )
+                var waitCount = 0;
+                for (; ; )
                 {
-                    if (SendOnFlush)
+                    var sendBufferLength = sendBuffer.Length;
+                    if (!asyncSendInProgress && sendBufferLength > 0)
                     {
-                        if (!asyncSendInProgress)
-                        {
-                            asyncSendInProgress = true;
-                            ThreadPool.QueueUserWorkItem(AsyncSendNext);
-                        }
+                        asyncSendInProgress = true;
+                        AsyncSendNext(null);
                     }
 
                     if (!asyncSendInProgress && client.PendingAsyncSends == 0)
                     {
-                        if (sendBuffer.Length > 0)
+                        if (sendBufferLength > 0)
                         {
-                            throw new Exception("SendAsync aborted!");
+                            throw new InvalidOperationException("SendAsync aborted!");
                         }
                         return;
                     }
 
-                    if (!Monitor.Wait(sendBuffer, 1000))
+                    if (!Monitor.Wait(sendBuffer, WriteTimeout == 0 ? 1000 : WriteTimeout))
                     {
                         if (!client.IsConnected)
                         {
                             throw new InvalidOperationException("Client diconnected!");
+                        }
+                        if (sendBufferLength == sendBuffer.Length && ++waitCount > 5)
+                        {
+                            throw new TimeoutException("Write timeout during async send!");
                         }
                     }
                 }

@@ -63,32 +63,13 @@ steps:
       Write-Host "##vso[task.setvariable variable=Version]$version"
 
 - task: UseDotNet@2
-  displayName: 'Use .NET Core sdk 2.x'
+  displayName: 'Install .NET Core sdk'
   inputs:
     packageType: sdk
-    version: 2.x
     installationPath: $(Agent.ToolsDirectory)/dotnet
-
-- task: UseDotNet@2
-  displayName: 'Use .NET Core sdk 3.x'
-  inputs:
-    packageType: sdk
-    version: 3.x
-    installationPath: $(Agent.ToolsDirectory)/dotnet
-
-- task: UseDotNet@2
-  displayName: 'Use .NET Core sdk 5.x'
-  inputs:
-    packageType: sdk
-    version: 5.x
-    installationPath: $(Agent.ToolsDirectory)/dotnet
-
-- task: UseDotNet@2
-  displayName: 'Use .NET Core sdk 6.x'
-  inputs:
-    packageType: sdk
-    version: 6.x
-    installationPath: $(Agent.ToolsDirectory)/dotnet
+    performMultiLevelLookup: true
+    version: 6.0.x
+    #useGlobalJson: true
 
 - task: NuGetToolInstaller@0
   inputs:
@@ -108,16 +89,6 @@ steps:
     configuration: '$(buildConfiguration)'
 
 - task: VSTest@2
-  displayName: Test netcore, net5+
-  inputs:
-    runInParallel: false
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
-    codeCoverageEnabled: true
-    testAssemblyVer2: |
-      **/bin/Release/net*/Test.dll
-
-- task: VSTest@2
   displayName: Test net2x, net3x, net4x
   inputs:
     runInParallel: false
@@ -126,6 +97,16 @@ steps:
     codeCoverageEnabled: true
     testAssemblyVer2: |
       **/bin/Release/net*/Test.exe
+
+- task: VSTest@2
+  displayName: Test netcore, net5+
+  inputs:
+    runInParallel: false
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+    codeCoverageEnabled: true
+    testAssemblyVer2: |
+      **/bin/Release/net*/Test.dll
 
 - task: NuGetCommand@2
   displayName: Push to nuget (release)
