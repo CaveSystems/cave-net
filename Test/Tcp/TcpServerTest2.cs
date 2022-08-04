@@ -41,7 +41,7 @@ namespace Test.Tcp
             var server = new TcpServer
             {
                 AcceptThreads = 10,
-                AcceptBacklog = 10000,
+                AcceptBacklog = 100,
             };
             server.Listen(port);
             if (server.LocalEndPoint.AddressFamily == AddressFamily.InterNetworkV6)
@@ -66,29 +66,18 @@ namespace Test.Tcp
                 if (Program.Verbose) Console.WriteLine($"Test : info TP{port}: Test connect to {addr} successful.");
             }
 
-            var count = 10000;
+            var count = 1000;
             var watch = Stopwatch.StartNew();
             var success = 0;
 
             Parallel.For(0, count, (n) =>
             {
                 var addr = addresses[n % addresses.Length];
-                for (var test = 0; ; test++)
-                {
-                    try
-                    {
-                        using var client = new TcpAsyncClient();
-                        client.Connect(addr, port);
-                        client.Close();
-                        Interlocked.Increment(ref success);
-                        break;
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Test : warning TP{port}: Client {n + 1} {addr} failed: {ex.Message}");
-                        if (test > 5) throw;
-                    }
-                }
+                using var client = new TcpAsyncClient();
+                client.ConnectTimeout = 10000;
+                client.Connect(addr, port);
+                client.Close();
+                Interlocked.Increment(ref success);
             });
             watch.Stop();
 
@@ -131,7 +120,7 @@ namespace Test.Tcp
 
             var busyCount = 0;
             server.AcceptTasksBusy += (s, e) => Interlocked.Increment(ref busyCount);
-            var count = 3000;
+            var count = 1000;
             var watch = Stopwatch.StartNew();
             var success = 0;
             var errors = 0;
