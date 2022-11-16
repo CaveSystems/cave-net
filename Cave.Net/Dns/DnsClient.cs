@@ -276,8 +276,10 @@ namespace Cave.Net.Dns
             TcpAsyncClient tcp = null;
             try
             {
-                tcp = new();
-                tcp.ConnectTimeout = timeout;
+                tcp = new()
+                {
+                    ConnectTimeout = timeout
+                };
                 tcp.Connect(srv, 53);
                 tcp.SendTimeout = timeout;
                 tcp.ReceiveTimeout = timeout;
@@ -330,10 +332,7 @@ namespace Cave.Net.Dns
         /// <exception cref="ArgumentNullException">Name must be provided.</exception>
         public DnsResponse Resolve(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
         {
-            if (Servers == null)
-            {
-                Servers = GetDefaultDnsServers();
-            }
+            Servers ??= GetDefaultDnsServers();
 
             if (domainName.Parts.Length == 1)
             {
@@ -358,10 +357,7 @@ namespace Cave.Net.Dns
         /// <exception cref="AggregateException">Could not reach any dns server.</exception>
         public DnsResponse Resolve(DnsQuery query)
         {
-            if (Servers == null)
-            {
-                Servers = GetDefaultDnsServers();
-            }
+            Servers ??= GetDefaultDnsServers();
 
             if (query.Name == null)
             {
@@ -409,10 +405,7 @@ namespace Cave.Net.Dns
         /// <exception cref="AggregateException">Could not reach any dns server.</exception>
         public IList<DnsResponse> ResolveAll(DnsQuery query)
         {
-            if (Servers == null)
-            {
-                Servers = GetDefaultDnsServers();
-            }
+            Servers ??= GetDefaultDnsServers();
 
             if (query.Name == null)
             {
@@ -478,10 +471,7 @@ namespace Cave.Net.Dns
         /// <exception cref="AggregateException">Could not reach any dns server.</exception>
         public DnsResponse ResolveSequential(DnsQuery query, Func<DnsResponse, bool> predicate)
         {
-            if (Servers == null)
-            {
-                Servers = GetDefaultDnsServers();
-            }
+            Servers ??= GetDefaultDnsServers();
 
             if (query.Name == null)
             {
@@ -521,10 +511,7 @@ namespace Cave.Net.Dns
         /// <exception cref="AggregateException">Could not reach any dns server.</exception>
         public DnsResponse ResolveWithSearchSuffix(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
         {
-            if (SearchSuffixes == null)
-            {
-                SearchSuffixes = NetworkInterface.GetAllNetworkInterfaces().Select(i => i.GetIPProperties().DnsSuffix).Distinct().ToArray();
-            }
+            SearchSuffixes ??= NetworkInterface.GetAllNetworkInterfaces().Select(i => i.GetIPProperties().DnsSuffix).Distinct().ToArray();
 
             var exceptions = new Exception[SearchSuffixes.Length];
             var responses = new DnsResponse[SearchSuffixes.Length];

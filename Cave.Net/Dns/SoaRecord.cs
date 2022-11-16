@@ -30,9 +30,9 @@ namespace Cave.Net.Dns
 
                     return (parts.Count == 0)
                         ? null
-                        : parts.Any(p => p.Contains("@"))
+                        : parts.Any(p => p.Contains('@'))
                         ? new MailAddress(parts.Join("."))
-                        : new MailAddress(parts[0] + "@" + parts.SubRange(1).Join("."));
+                        : new MailAddress(parts[0] + '@' + parts.SubRange(1).Join("."));
                 }
                 if (b >= 192)
                 {

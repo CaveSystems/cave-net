@@ -111,13 +111,13 @@ namespace Cave.Net
         /// <param name="a">a.</param>
         /// <param name="b">The b.</param>
         /// <returns>The result of the operator.</returns>
-        public static bool operator !=(DomainName a, DomainName b) => b is null ? a is object : a is null || a.ToString() != b.ToString();
+        public static bool operator !=(DomainName a, DomainName b) => b is null ? a is not null : a is null || a.ToString() != b.ToString();
 
         /// <summary>Implements the operator ==.</summary>
         /// <param name="a">a.</param>
         /// <param name="b">The b.</param>
         /// <returns>The result of the operator.</returns>
-        public static bool operator ==(DomainName a, DomainName b) => b is null ? a is null : !(a is null) && a.ToString() == b.ToString();
+        public static bool operator ==(DomainName a, DomainName b) => b is null ? a is null : a is not null && a.ToString() == b.ToString();
 
         /// <summary>Parses a domain name using the specified reader.</summary>
         /// <param name="reader">The reader.</param>

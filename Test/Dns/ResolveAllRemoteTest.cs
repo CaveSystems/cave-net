@@ -37,17 +37,15 @@ namespace Test.Dns
             }
         }
 
-        static IPAddress[] GetDnsServers()
-        {
+        static IPAddress[] GetDnsServers() =>
             //azure build server does not support ipv6
             //azure build server refuses connection to some public dns, use specific ones
-            return new IPAddress[]
+            new IPAddress[]
             {
                 IPAddress.Parse("1.1.1.1"),
                 IPAddress.Parse("8.8.4.4"),
                 IPAddress.Parse("8.8.8.8"),
             };
-        }
 
         static void MX_Test(DnsClient testClient)
         {
@@ -119,64 +117,34 @@ namespace Test.Dns
         #region Public Methods
 
         [Test]
-        public void TcpAAAATest()
-        {
-            AAAA_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() });
-        }
+        public void TcpAAAATest() => AAAA_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() });
 
         [Test]
-        public void TcpATest()
-        {
-            A_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() });
-        }
+        public void TcpATest() => A_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() });
 
         [Test]
-        public void TcpMXTest()
-        {
-            MX_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() });
-        }
+        public void TcpMXTest() => MX_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() });
 
         [Test]
-        public void TcpPTRTest()
-        {
-            PTR_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() });
-        }
+        public void TcpPTRTest() => PTR_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() });
 
         [Test]
-        public void TcpTXTTest()
-        {
-            TXT_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() }, false);
-        }
+        public void TcpTXTTest() => TXT_Test(new DnsClient() { UseTcp = true, UseUdp = false, Servers = GetDnsServers() }, false);
 
         [Test]
-        public void UdpAAAATest()
-        {
-            AAAA_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() });
-        }
+        public void UdpAAAATest() => AAAA_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() });
 
         [Test]
-        public void UdpATest()
-        {
-            A_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() });
-        }
+        public void UdpATest() => A_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() });
 
         [Test]
-        public void UdpMXTest()
-        {
-            MX_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() });
-        }
+        public void UdpMXTest() => MX_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() });
 
         [Test]
-        public void UdpPTRTest()
-        {
-            PTR_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() });
-        }
+        public void UdpPTRTest() => PTR_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() });
 
         [Test]
-        public void UdpTXTTest()
-        {
-            TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() }, true);
-        }
+        public void UdpTXTTest() => TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true, Servers = GetDnsServers() }, true);
 
         #endregion Public Methods
     }

@@ -12,6 +12,11 @@ using System.Diagnostics;
 using System.Reflection;
 #endif
 
+#if NET6_0_OR_GREATER
+//class uses old WebRequest functionality
+#pragma warning disable SYSLIB0014
+#endif
+
 namespace Cave.Net
 {
     /// <summary>Provides a simple asynchronous http fetch.</summary>
