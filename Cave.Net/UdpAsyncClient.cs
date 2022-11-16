@@ -196,10 +196,7 @@ namespace Cave.Net
 #if NETSTANDARD13
             Bind(new IPEndPoint(IPAddress.Any, port));
 #else
-            if (useIPv6 == null)
-            {
-                useIPv6 = NetworkInterface.GetAllNetworkInterfaces().Any(n => n.GetIPProperties().UnicastAddresses.Any(u => u.Address.AddressFamily == AddressFamily.InterNetworkV6));
-            }
+            useIPv6 ??= NetworkInterface.GetAllNetworkInterfaces().Any(n => n.GetIPProperties().UnicastAddresses.Any(u => u.Address.AddressFamily == AddressFamily.InterNetworkV6));
             if (useIPv6.GetValueOrDefault(true))
             {
                 Bind(new IPEndPoint(IPAddress.IPv6Any, port));

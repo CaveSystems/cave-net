@@ -4,6 +4,11 @@ using System.Net;
 using System.Text;
 using Cave.IO;
 
+#if NET6_0_OR_GREATER
+//class uses old WebRequest functionality
+#pragma warning disable SYSLIB0014
+#endif
+
 namespace Cave.Net
 {
     /// <summary>Provides a simple asynchronous http fetch.</summary>
@@ -47,8 +52,11 @@ namespace Cave.Net
 
         FtpWebRequest CreateRequest(string method, ConnectionString connectionString)
         {
-            var l_Uri = connectionString.ToUri();
-            var request = (FtpWebRequest)WebRequest.Create(l_Uri);
+            var uri = connectionString.ToUri();
+            var request = (FtpWebRequest)WebRequest.Create(uri);
+#if NETSTANDARD20
+            request.AllowReadStreamBuffering = false;
+#endif
             request.Credentials = connectionString.GetCredentials();
             request.EnableSsl = EnableSSL;
             request.Method = method;

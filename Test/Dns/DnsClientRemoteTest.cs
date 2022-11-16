@@ -93,64 +93,34 @@ namespace Test.Dns
         #region Public Methods
 
         [Test]
-        public void TcpAAAATest()
-        {
-            AAAA_Test(new DnsClient() { UseTcp = true, UseUdp = false });
-        }
+        public void TcpAAAATest() => AAAA_Test(new DnsClient() { UseTcp = true, UseUdp = false });
 
         [Test]
-        public void TcpATest()
-        {
-            A_Test(new DnsClient() { UseTcp = true, UseUdp = false });
-        }
+        public void TcpATest() => A_Test(new DnsClient() { UseTcp = true, UseUdp = false });
 
         [Test]
-        public void TcpMXTest()
-        {
-            MX_Test(new DnsClient() { UseTcp = true, UseUdp = false });
-        }
+        public void TcpMXTest() => MX_Test(new DnsClient() { UseTcp = true, UseUdp = false });
 
         [Test]
-        public void TcpPTRTest()
-        {
-            PTR_Test(new DnsClient() { UseTcp = true, UseUdp = false });
-        }
+        public void TcpPTRTest() => PTR_Test(new DnsClient() { UseTcp = true, UseUdp = false });
 
         [Test]
-        public void TcpTXTTest()
-        {
-            TXT_Test(new DnsClient() { UseTcp = true, UseUdp = false }, false);
-        }
+        public void TcpTXTTest() => TXT_Test(new DnsClient() { UseTcp = true, UseUdp = false }, false);
 
         [Test]
-        public void UdpAAAATest()
-        {
-            AAAA_Test(new DnsClient() { UseTcp = false, UseUdp = true });
-        }
+        public void UdpAAAATest() => AAAA_Test(new DnsClient() { UseTcp = false, UseUdp = true });
 
         [Test]
-        public void UdpATest()
-        {
-            A_Test(new DnsClient() { UseTcp = false, UseUdp = true });
-        }
+        public void UdpATest() => A_Test(new DnsClient() { UseTcp = false, UseUdp = true });
 
         [Test]
-        public void UdpMXTest()
-        {
-            MX_Test(new DnsClient() { UseTcp = false, UseUdp = true });
-        }
+        public void UdpMXTest() => MX_Test(new DnsClient() { UseTcp = false, UseUdp = true });
 
         [Test]
-        public void UdpPTRTest()
-        {
-            PTR_Test(new DnsClient() { UseTcp = false, UseUdp = true });
-        }
+        public void UdpPTRTest() => PTR_Test(new DnsClient() { UseTcp = false, UseUdp = true });
 
         [Test]
-        public void UdpTXTTest()
-        {
-            TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true }, true);
-        }
+        public void UdpTXTTest() => TXT_Test(new DnsClient() { UseTcp = false, UseUdp = true }, true);
 
         #endregion Public Methods
     }
