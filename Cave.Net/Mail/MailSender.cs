@@ -38,7 +38,7 @@ namespace Cave.Mail
 
         /// <summary>Loads the config for the sender from an ini file. This reads [Mail] Username, Password, Server, Sender, DisableSSL, BCC and CC.</summary>
         /// <param name="settings">The settings.</param>
-        public void LoadConfig(IniReader settings)
+        public virtual void LoadConfig(IniReader settings)
         {
             try
             {
@@ -104,7 +104,7 @@ namespace Cave.Mail
         /// <param name="retries">The retries.</param>
         /// <param name="throwException">if set to <c>true</c> [throw exception].</param>
         /// <returns></returns>
-        public bool Send(MailMessage message, int retries = 3, bool throwException = true)
+        public virtual bool Send(MailMessage message, int retries = 3, bool throwException = true)
         {
             foreach (var bcc in BCC)
             {

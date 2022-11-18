@@ -2,11 +2,11 @@
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;netstandard2.1;net20;net35;net40;net45;net5.0;net6.0</TargetFrameworks>
         <!--project-->
-        <RootNamespace>Cave.Net</RootNamespace>
+        <RootNamespace>Cave</RootNamespace>
         <AssemblyOriginatorKeyFile>cave-net.snk</AssemblyOriginatorKeyFile>
         <Product>CaveSystems Networking Library</Product>
         <PackageTags>CaveSystems Networking TcpServer TcpAsyncClient UdpServer UdpAsyncClient DNS NTP WakeOnLan</PackageTags>
-        <Description>CaveSystems Networking Library provides classes for fast and easy access to fast async tcp streaming, dns client, ssl client and server and ntp client and server implementations.</Description>
+        <Description>Provides classes for fast and easy access to fast async tcp streaming, dns client, ssl client and server and ntp client and server implementations.</Description>
         <PackageProjectUrl>https://github.com/CaveSystems/cave-net</PackageProjectUrl>
         <RepositoryUrl>https://github.com/CaveSystems/cave-net</RepositoryUrl>
         <!--settings-->
