@@ -23,7 +23,7 @@ namespace Cave.Net
         bool connectedEventTriggered;
         bool disconnectedEventTriggered;
         LingerOption lingerState = new(false, 0);
-        bool nodelay;
+        bool noDelay;
         int pendingAsyncSends;
         int receiveTimeout;
         int sendTimeout;
@@ -32,8 +32,8 @@ namespace Cave.Net
         Socket uncheckedSocket;
 
         Socket CheckedSocket => uncheckedSocket == null
-                ? throw new InvalidOperationException("Not connected!")
-                : closing
+            ? throw new InvalidOperationException("Not connected!")
+            : closing
                 ? throw new ObjectDisposedException(nameof(TcpAsyncClient))
                 : uncheckedSocket;
 
@@ -41,7 +41,7 @@ namespace Cave.Net
 
         T CachedValue<T>(ref T field, Func<T> func)
         {
-            if (uncheckedSocket != null && !closing)
+            if ((uncheckedSocket != null) && !closing)
             {
                 field = func();
             }
@@ -166,7 +166,7 @@ namespace Cave.Net
 
         void SetSocketOptions(Socket socket)
         {
-            socket.NoDelay = nodelay;
+            socket.NoDelay = noDelay;
             socket.Ttl = ttl;
             socket.LingerState = lingerState;
             if (!lingerState.Enabled)
@@ -259,7 +259,7 @@ namespace Cave.Net
 
         /// <summary>Calls the <see cref="Received"/> event (if set).</summary>
         /// <remarks>
-        /// You can set <see cref="BufferEventArgs.Handled"/> to true when overrideing this function or within <see cref="Received"/> to skip adding data to the
+        /// You can set <see cref="BufferEventArgs.Handled"/> to true when overriding this function or within <see cref="Received"/> to skip adding data to the
         /// <see cref="Stream"/> and <see cref="ReceiveBuffer"/>.
         /// </remarks>
         /// <param name="buffer">Receive buffer instance.</param>
@@ -279,6 +279,12 @@ namespace Cave.Net
                 handled = false;
             }
         }
+
+        /// <summary>Calls the <see cref="Sent"/> event (if set).</summary>
+        /// <param name="buffer">Sent buffer instance.</param>
+        /// <param name="offset">Start offset of the sent data.</param>
+        /// <param name="length">Length in bytes of the sent data.</param>
+        protected virtual void OnSent(byte[] buffer, int offset, int length) => Sent?.Invoke(this, new BufferEventArgs(buffer, offset, length));
 
         /// <summary>Calls the Error event (if set) and closes the connection.</summary>
         /// <param name="ex">The exception (most of the time this will be a <see cref="SocketException"/>.</param>
@@ -305,6 +311,9 @@ namespace Cave.Net
 
         /// <summary>Event to be called after a buffer was received</summary>
         public event EventHandler<BufferEventArgs> Received;
+
+        /// <summary>Event to be called after a buffer was sent</summary>
+        public event EventHandler<BufferEventArgs> Sent;
 
         #endregion events
 
@@ -736,6 +745,7 @@ namespace Cave.Net
             try
             {
                 CheckedSocket.Send(buffer, offset, length, 0);
+                OnSent(buffer, offset, length);
             }
             catch (Exception ex)
             {
@@ -752,7 +762,7 @@ namespace Cave.Net
 
         /// <summary>Sends data asynchronously to a connected remote.</summary>
         /// <remarks>
-        /// This function is threadsafe, howeverc alling this method more than one time prior completion may result in a different byte sequence at the receiver.
+        /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte sequence at the receiver.
         /// </remarks>
         /// <remarks>This function is threadsafe.</remarks>
         /// <param name="buffer">An array of bytes to be send.</param>
@@ -761,7 +771,7 @@ namespace Cave.Net
 
         /// <summary>Sends data asynchronously to a connected remote.</summary>
         /// <remarks>
-        /// This function is threadsafe, howeverc alling this method more than one time prior completion may result in a different byte sequence at the receiver.
+        /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte sequence at the receiver.
         /// </remarks>
         /// <remarks>This function is threadsafe.</remarks>
         /// <param name="buffer">An array of bytes to be send.</param>
@@ -771,7 +781,7 @@ namespace Cave.Net
 
         /// <summary>Sends data asynchronously to a connected remote.</summary>
         /// <remarks>
-        /// This function is threadsafe, howeverc alling this method more than one time prior completion may result in a different byte sequence at the receiver.
+        /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte sequence at the receiver.
         /// </remarks>
         /// <remarks>This function is threadsafe.</remarks>
         /// <param name="buffer">An array of bytes to be send.</param>
@@ -782,7 +792,7 @@ namespace Cave.Net
 
         /// <summary>Sends data asynchronously to a connected remote.</summary>
         /// <remarks>
-        /// This function is threadsafe, howeverc alling this method more than one time prior completion may result in a different byte sequence at the receiver.
+        /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte sequence at the receiver.
         /// </remarks>
         /// <remarks>This function is threadsafe.</remarks>
         /// <param name="buffer">An array of bytes to be send.</param>
@@ -793,7 +803,7 @@ namespace Cave.Net
 
         /// <summary>Sends data asynchronously to a connected remote.</summary>
         /// <remarks>
-        /// This function is threadsafe, howeverc alling this method more than one time prior completion may result in a different byte sequence at the receiver.
+        /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte sequence at the receiver.
         /// </remarks>
         /// <param name="buffer">An array of bytes to be send.</param>
         /// <param name="length">The number of bytes.</param>
@@ -804,7 +814,7 @@ namespace Cave.Net
 
         /// <summary>Sends data asynchronously to a connected remote.</summary>
         /// <remarks>
-        /// This function is threadsafe, howeverc alling this method more than one time prior completion may result in a different byte sequence at the receiver.
+        /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte sequence at the receiver.
         /// </remarks>
         /// <param name="buffer">An array of bytes to be send.</param>
         /// <param name="offset">The start offset at the byte array.</param>
@@ -818,6 +828,7 @@ namespace Cave.Net
             {
                 Interlocked.Decrement(ref pendingAsyncSends);
                 Interlocked.Add(ref bytesSent, e.BytesTransferred);
+                OnSent(e.Buffer, e.Offset, e.BytesTransferred);
                 if (e.SocketError != SocketError.Success)
                 {
                     OnError(new SocketException((int)e.SocketError));
@@ -949,8 +960,8 @@ namespace Cave.Net
         /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
         public bool NoDelay
         {
-            get => CachedValue(ref nodelay, () => uncheckedSocket.NoDelay);
-            set => SetValue(ref nodelay, (v) => CheckedSocket.NoDelay = v, value);
+            get => CachedValue(ref noDelay, () => uncheckedSocket.NoDelay);
+            set => SetValue(ref noDelay, (v) => CheckedSocket.NoDelay = v, value);
         }
 
         /// <summary>Gets the number of active async send tasks.</summary>
