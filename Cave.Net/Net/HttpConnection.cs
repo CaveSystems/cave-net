@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Cache;
 using System.Text;
 using Cave.IO;
-
 #if !NETSTANDARD2_0_OR_GREATER && !NET5_0_OR_GREATER
 using System.Net.Configuration;
 using System.Diagnostics;
@@ -71,10 +70,8 @@ namespace Cave.Net
 
         #region Public Constructors
 
-        /// <summary>Initializes a new instance of the <see cref="HttpConnection"/> class.</summary>
-        public HttpConnection()
-        {
-        }
+        /// <summary>Initializes a new instance of the <see cref="HttpConnection" /> class.</summary>
+        public HttpConnection() { }
 
         #endregion Public Constructors
 
@@ -84,20 +81,20 @@ namespace Cave.Net
         public string Accept { get; set; }
 
         /// Gets or sets the
-        /// <see cref="RequestCachePolicy"/>
+        /// <see cref="RequestCachePolicy" />
         /// .
         public RequestCachePolicy CachePolicy { get; set; } = HttpWebRequest.DefaultCachePolicy;
 
-        /// <summary>Gets or sets the <see cref="CookieContainer"/>.</summary>
-        public CookieContainer Cookies { get; set; } = new CookieContainer();
+        /// <summary>Gets or sets the <see cref="CookieContainer" />.</summary>
+        public CookieContainer Cookies { get; set; } = new();
 
         /// <summary>The headers to use.</summary>
-        public Dictionary<string, string> Headers { get; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Headers { get; } = new();
 
         /// <summary>Gets or sets a value indicating if caching shall be prevented using multiple measures.</summary>
         /// <remarks>
-        /// This is setting <see cref="CachePolicy"/> to <see cref="HttpRequestCacheLevel.NoCacheNoStore"/>, <see cref="HttpRequestHeader.IfModifiedSince"/> and
-        /// Header[Pragma] = no-cache and Header[RequestId] = new guid.
+        /// This is setting <see cref="CachePolicy" /> to <see cref="HttpRequestCacheLevel.NoCacheNoStore" />,
+        /// <see cref="HttpRequestHeader.IfModifiedSince" /> and Header[Pragma] = no-cache and Header[RequestId] = new guid.
         /// </remarks>
         public bool PreventCaching { get; set; }
 
@@ -265,7 +262,7 @@ namespace Cave.Net
             request.CookieContainer = Cookies ?? new CookieContainer();
             var credentialCache = new CredentialCache
             {
-                { connectionString.ToUri(), "plain", connectionString.GetCredentials() },
+                { connectionString.ToUri(), "plain", connectionString.GetCredentials() }
             };
             request.Credentials = credentialCache;
             request.KeepAlive = false;
@@ -364,7 +361,7 @@ namespace Cave.Net
             request.Method = "POST";
             request.KeepAlive = true;
             using var requestStream = request.GetRequestStream();
-            var writer = new DataWriter(requestStream, StringEncoding.ASCII, NewLineMode.CRLF);
+            var writer = new DataWriter(requestStream, StringEncoding.US_ASCII, NewLineMode.CRLF);
 
             foreach (var postItem in postData)
             {
@@ -385,6 +382,6 @@ namespace Cave.Net
 
         /// <summary>Sets the proxy.</summary>
         /// <param name="proxy">The proxy.</param>
-        public void SetProxy(ConnectionString proxy) => Proxy = new WebProxy(proxy.ToString(ConnectionStringPart.Server), true, new string[] { "localhost" }, new NetworkCredential(proxy.UserName, proxy.Password));
+        public void SetProxy(ConnectionString proxy) => Proxy = new WebProxy(proxy.ToString(ConnectionStringPart.Server), true, new[] { "localhost" }, new NetworkCredential(proxy.UserName, proxy.Password));
     }
 }

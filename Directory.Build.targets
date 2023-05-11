@@ -10,6 +10,10 @@
         <DefineConstants>TRACE;DEBUG;</DefineConstants>
     </PropertyGroup>
 
+    <PropertyGroup>
+        <DefineConstants>$(DefineConstants);$(TargetFramework.ToUpper().Replace(".", "_"))</DefineConstants>
+    </PropertyGroup>
+
     <ItemGroup>
         <None Include="..\cavesystems.png" Pack="true" Visible="false" PackagePath="\cavesystems.png" />
     </ItemGroup>

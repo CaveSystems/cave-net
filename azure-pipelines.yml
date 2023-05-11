@@ -7,13 +7,12 @@ trigger:
 - refs/tags/*
 - master
 - next
-- feature/*
 
 pool:
-  vmImage: 'windows-2022'
+  vmImage: 'windows-latest'
 
 variables:
-  fixedBuildVersion: '2.1'
+  fixedBuildVersion: '3.0'
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
@@ -62,18 +61,37 @@ steps:
       echo "build version = '$version'"
       Write-Host "##vso[task.setvariable variable=Version]$version"
 
-- task: UseDotNet@2
-  displayName: 'Install .NET Core sdk'
-  inputs:
-    packageType: sdk
-    installationPath: $(Agent.ToolsDirectory)/dotnet
-    performMultiLevelLookup: true
-    version: 6.0.x
-    #useGlobalJson: true
-
 - task: NuGetToolInstaller@0
   inputs:
     versionSpec: '>=4.9.0'
+
+- task: UseDotNet@2
+  displayName: 'Install .NET sdk 7'
+  inputs:
+    packageType: sdk
+    version: 7.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- task: UseDotNet@2
+  displayName: 'Install .NET sdk 6'
+  inputs:
+    packageType: sdk
+    version: 6.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- task: UseDotNet@2
+  displayName: 'Install .NET sdk 5'
+  inputs:
+    packageType: sdk
+    version: 5.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+    
+- task: UseDotNet@2
+  displayName: 'Install .NET Core sdk 3.1'
+  inputs:
+    packageType: sdk
+    version: 3.1.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
 
 - task: NuGetCommand@2
   displayName: Restore nuget packages
@@ -89,24 +107,45 @@ steps:
     configuration: '$(buildConfiguration)'
 
 - task: VSTest@2
-  displayName: Test net2x, net3x, net4x
+  displayName: Test net5+
   inputs:
     runInParallel: false
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
     codeCoverageEnabled: true
     testAssemblyVer2: |
-      **/bin/Release/net*/Test.exe
+      **/bin/Release/net?.?/Test.dll
 
 - task: VSTest@2
-  displayName: Test netcore, net5+
+  displayName: Test net2x, net3x
   inputs:
     runInParallel: false
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
     codeCoverageEnabled: true
     testAssemblyVer2: |
-      **/bin/Release/net*/Test.dll
+      **/bin/Release/net20/Test.exe
+      **/bin/Release/net35/Test.exe
+
+- task: VSTest@2
+  displayName: Test net4x
+  inputs:
+    runInParallel: false
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+    codeCoverageEnabled: true
+    testAssemblyVer2: |
+      **/bin/Release/net4?/Test.exe
+
+- task: VSTest@2
+  displayName: Test netcore
+  inputs:
+    runInParallel: false
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+    codeCoverageEnabled: true
+    testAssemblyVer2: |
+      **/bin/Release/netcoreapp*/Test.dll
 
 - task: NuGetCommand@2
   displayName: Push to nuget (release)

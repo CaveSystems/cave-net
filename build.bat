@@ -1,15 +1,8 @@
 @echo off
 chcp 1252
-if "%VisualStudioVersion%"=="" call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\BuildTools\Common7\Tools\VsDevCmd.bat" 2> nul
-if "%VisualStudioVersion%"=="" call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" 2> nul
-if "%VisualStudioVersion%"=="" call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Professional\Common7\Tools\VsDevCmd.bat" 2> nul
-if "%VisualStudioVersion%"=="" call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Community\Common7\Tools\VsDevCmd.bat" 2> nul
-if "%VisualStudioVersion%"=="" call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\WDExpress\Common7\Tools\VsDevCmd.bat" 2> nul
-if "%VisualStudioVersion%"=="" call "%ProgramFiles(x86)%\Microsoft Visual Studio\2017\BuildTools\Common7\Tools\VsDevCmd.bat" 2> nul
-if "%VisualStudioVersion%"=="" call "%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Enterprise\Common7\Tools\VsDevCmd.bat" 2> nul
-if "%VisualStudioVersion%"=="" call "%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Professional\Common7\Tools\VsDevCmd.bat" 2> nul
-if "%VisualStudioVersion%"=="" call "%ProgramFiles(x86)%\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat" 2> nul
-if "%VisualStudioVersion%"=="" call "%ProgramFiles(x86)%\Microsoft Visual Studio\2017\WDExpress\Common7\Tools\VsDevCmd.bat" 2> nul
+if "%VisualStudioVersion%"=="" call "%ProgramFiles%\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat"
+if "%VisualStudioVersion%"=="" call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"
+if "%VisualStudioVersion%"=="" call "%ProgramFiles%\Microsoft Visual Studio\2022\Professional\Common7\Tools\VsDevCmd.bat"
 
 msbuild /t:Clean
 if %errorlevel% neq 0 exit /b %errorlevel%
@@ -26,13 +19,16 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 rem msbuild /p:Configuration=Release /p:Platform="Any CPU" documentation.shfbproj
 rem if %errorlevel% neq 0 exit /b %errorlevel%
 
-vstest.console Test\bin\Release\net5.0\Test.dll
-vstest.console Test\bin\Release\netcoreapp2.1\Test.dll
-vstest.console Test\bin\Release\netcoreapp3.1\Test.dll
-vstest.console Test\bin\Release\net20\Test.exe
-vstest.console Test\bin\Release\net35\Test.exe
-vstest.console Test\bin\Release\net40\Test.exe
-vstest.console Test\bin\Release\net45\Test.exe
-vstest.console Test\bin\Release\net46\Test.exe
-vstest.console Test\bin\Release\net47\Test.exe
-vstest.console Test\bin\Release\net48\Test.exe
+dotnet run Tests\bin\Release\netcoreapp1.0\Tests.dll
+dotnet run Tests\bin\Release\netcoreapp1.1\Tests.dll
+dotnet run Tests\bin\Release\netcoreapp2.0\Tests.dll
+dotnet run Tests\bin\Release\netcoreapp2.1\Tests.dll
+dotnet run Tests\bin\Release\netcoreapp3.0\Tests.dll
+dotnet run Tests\bin\Release\netcoreapp3.1\Tests.dll
+Tests\bin\Release\net20\Tests.exe
+Tests\bin\Release\net35\Tests.exe
+Tests\bin\Release\net40\Tests.exe
+Tests\bin\Release\net45\Tests.exe
+Tests\bin\Release\net50\Tests.exe
+Tests\bin\Release\net60\Tests.exe
+Tests\bin\Release\net70\Tests.exe

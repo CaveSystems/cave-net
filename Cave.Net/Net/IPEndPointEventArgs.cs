@@ -1,24 +1,23 @@
 using System;
 using System.Net;
 
-namespace Cave.Net
+namespace Cave.Net;
+
+/// <summary>Provides <see cref="EventArgs" /> for remote endpoint.</summary>
+public class IPEndPointEventArgs : EventArgs
 {
-    /// <summary>Provides <see cref="EventArgs"/> for remote endpoint.</summary>
-    public class IPEndPointEventArgs : EventArgs
-    {
-        #region Public Constructors
+    #region Public Constructors
 
-        /// <summary>Initializes a new instance of the <see cref="IPEndPointEventArgs"/> class.</summary>
-        /// <param name="endPoint">IP endpoint.</param>
-        public IPEndPointEventArgs(IPEndPoint endPoint) => EndPoint = endPoint;
+    /// <summary>Initializes a new instance of the <see cref="IPEndPointEventArgs" /> class.</summary>
+    /// <param name="endPoint">IP endpoint.</param>
+    public IPEndPointEventArgs(IPEndPoint endPoint) => EndPoint = endPoint;
 
-        #endregion Public Constructors
+    #endregion Public Constructors
 
-        #region Public Properties
+    #region Public Properties
 
-        /// <summary>Gets the endpoint.</summary>
-        public IPEndPoint EndPoint { get; private set; }
+    /// <summary>Gets the endpoint.</summary>
+    public IPEndPoint EndPoint { get; private set; }
 
-        #endregion Public Properties
-    }
+    #endregion Public Properties
 }

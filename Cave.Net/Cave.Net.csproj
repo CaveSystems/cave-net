@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>netstandard2.0;netstandard2.1;net20;net35;net40;net45;net5.0;net6.0</TargetFrameworks>
+        <TargetFrameworks>netstandard2.0;netstandard2.1;net20;net35;net40;net45;net5.0;net6.0;net7.0</TargetFrameworks>
         <!--project-->
         <RootNamespace>Cave</RootNamespace>
         <AssemblyOriginatorKeyFile>cave-net.snk</AssemblyOriginatorKeyFile>
@@ -26,11 +26,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Cave.Extensions" Version="2.1.13" />
-        <PackageReference Include="Cave.IO" Version="2.1.5" />
+        <PackageReference Include="Cave.Extensions" Version="3.0.1" />
+        <PackageReference Include="Cave.IO" Version="3.0.0" />
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
     </ItemGroup>
 </Project>

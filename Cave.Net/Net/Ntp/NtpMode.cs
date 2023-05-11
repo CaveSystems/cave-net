@@ -1,27 +1,26 @@
 ﻿using System;
 
-namespace Cave.Net.Ntp
+namespace Cave.Net.Ntp;
+
+/// <summary>This is a three-bit integer indicating the operation mode.</summary>
+public enum NtpMode
 {
-    /// <summary>This is a three-bit integer indicating the operation mode.</summary>
-    public enum NtpMode
-    {
-        /// <summary>Invalid mode</summary>
-        [Obsolete("Do not use this value")]
-        Invalid = 0,
+    /// <summary>Invalid mode</summary>
+    [Obsolete("Do not use this value")]
+    Invalid = 0,
 
-        /// <summary>Symmetric active</summary>
-        SymmetricActive = 1,
+    /// <summary>Symmetric active</summary>
+    SymmetricActive = 1,
 
-        /// <summary>Symmetric pasive</summary>
-        SymmetricPassive,
+    /// <summary>Symmetric pasive</summary>
+    SymmetricPassive,
 
-        /// <summary>Client</summary>
-        Client,
+    /// <summary>Client</summary>
+    Client,
 
-        /// <summary>Server</summary>
-        Server,
+    /// <summary>Server</summary>
+    Server,
 
-        /// <summary>Broadcast</summary>
-        Broadcast,
-    }
+    /// <summary>Broadcast</summary>
+    Broadcast
 }

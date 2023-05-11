@@ -16,10 +16,8 @@ namespace Cave.Net
     {
         #region Public Constructors
 
-        /// <summary>Initializes a new instance of the <see cref="FtpConnection"/> class.</summary>
-        public FtpConnection()
-        {
-        }
+        /// <summary>Initializes a new instance of the <see cref="FtpConnection" /> class.</summary>
+        public FtpConnection() { }
 
         #endregion Public Constructors
 
@@ -29,24 +27,6 @@ namespace Cave.Net
         public bool EnableSSL { get; set; }
 
         #endregion Public Properties
-
-        #region Public Methods
-
-        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
-        /// <param name="connectionString">The full connectionstring for the download.</param>
-        /// <returns>Returns an array of byte.</returns>
-        public static byte[] Get(ConnectionString connectionString)
-        {
-            var connection = new FtpConnection();
-            return connection.Download(connectionString);
-        }
-
-        /// <summary>Directly obtains the data of the specified fileName by using the specified connectionstring as string.</summary>
-        /// <param name="connectionString">The full connectionstring for the download.</param>
-        /// <returns>Returns the downloaded data as string (utf8).</returns>
-        public static string GetString(ConnectionString connectionString) => Encoding.UTF8.GetString(Get(connectionString));
-
-        #endregion Public Methods
 
         #region private functionality
 
@@ -157,7 +137,7 @@ namespace Cave.Net
                         throw new NetworkException(string.Format("Ftp error status: {0} message: '{1}'", response.StatusCode, response.StatusDescription));
                 }
                 var reader = new StreamReader(response.GetResponseStream());
-                var result = reader.ReadToEnd().Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                var result = reader.ReadToEnd().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
                 reader.Close();
                 return response.StatusCode == FtpStatusCode.ClosingData
                     ? result
@@ -224,5 +204,23 @@ namespace Cave.Net
                 }
             }
         }
+
+        #region Public Methods
+
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <returns>Returns an array of byte.</returns>
+        public static byte[] Get(ConnectionString connectionString)
+        {
+            var connection = new FtpConnection();
+            return connection.Download(connectionString);
+        }
+
+        /// <summary>Directly obtains the data of the specified fileName by using the specified connectionstring as string.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <returns>Returns the downloaded data as string (utf8).</returns>
+        public static string GetString(ConnectionString connectionString) => Encoding.UTF8.GetString(Get(connectionString));
+
+        #endregion Public Methods
     }
 }

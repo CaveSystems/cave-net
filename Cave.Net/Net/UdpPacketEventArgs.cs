@@ -1,23 +1,22 @@
 using System;
 
-namespace Cave.Net
+namespace Cave.Net;
+
+/// <summary>Provides <see cref="EventArgs" /> for packet events.</summary>
+public class UdpPacketEventArgs : EventArgs
 {
-    /// <summary>Provides <see cref="EventArgs"/> for packet events.</summary>
-    public class UdpPacketEventArgs : EventArgs
-    {
-        #region Public Constructors
+    #region Public Constructors
 
-        /// <summary>Initializes a new instance of the <see cref="UdpPacketEventArgs"/> class.</summary>
-        /// <param name="packet">The packet.</param>
-        public UdpPacketEventArgs(UdpPacket packet) => Packet = packet;
+    /// <summary>Initializes a new instance of the <see cref="UdpPacketEventArgs" /> class.</summary>
+    /// <param name="packet">The packet.</param>
+    public UdpPacketEventArgs(UdpPacket packet) => Packet = packet;
 
-        #endregion Public Constructors
+    #endregion Public Constructors
 
-        #region Public Properties
+    #region Public Properties
 
-        /// <summary>Gets the packet.</summary>
-        public UdpPacket Packet { get; private set; }
+    /// <summary>Gets the packet.</summary>
+    public UdpPacket Packet { get; private set; }
 
-        #endregion Public Properties
-    }
+    #endregion Public Properties
 }

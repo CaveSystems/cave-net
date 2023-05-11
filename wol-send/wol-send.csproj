@@ -1,16 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFrameworks>net20;net35;net40;net45;net46;net47</TargetFrameworks>
-    <RootNamespace>WakeOnLanSend</RootNamespace>
-    <PublishSingleFile>true</PublishSingleFile>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <PublishTrimmed>true</PublishTrimmed>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFrameworks>net20;net35;net40;net45;net48;net6.0</TargetFrameworks>
+        <RootNamespace>WakeOnLanSend</RootNamespace>
+        <PublishSingleFile>true</PublishSingleFile>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <PublishTrimmed>true</PublishTrimmed>
+    </PropertyGroup>
+
+    <ItemGroup>
+            <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Cave.Net\Cave.Net.csproj" />
-  </ItemGroup>
+<ProjectReference Include="..\Cave.Net\Cave.Net.csproj" />
+    </ItemGroup>
 
 </Project>
