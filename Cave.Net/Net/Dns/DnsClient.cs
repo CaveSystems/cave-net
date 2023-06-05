@@ -403,7 +403,17 @@ public class DnsClient
         {
             return SelectBestResponse(responses, exceptions);
         }
-        throw new AggregateException("Could not complete query.", exceptions);
+        if (exceptions.Any())
+        {
+            throw new AggregateException("Could not complete query.", exceptions);
+        }
+        var ex = new Exception("No valid response received.");
+        ex.Data.Add("DnsResponse.Count", responses.Count);
+        for (var i = 0; i < responses.Count; i++)
+        {
+            ex.Data.Add($"DnsResponse[{i}]", responses[i]);
+        }
+        throw ex;
     }
 
     /// <summary>Queries the dns servers for the specified records.</summary>
