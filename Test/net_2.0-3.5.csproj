@@ -8,7 +8,7 @@
         <StartupObject>Test.Program</StartupObject>
         <RootNamespace>Test</RootNamespace>
         <AssemblyName>Test</AssemblyName>
-        <NoWarn>IDE0004;IDE0130;CS1591;CA1806;CA1825;</NoWarn>
+        <WarningLevel>0</WarningLevel>
     </PropertyGroup>
 
     <ItemGroup>
@@ -17,7 +17,14 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\Cave.Net\Cave.Net.csproj" />
     </ItemGroup>
-    
+
 </Project>
