@@ -93,10 +93,20 @@ public class TcpAsyncStream : Stream
     /// </summary>
     public bool DirectWrites { get; set; }
 
-    /// <summary>Gets the number of bytes received ( <see cref="TcpAsyncClient.BytesReceived" />).</summary>
-    public override long Length => client.BytesReceived;
+    /// <summary>Gets the number of bytes at the buffer ( <see cref="TcpAsyncClient.ReceiveBuffer" />).</summary>
+    public override long Length
+    {
+        get
+        {
+            var buffer = client.ReceiveBuffer;
+            lock (buffer)
+            {
+                return buffer.Length;
+            }
+        }
+    }
 
-    /// <summary>Gets or sets the current read position at the buffers still present in memory.</summary>
+    /// <summary>Gets the current read position at the buffers still present in memory.</summary>
     public override long Position
     {
         get
@@ -199,7 +209,7 @@ public class TcpAsyncStream : Stream
             }
 
             var waitCount = 0;
-            for (;;)
+            for (; ; )
             {
                 var sendBufferLength = sendBuffer.Length;
                 if (!asyncSendInProgress && (sendBufferLength > 0))
