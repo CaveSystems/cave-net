@@ -11,15 +11,15 @@ public sealed class ImapNumberSequence : IEnumerable<int>
 {
     /// <summary>Gets the empty number sequence.</summary>
     public static readonly int[] Empty =
-#if NET20 || NET35 || NET40 || NET45
-            new int[0];
+#if NET20_OR_GREATER && !NET46_OR_GREATER
+        new int[0];
 #else
         Array.Empty<int>();
+
 #endif
 
     /// <summary>
-    /// Creates a <see cref="ImapNumberSequence" /> from the given string. The string is created by <see cref="ToString()" /> or received
-    /// by <see cref="ImapClient.Search(ImapSearch)" />.
+    /// Creates a <see cref="ImapNumberSequence"/> from the given string. The string is created by <see cref="ToString()"/> or received by <see cref="ImapClient.Search(ImapSearch)"/>.
     /// </summary>
     /// <param name="numbers"></param>
     /// <returns></returns>
@@ -41,18 +41,18 @@ public sealed class ImapNumberSequence : IEnumerable<int>
         return result + new ImapNumberSequence(list.ToArray());
     }
 
-    /// <summary>Creates a <see cref="ImapNumberSequence" /> from the given message number range.</summary>
+    /// <summary>Creates a <see cref="ImapNumberSequence"/> from the given message number range.</summary>
     /// <param name="firstNumber"></param>
     /// <param name="count"></param>
     /// <returns></returns>
     public static ImapNumberSequence CreateRange(int firstNumber, int count) => new(firstNumber, (count + firstNumber) - 1);
 
-    /// <summary>Creates a <see cref="ImapNumberSequence" /> from the given message number list.</summary>
+    /// <summary>Creates a <see cref="ImapNumberSequence"/> from the given message number list.</summary>
     /// <param name="numbers"></param>
     /// <returns></returns>
     public static ImapNumberSequence CreateList(params int[] numbers) => new(numbers);
 
-    /// <summary>Adds to <see cref="ImapNumberSequence" />s.</summary>
+    /// <summary>Adds to <see cref="ImapNumberSequence"/> s.</summary>
     /// <param name="seq1"></param>
     /// <param name="seq2"></param>
     /// <returns></returns>
@@ -100,14 +100,14 @@ public sealed class ImapNumberSequence : IEnumerable<int>
 
     readonly int[] numbers;
 
-    /// <summary>Creates a new empty <see cref="ImapNumberSequence" />.</summary>
+    /// <summary>Creates a new empty <see cref="ImapNumberSequence"/>.</summary>
     public ImapNumberSequence()
     {
         numbers = Empty;
         IsRange = false;
     }
 
-    /// <summary>Creates a new <see cref="ImapNumberSequence" /> with the given message numbers.</summary>
+    /// <summary>Creates a new <see cref="ImapNumberSequence"/> with the given message numbers.</summary>
     /// <param name="numbers"></param>
     public ImapNumberSequence(int[] numbers)
     {
@@ -115,7 +115,7 @@ public sealed class ImapNumberSequence : IEnumerable<int>
         this.numbers = numbers;
     }
 
-    /// <summary>Creates a new <see cref="ImapNumberSequence" /> with the given message number range.</summary>
+    /// <summary>Creates a new <see cref="ImapNumberSequence"/> with the given message number range.</summary>
     /// <param name="first"></param>
     /// <param name="last"></param>
     public ImapNumberSequence(int first, int last)
@@ -160,16 +160,16 @@ public sealed class ImapNumberSequence : IEnumerable<int>
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public IEnumerator<int> GetEnumerator() => GetDefaultEnumerator();
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     IEnumerator IEnumerable.GetEnumerator() => GetDefaultEnumerator();
 
     /// <summary>Sorts the sequence numbers.</summary>
     public void Sort() => Array.Sort(numbers);
 
-    /// <summary>Obtains the string representing the <see cref="ImapNumberSequence" />.</summary>
+    /// <summary>Obtains the string representing the <see cref="ImapNumberSequence"/>.</summary>
     /// <returns></returns>
     public override string ToString()
     {

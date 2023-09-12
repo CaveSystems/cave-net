@@ -16,6 +16,7 @@ variables:
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
+  system.debug: true
 
 steps:
 
@@ -29,7 +30,8 @@ steps:
     targetType: inline
     script: |
       $fixedVersion = [Version]"$(fixedBuildVersion)"
-      $gitTag = "$(git describe --tags --always)".Trim().TrimStart('v')                                # possible return values: 'hash' (no tags), 'tag-hash' (old tag), 'tag' (if commit == tag)
+      $gitTag = "$(git describe --tags --always)".Trim().TrimStart('v')
+      # possible return values: 'hash' (no tags), 'tag-hash' (old tag), 'tag' (if commit == tag)
       if (!$gitTag.Contains('.'))
       {
         echo "no tag set yet!"
@@ -42,7 +44,8 @@ steps:
       }
       else
       {
-        $semVer = "ci-$env:BUILD_BUILDNUMBER".Replace('.', '-')                                     # semVer = ci-yyyyMMdd-NN
+        $semVer = "ci-$env:BUILD_BUILDNUMBER".Replace('.', '-')
+        # semVer = ci-yyyyMMdd-NN
         $gitTagVersion = [Version]$gitTag.Split('-')[0]
         if ($gitTagVersion.Major -ne $fixedVersion.Major)
         {
@@ -107,45 +110,49 @@ steps:
     configuration: '$(buildConfiguration)'
 
 - task: VSTest@2
-  displayName: Test net5+
+  displayName: Test netcore
   inputs:
+    runSettingsFile: 'Tests.RunSettings'
     runInParallel: false
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
     codeCoverageEnabled: true
     testAssemblyVer2: |
-      **/bin/Release/net?.?/Test.dll
+      **/bin/$(buildConfiguration)/netcoreapp*/Test.dll
+
+- task: VSTest@2
+  displayName: Test net5+
+  inputs:
+    runSettingsFile: 'Tests.RunSettings'
+    runInParallel: false
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'
+    codeCoverageEnabled: true
+    testAssemblyVer2: |
+      **/bin/$(buildConfiguration)/net?.?/Test.dll
 
 - task: VSTest@2
   displayName: Test net2x, net3x
   inputs:
+    runSettingsFile: 'Tests.RunSettings'
     runInParallel: false
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
     codeCoverageEnabled: true
     testAssemblyVer2: |
-      **/bin/Release/net20/Test.exe
-      **/bin/Release/net35/Test.exe
+      **/bin/$(buildConfiguration)/net20/Test.exe
+      **/bin/$(buildConfiguration)/net35/Test.exe
 
 - task: VSTest@2
   displayName: Test net4x
   inputs:
+    runSettingsFile: 'Tests.RunSettings'
     runInParallel: false
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
     codeCoverageEnabled: true
     testAssemblyVer2: |
-      **/bin/Release/net4?/Test.exe
-
-- task: VSTest@2
-  displayName: Test netcore
-  inputs:
-    runInParallel: false
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
-    codeCoverageEnabled: true
-    testAssemblyVer2: |
-      **/bin/Release/netcoreapp*/Test.dll
+      **/bin/$(buildConfiguration)/net4?/Test.exe
 
 - task: NuGetCommand@2
   displayName: Push to nuget (release)

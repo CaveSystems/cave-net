@@ -16,7 +16,7 @@ namespace Cave.Net
     {
         #region Public Constructors
 
-        /// <summary>Initializes a new instance of the <see cref="FtpConnection" /> class.</summary>
+        /// <summary>Initializes a new instance of the <see cref="FtpConnection"/> class.</summary>
         public FtpConnection() { }
 
         #endregion Public Constructors
@@ -34,9 +34,6 @@ namespace Cave.Net
         {
             var uri = connectionString.ToUri();
             var request = (FtpWebRequest)WebRequest.Create(uri);
-#if NETSTANDARD20
-            request.AllowReadStreamBuffering = false;
-#endif
             request.Credentials = connectionString.GetCredentials();
             request.EnableSsl = EnableSSL;
             request.Method = method;

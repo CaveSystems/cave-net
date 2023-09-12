@@ -5,8 +5,8 @@ using System.Net;
 using System.Net.Cache;
 using System.Text;
 using Cave.IO;
+
 #if !NETSTANDARD2_0_OR_GREATER && !NET5_0_OR_GREATER
-using System.Net.Configuration;
 using System.Diagnostics;
 using System.Reflection;
 #endif
@@ -21,12 +21,12 @@ namespace Cave.Net
     /// <summary>Provides a simple asynchronous http fetch.</summary>
     public sealed class HttpConnection
     {
-#if !NETSTANDARD2_0_OR_GREATER && !NET5_0_OR_GREATER
+#if !NETCOREAPP && !NETSTANDARD
         static HttpConnection()
         {
             try
             {
-                new HttpWebRequestElement().UseUnsafeHeaderParsing = true;
+                new System.Net.Configuration.HttpWebRequestElement().UseUnsafeHeaderParsing = true;
                 return;
             }
             catch (Exception ex)
@@ -35,7 +35,7 @@ namespace Cave.Net
             }
             try
             {
-                var outerType = typeof(SettingsSection);
+                var outerType = typeof(System.Net.Configuration.SettingsSection);
                 var asm = Assembly.GetAssembly(outerType);
                 if (asm != null)
                 {
@@ -70,7 +70,7 @@ namespace Cave.Net
 
         #region Public Constructors
 
-        /// <summary>Initializes a new instance of the <see cref="HttpConnection" /> class.</summary>
+        /// <summary>Initializes a new instance of the <see cref="HttpConnection"/> class.</summary>
         public HttpConnection() { }
 
         #endregion Public Constructors
@@ -81,11 +81,11 @@ namespace Cave.Net
         public string Accept { get; set; }
 
         /// Gets or sets the
-        /// <see cref="RequestCachePolicy" />
+        /// <see cref="RequestCachePolicy"/>
         /// .
         public RequestCachePolicy CachePolicy { get; set; } = HttpWebRequest.DefaultCachePolicy;
 
-        /// <summary>Gets or sets the <see cref="CookieContainer" />.</summary>
+        /// <summary>Gets or sets the <see cref="CookieContainer"/>.</summary>
         public CookieContainer Cookies { get; set; } = new();
 
         /// <summary>The headers to use.</summary>
@@ -93,8 +93,8 @@ namespace Cave.Net
 
         /// <summary>Gets or sets a value indicating if caching shall be prevented using multiple measures.</summary>
         /// <remarks>
-        /// This is setting <see cref="CachePolicy" /> to <see cref="HttpRequestCacheLevel.NoCacheNoStore" />,
-        /// <see cref="HttpRequestHeader.IfModifiedSince" /> and Header[Pragma] = no-cache and Header[RequestId] = new guid.
+        /// This is setting <see cref="CachePolicy"/> to <see cref="HttpRequestCacheLevel.NoCacheNoStore"/>, <see cref="HttpRequestHeader.IfModifiedSince"/> and
+        /// Header[Pragma] = no-cache and Header[RequestId] = new guid.
         /// </remarks>
         public bool PreventCaching { get; set; }
 
