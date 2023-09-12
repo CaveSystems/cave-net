@@ -830,14 +830,14 @@ namespace Test.Tcp
                 using (var client = new TcpAsyncClient())
                 {
                     client.Connect(addr, port);
-                    for (var x = 0; x < 256; x++)
+                    for (var x = 0; x < 64; x++)
                     {
-                        for (var y = 0; y < 1024; y++)
+                        for (var y = 0; y < 256; y++)
                         {
                             client.Stream.Write(new byte[1024], 0, 1024);
                             Interlocked.Add(ref bytes, 1024);
                         }
-                        while (client.Stream.SendBufferLength > 10 * 1024 * 1024)
+                        while (client.Stream.SendBufferLength > 1024 * 1024)
                         {
                             Thread.Sleep(1);
                         }

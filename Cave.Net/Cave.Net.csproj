@@ -1,6 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>netstandard2.0;netstandard2.1;net20;net35;net40;net45;net5.0;net6.0;net7.0</TargetFrameworks>
+        <TargetFrameworks>
+            net20;net35;
+            net40;
+            net45;net451;net452;
+            net46;net461;net462;
+            net47;net471;net472;
+            net48;net481;
+            netstandard2.0;netstandard2.1;
+            net5.0;net6.0;net7.0;
+            netcoreapp3.0;netcoreapp3.1;
+            netcoreapp2.0;netcoreapp2.1;netcoreapp2.2;
+        </TargetFrameworks>
+
         <!--project-->
         <RootNamespace>Cave</RootNamespace>
         <AssemblyOriginatorKeyFile>cave-net.snk</AssemblyOriginatorKeyFile>
@@ -9,6 +21,7 @@
         <Description>Provides classes for fast and easy access to fast async tcp streaming, dns client, ssl client and server and ntp client and server implementations.</Description>
         <PackageProjectUrl>https://github.com/CaveSystems/cave-net</PackageProjectUrl>
         <RepositoryUrl>https://github.com/CaveSystems/cave-net</RepositoryUrl>
+
         <!--settings-->
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageReleaseNotes />
@@ -26,8 +39,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Cave.Extensions" Version="3.0.2" />
-        <PackageReference Include="Cave.IO" Version="3.0.1" />
+        <PackageReference Include="Cave.Extensions" Version="3.0.8" />
+        <PackageReference Include="Cave.IO" Version="3.0.3" />
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

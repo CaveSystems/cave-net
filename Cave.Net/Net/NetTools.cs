@@ -131,7 +131,7 @@ public static class NetTools
 
     #region Public Methods
 
-    /// <summary>Obtains the first available <see cref="IPAddress" /> for the specified hostname with the specified <see cref="AddressFamily" />.</summary>
+    /// <summary>Obtains the first available <see cref="IPAddress"/> for the specified hostname with the specified <see cref="AddressFamily"/>.</summary>
     /// <param name="hostName">Hostname to get addresses for.</param>
     /// <param name="addressFamily">Address family to lookup.</param>
     /// <returns>Returns the first matching ip address.</returns>
@@ -147,7 +147,7 @@ public static class NetTools
         throw new ArgumentException(string.Format("Could not find an IPAddress for {0} with AddressFamily {1}!", hostName, addressFamily));
     }
 
-    /// <summary>Obtains all available <see cref="IPAddress" /> for the specified hostname with the specified <see cref="AddressFamily" />.</summary>
+    /// <summary>Obtains all available <see cref="IPAddress"/> for the specified hostname with the specified <see cref="AddressFamily"/>.</summary>
     /// <param name="hostName">Hostname to get addresses for.</param>
     /// <param name="addressFamily">Address family to lookup.</param>
     /// <returns>Returns a new array of matching ip addresses.</returns>
@@ -175,17 +175,15 @@ public static class NetTools
         {
 #if NET45_OR_GREATER || NETSTANDARD2_0_OR_GREATER || NET5_0_OR_GREATER
             var listener = TcpListener.Create(port);
-#elif NET20_OR_GREATER
-                var listener = new TcpListener(IPAddress.Any, port);
 #else
-#error No code defined for the current framework or NETXX version define missing!
+            var listener = new TcpListener(IPAddress.Any, port);
 #endif
             listener.Start();
             listener.Stop();
             return (ushort)port;
         }
         catch { }
-        for (var i = 0;; i++)
+        for (var i = 0; ; i++)
         {
             try
             {
@@ -206,12 +204,12 @@ public static class NetTools
     }
 
     /// <summary>
-    /// Parses a string for a valid IPAddress[:Port] or DnsName[:Port] combination and retrieves all matching <see cref="IPEndPoint" /> s.
-    /// If no port is specified DefaultPort will be returned.
+    /// Parses a string for a valid IPAddress[:Port] or DnsName[:Port] combination and retrieves all matching <see cref="IPEndPoint"/> s. If no port is
+    /// specified DefaultPort will be returned.
     /// </summary>
     /// <param name="text">The string containing the ip endpoint (server[:port] or ipaddress[:port]).</param>
     /// <param name="defaultPort">The default port used if no port was given.</param>
-    /// <returns>Returns an array of <see cref="IPEndPoint" /> s.</returns>
+    /// <returns>Returns an array of <see cref="IPEndPoint"/> s.</returns>
     public static IPEndPoint[] GetIPEndPoints(string text, int defaultPort)
     {
         if (string.IsNullOrEmpty(text))
@@ -254,7 +252,7 @@ public static class NetTools
 
     /// <summary>Retrieves all local addresses.</summary>
     /// <param name="status">Filter to apply.</param>
-    /// <returns>Returns <see cref="UnicastIPAddressInformation" /> instances for all local network interfaces.</returns>
+    /// <returns>Returns <see cref="UnicastIPAddressInformation"/> instances for all local network interfaces.</returns>
     public static UnicastIPAddressInformation[] GetLocalAddresses(OperationalStatus? status = null)
     {
         var result = new List<UnicastIPAddressInformation>();
