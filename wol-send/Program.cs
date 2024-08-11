@@ -45,7 +45,7 @@ namespace WakeOnLanSend
                 PhysicalAddress address;
                 try
                 {
-                    address = PhysicalAddress.Parse(target.Replace(":", "").Replace("-", ""));
+                    address = PhysicalAddress.Parse(target.Replace(":", "").Replace("-", "").ToUpperInvariant());
                 }
                 catch
                 {
