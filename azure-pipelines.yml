@@ -36,7 +36,7 @@ steps:
       # possible return values: 'hash' (no tags), 'tag-hash' (old tag), 'tag' (if commit == tag)
       if (!$gitTag.Contains('.'))
       {
-        $gitTag = "$(git describe --tags $(git rev-list --tags --max-count=1))".Trim().TrimStart('v')
+        $gitTag = "$(git describe --tags $(git rev-list --tags --max-count=1))-$env:BUILD_SOURCEBRANCHNAME".Trim().TrimStart('v')
       }
       if (!$gitTag.Contains('.'))
       {
