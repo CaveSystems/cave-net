@@ -37,8 +37,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Cave.Extensions" Version="3.0.8" />
-        <PackageReference Include="Cave.IO" Version="3.0.3" />
+        <PackageReference Include="Cave.Extensions" Version="3.0.13" />
+        <PackageReference Include="Cave.IO" Version="3.0.7" />
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
