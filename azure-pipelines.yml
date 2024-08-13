@@ -5,6 +5,8 @@
 # trigger: add any branches with releases to build AND change fixedBuildVersion variable!
 trigger:
 - refs/tags/*
+- bugfix/*
+- feature/*
 - master
 - next
 
@@ -32,6 +34,10 @@ steps:
       $fixedVersion = [Version]"$(fixedBuildVersion)"
       $gitTag = "$(git describe --tags --always)".Trim().TrimStart('v')
       # possible return values: 'hash' (no tags), 'tag-hash' (old tag), 'tag' (if commit == tag)
+      if (!$gitTag.Contains('.'))
+      {
+        $gitTag = "$(git describe --tags $(git rev-list --tags --max-count=1))-$env:BUILD_SOURCEBRANCHNAME".Trim().TrimStart('v')
+      }
       if (!$gitTag.Contains('.'))
       {
         echo "no tag set yet!"
@@ -67,6 +73,13 @@ steps:
 - task: NuGetToolInstaller@0
   inputs:
     versionSpec: '>=4.9.0'
+
+- task: UseDotNet@2
+  displayName: 'Install .NET sdk 8'
+  inputs:
+    packageType: sdk
+    version: 8.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
 
 - task: UseDotNet@2
   displayName: 'Install .NET sdk 7'

@@ -2,11 +2,9 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFrameworks>net20;net48;net6.0</TargetFrameworks>
+        <TargetFrameworks>net20;net48;net8.0</TargetFrameworks>
         <RootNamespace>net-scan</RootNamespace>
         <PublishSingleFile>true</PublishSingleFile>
-        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-        <PublishTrimmed>true</PublishTrimmed>
     </PropertyGroup>
 
     <ItemGroup>

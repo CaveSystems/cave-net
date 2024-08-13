@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Threading;
 using Cave.IO;
 using Cave.Net.Dns;
@@ -49,7 +50,8 @@ public class TcpAsyncClient : IDisposable
     }
 
 #if NETSTANDARD13 || NET20 || NET35 || NET40
-        Socket CreateSocket(AddressFamily family)
+
+    Socket CreateSocket(AddressFamily family)
 #else
     Socket CreateSocket()
 #endif
@@ -59,7 +61,7 @@ public class TcpAsyncClient : IDisposable
             throw new ObjectDisposedException(nameof(TcpAsyncClient));
         }
 #if NETSTANDARD13 || NET20 || NET35 || NET40
-            var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp);
+        var socket = new Socket(family, SocketType.Stream, ProtocolType.Tcp);
 #else
         var socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
 #endif
@@ -79,7 +81,7 @@ public class TcpAsyncClient : IDisposable
 
     void ExitLock() => Monitor.Exit(syncRoot);
 
-    void InitializeSocket(Socket socket)
+    internal void InitializeSocket(Socket socket)
     {
         if (socket == null)
         {
@@ -151,7 +153,7 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Gets called whenever a read is completed.</summary>
     /// <param name="sender">The sender.</param>
-    /// <param name="e">The <see cref="SocketAsyncEventArgs" /> instance containing the event data.</param>
+    /// <param name="e">The <see cref="SocketAsyncEventArgs"/> instance containing the event data.</param>
     void ReadCompleted(object sender, SocketAsyncEventArgs e)
     {
     ReadCompletedBegin:
@@ -207,9 +209,9 @@ public class TcpAsyncClient : IDisposable
                     e = socketAsync;
                     goto ReadCompletedBegin;
 
-                    // we could do a function call to myself here but with slow OnReceived() functions and fast networks we might get a stack overflow
-                    // caused by infinite recursion spawning threads using the threadpool is not a good idea either, because multiple receives will mess up
-                    // our (sequential) stream reading.
+                    // we could do a function call to myself here but with slow OnReceived() functions and fast networks we might get a stack overflow caused by
+                    // infinite recursion spawning threads using the threadpool is not a good idea either, because multiple receives will mess up our
+                    // (sequential) stream reading.
                 }
                 return;
             }
@@ -249,11 +251,11 @@ public class TcpAsyncClient : IDisposable
         field = value;
     }
 
-    #endregion
+    #endregion private class
 
     #region internal functions used by TcpSocketServer
 
-    /// <summary>Initializes the client for use with the specified <paramref name="server" /> instance.</summary>
+    /// <summary>Initializes the client for use with the specified <paramref name="server"/> instance.</summary>
     /// <exception cref="InvalidOperationException">Reader already started.</exception>
     /// <param name="server">Server instance this client belongs to.</param>
     /// <param name="socket">Socket instance this client uses.</param>
@@ -270,7 +272,7 @@ public class TcpAsyncClient : IDisposable
         InitializeSocket(socket);
     }
 
-    /// <summary>Calls the <see cref="OnConnect()" /> function and starts the async socket reader.</summary>
+    /// <summary>Calls the <see cref="OnConnect()"/> function and starts the async socket reader.</summary>
     internal void StartReader()
     {
         if (socketAsync != null)
@@ -296,10 +298,10 @@ public class TcpAsyncClient : IDisposable
 
     #region events
 
-    /// <summary>Calls the <see cref="Buffered" /> event (if set).</summary>
+    /// <summary>Calls the <see cref="Buffered"/> event (if set).</summary>
     protected virtual void OnBuffered() => Buffered?.Invoke(this, new());
 
-    /// <summary>Calls the <see cref="Connected" /> event (if set).</summary>
+    /// <summary>Calls the <see cref="Connected"/> event (if set).</summary>
     protected virtual void OnConnect()
     {
         if (connectedEventTriggered)
@@ -311,7 +313,7 @@ public class TcpAsyncClient : IDisposable
         Connected?.Invoke(this, new());
     }
 
-    /// <summary>Calls the <see cref="Disconnected" /> event (if set).</summary>
+    /// <summary>Calls the <see cref="Disconnected"/> event (if set).</summary>
     protected virtual void OnDisconnect()
     {
         if (connectedEventTriggered && !disconnectedEventTriggered)
@@ -321,10 +323,10 @@ public class TcpAsyncClient : IDisposable
         }
     }
 
-    /// <summary>Calls the <see cref="Received" /> event (if set).</summary>
+    /// <summary>Calls the <see cref="Received"/> event (if set).</summary>
     /// <remarks>
-    /// You can set <see cref="BufferEventArgs.Handled" /> to true when overriding this function or within <see cref="Received" /> to skip
-    /// adding data to the <see cref="Stream" /> and <see cref="ReceiveBuffer" />.
+    /// You can set <see cref="BufferEventArgs.Handled"/> to true when overriding this function or within <see cref="Received"/> to skip adding data to the
+    /// <see cref="Stream"/> and <see cref="ReceiveBuffer"/>.
     /// </remarks>
     /// <param name="buffer">Receive buffer instance.</param>
     /// <param name="offset">Start offset of the received data.</param>
@@ -344,14 +346,14 @@ public class TcpAsyncClient : IDisposable
         }
     }
 
-    /// <summary>Calls the <see cref="Sent" /> event (if set).</summary>
+    /// <summary>Calls the <see cref="Sent"/> event (if set).</summary>
     /// <param name="buffer">Sent buffer instance.</param>
     /// <param name="offset">Start offset of the sent data.</param>
     /// <param name="length">Length in bytes of the sent data.</param>
     protected virtual void OnSent(byte[] buffer, int offset, int length) => Sent?.Invoke(this, new(buffer, offset, length));
 
     /// <summary>Calls the Error event (if set) and closes the connection.</summary>
-    /// <param name="ex">The exception (most of the time this will be a <see cref="SocketException" />.</param>
+    /// <param name="ex">The exception (most of the time this will be a <see cref="SocketException"/>.</param>
     protected internal virtual void OnError(Exception ex)
     {
         if (!closing)
@@ -361,7 +363,7 @@ public class TcpAsyncClient : IDisposable
         }
     }
 
-    /// <summary>Event to be called after a buffer was received and was not handled by the <see cref="Received" /> event</summary>
+    /// <summary>Event to be called after a buffer was received and was not handled by the <see cref="Received"/> event</summary>
     public event EventHandler<EventArgs> Buffered;
 
     /// <summary>Event to be called after the connection was established</summary>
@@ -383,7 +385,7 @@ public class TcpAsyncClient : IDisposable
 
     #region Public Constructors
 
-    /// <summary>Initializes a new instance of the <see cref="TcpAsyncClient" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="TcpAsyncClient"/> class.</summary>
     public TcpAsyncClient() => Stream = new(this);
 
     #endregion Public Constructors
@@ -471,7 +473,7 @@ public class TcpAsyncClient : IDisposable
             while (true)
             {
 #if NETSTANDARD13 || NET20 || NET35 || NET40
-                    var socket = CreateSocket(endpoint.AddressFamily);
+                var socket = CreateSocket(endpoint.AddressFamily);
 #else
                 var socket = CreateSocket();
 #endif
@@ -550,38 +552,37 @@ public class TcpAsyncClient : IDisposable
 
 #endif
 #if NET20 || NET35
-        void ConnectAsyncCallback(IAsyncResult asyncResult)
+
+    void ConnectAsyncCallback(IAsyncResult asyncResult)
+    {
+        EnterLock();
+        try
         {
-            EnterLock();
-            try
+            var socket = (Socket)asyncResult.AsyncState;
+            if (!socket.Connected)
             {
-                var socket = (Socket)asyncResult.AsyncState;
-                if (!socket.Connected)
-                {
-                    OnError(new SocketException((int)SocketError.SocketError));
-                    return;
-                }
-                socket.EndConnect(asyncResult);
-                InitializeSocket(socket);
-                StartReader();
+                OnError(new SocketException((int)SocketError.SocketError));
+                return;
             }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-            finally
-            {
-                ExitLock();
-            }
+            socket.EndConnect(asyncResult);
+            InitializeSocket(socket);
+            StartReader();
         }
+        catch (Exception ex)
+        {
+            OnError(ex);
+        }
+        finally
+        {
+            ExitLock();
+        }
+    }
+
 #endif
 
     /// <summary>Closes this instance gracefully.</summary>
     /// <remarks>
-    /// To ensure unsent data is flushed when using <see cref="Stream" /> use the <see cref="TcpAsyncStream.Close" /> method or
-    /// <see
-    ///     cref="TcpAsyncStream.Flush" />
-    /// first.
+    /// To ensure unsent data is flushed when using <see cref="Stream"/> use the <see cref="TcpAsyncStream.Close"/> method or <see cref="TcpAsyncStream.Flush"/> first.
     /// <para>This function is threadsafe.</para>
     /// </remarks>
     public virtual void Close()
@@ -665,9 +666,9 @@ public class TcpAsyncClient : IDisposable
         BufferSize = bufferSize;
 
 #if NETSTANDARD13
-            var socket = CreateSocket();
-            var parameters = new AsyncParameters(socket, bufferSize);
-            Connect(parameters, socket.ConnectAsync(address, port));
+        var socket = CreateSocket();
+        var parameters = new AsyncParameters(socket, bufferSize);
+        Connect(parameters, socket.ConnectAsync(address, port));
 #else
         ConnectInternal(new(address, port));
 #endif
@@ -677,6 +678,43 @@ public class TcpAsyncClient : IDisposable
     /// <param name="endPoint">ip endpoint to connect to.</param>
     /// <param name="bufferSize">tcp buffer size in bytes.</param>
     public void Connect(IPEndPoint endPoint, int bufferSize = 64 * 1024) => Connect(endPoint.Address, endPoint.Port, bufferSize);
+
+    /// <summary>Connects to the specified host and port.</summary>
+    /// <param name="proxy">Proxy settings</param>
+    /// <param name="host">host to connect to..</param>
+    /// <param name="port">port to connect to.</param>
+    public void ConnectViaProxy(Proxy proxy, string host, int port)
+    {
+        var request = WebRequest.Create($"http://{host}:{port}");
+        var webProxy = new WebProxy(proxy.GetUri());
+        request.Proxy = webProxy;
+        request.Method = "CONNECT";
+        if (proxy.Credentials is null)
+        {
+            webProxy.UseDefaultCredentials = true;
+        }
+        else
+        {
+            webProxy.Credentials = proxy.Credentials;
+        }
+        var response = request.GetResponse();
+        var responseStream = response.GetResponseStream();
+        Debug.Assert(responseStream != null);
+
+        try
+        {
+            const BindingFlags privateInstance = BindingFlags.NonPublic | BindingFlags.Instance;
+            var connection = responseStream.GetPropertyValue("Connection", privateInstance);
+            var networkStream = connection.GetPropertyValue("NetworkStream", privateInstance);
+            var socket = (Socket)networkStream.GetPropertyValue("Socket");
+            InitializeSocket(socket);
+            StartReader();
+        }
+        catch (Exception ex)
+        {
+            OnError(ex);
+        }
+    }
 
     /// <summary>Connects to the specified hostname and port.</summary>
     /// <param name="hostname">hostname to resolve.</param>
@@ -695,33 +733,33 @@ public class TcpAsyncClient : IDisposable
         }
 
 #if NET20 || NET35
-            Exception e = null;
-            foreach (var addr in System.Net.Dns.GetHostAddresses(hostname))
+        Exception e = null;
+        foreach (var addr in System.Net.Dns.GetHostAddresses(hostname))
+        {
+            var socket = CreateSocket(addr.AddressFamily);
+            try
             {
-                var socket = CreateSocket(addr.AddressFamily);
-                try
-                {
-                    socket.BeginConnect(hostname, port, ConnectAsyncCallback, socket);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    e = ex;
-                }
+                socket.BeginConnect(hostname, port, ConnectAsyncCallback, socket);
+                return;
             }
-            if (e != null)
+            catch (Exception ex)
             {
-                throw e;
+                e = ex;
             }
+        }
+        if (e != null)
+        {
+            throw e;
+        }
 
-            throw new Exception("No target address found at dns!");
+        throw new Exception("No target address found at dns!");
 #else
         ConnectAsync(new DnsEndPoint(hostname, port), bufferSize);
 #endif
     }
 
     /// <summary>Performs an asynchonous connect to the specified address and port.</summary>
-    /// <remarks>This function returns immediately. Results are delivered by the <see cref="Error" /> / <see cref="Connected" /> events.</remarks>
+    /// <remarks>This function returns immediately. Results are delivered by the <see cref="Error"/> / <see cref="Connected"/> events.</remarks>
     /// <param name="address">ip address to connect to.</param>
     /// <param name="port">port to connect to.</param>
     /// <param name="bufferSize">tcp buffer size in bytes.</param>
@@ -744,7 +782,7 @@ public class TcpAsyncClient : IDisposable
     }
 
     /// <summary>Performs an asynchronous connect to the specified address and port.</summary>
-    /// <remarks>This function returns immediately. Results are delivered by the <see cref="Error" /> / <see cref="Connected" /> events.</remarks>
+    /// <remarks>This function returns immediately. Results are delivered by the <see cref="Error"/> / <see cref="Connected"/> events.</remarks>
     /// <param name="endPoint">ip endpoint to connect to.</param>
     /// <param name="bufferSize">tcp buffer size in bytes.</param>
     public void ConnectAsync(EndPoint endPoint, int bufferSize = 64 * 1024)
@@ -754,7 +792,7 @@ public class TcpAsyncClient : IDisposable
         {
             RemoteEndPoint = endPoint as IPEndPoint;
 #if NET20 || NET35 || NET40
-                var socket = CreateSocket(endPoint.AddressFamily);
+            var socket = CreateSocket(endPoint.AddressFamily);
 #else
             var socket = CreateSocket();
 #endif
@@ -777,7 +815,7 @@ public class TcpAsyncClient : IDisposable
     }
 
     /// <summary>Gets the stream.</summary>
-    /// <returns>Returns the <see cref="Stream" /> instance used to send and receive data.</returns>
+    /// <returns>Returns the <see cref="Stream"/> instance used to send and receive data.</returns>
     /// <remarks>This function and access to all stream functions are threadsafe.</remarks>
     /// <exception cref="InvalidOperationException">Not connected.</exception>
     public virtual Stream GetStream() => Stream;
@@ -825,8 +863,7 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Sends data asynchronously to a connected remote.</summary>
     /// <remarks>
-    /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte
-    /// sequence at the receiver.
+    /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte sequence at the receiver.
     /// </remarks>
     /// <remarks>This function is threadsafe.</remarks>
     /// <param name="buffer">An array of bytes to be send.</param>
@@ -835,8 +872,7 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Sends data asynchronously to a connected remote.</summary>
     /// <remarks>
-    /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte
-    /// sequence at the receiver.
+    /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte sequence at the receiver.
     /// </remarks>
     /// <remarks>This function is threadsafe.</remarks>
     /// <param name="buffer">An array of bytes to be send.</param>
@@ -846,8 +882,7 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Sends data asynchronously to a connected remote.</summary>
     /// <remarks>
-    /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte
-    /// sequence at the receiver.
+    /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte sequence at the receiver.
     /// </remarks>
     /// <remarks>This function is threadsafe.</remarks>
     /// <param name="buffer">An array of bytes to be send.</param>
@@ -858,39 +893,36 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Sends data asynchronously to a connected remote.</summary>
     /// <remarks>
-    /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte
-    /// sequence at the receiver.
+    /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte sequence at the receiver.
     /// </remarks>
     /// <remarks>This function is threadsafe.</remarks>
     /// <param name="buffer">An array of bytes to be send.</param>
     /// <param name="callback">Callback method to be called after completion.</param>
     /// <param name="state">State to pass to the callback.</param>
-    /// <typeparam name="T">Type for the callback <paramref name="state" /> parameter.</typeparam>
+    /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
     public void SendAsync<T>(byte[] buffer, Action<T> callback = null, T state = default) => InternalSendAsync(buffer, 0, buffer.Length, callback, state);
 
     /// <summary>Sends data asynchronously to a connected remote.</summary>
     /// <remarks>
-    /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte
-    /// sequence at the receiver.
+    /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte sequence at the receiver.
     /// </remarks>
     /// <param name="buffer">An array of bytes to be send.</param>
     /// <param name="length">The number of bytes.</param>
     /// <param name="callback">Callback method to be called after completion.</param>
     /// <param name="state">State to pass to the callback.</param>
-    /// <typeparam name="T">Type for the callback <paramref name="state" /> parameter.</typeparam>
+    /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
     public void SendAsync<T>(byte[] buffer, int length, Action<T> callback = null, T state = default) => InternalSendAsync(buffer, 0, length, callback, state);
 
     /// <summary>Sends data asynchronously to a connected remote.</summary>
     /// <remarks>
-    /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte
-    /// sequence at the receiver.
+    /// This function is threadsafe, however calling this method more than one time prior completion may result in a different byte sequence at the receiver.
     /// </remarks>
     /// <param name="buffer">An array of bytes to be send.</param>
     /// <param name="offset">The start offset at the byte array.</param>
     /// <param name="length">The number of bytes.</param>
     /// <param name="callback">Callback method to be called after completion.</param>
     /// <param name="state">State to pass to the callback.</param>
-    /// <typeparam name="T">Type for the callback <paramref name="state" /> parameter.</typeparam>
+    /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
     public void SendAsync<T>(byte[] buffer, int offset, int length, Action<T> callback = null, T state = default) => InternalSendAsync(buffer, offset, length, callback, state);
 
     #endregion public functions
@@ -956,9 +988,7 @@ public class TcpAsyncClient : IDisposable
     /// <summary>Gets or sets the amount of time, in milliseconds, that a connect operation blocks waiting for data.</summary>
     /// <value>
     /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value,
-    /// <see
-    ///     cref="Timeout.Infinite" />
-    /// , specifies that the connect operation does not time out.
+    /// <see cref="Timeout.Infinite"/> , specifies that the connect operation does not time out.
     /// </value>
     public int ConnectTimeout { get; set; } = 5000;
 
@@ -969,7 +999,7 @@ public class TcpAsyncClient : IDisposable
     public bool IsConnected => !closing && (uncheckedSocket?.Connected ?? false);
 
     /// <summary>Gets or sets a value that specifies whether the Socket will delay closing a socket in an attempt to send all pending data.</summary>
-    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)" />.</remarks>
+    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
     public LingerOption LingerState
     {
         get => CachedValue(ref lingerState, () => uncheckedSocket.LingerState);
@@ -982,7 +1012,7 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Gets or sets a value indicating whether the stream Socket is using the Nagle algorithm.</summary>
     /// <value><c>true</c> if the Socket uses the Nagle algorithm; otherwise, <c>false</c>.</value>
-    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)" />.</remarks>
+    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
     public bool NoDelay
     {
         get => CachedValue(ref noDelay, () => uncheckedSocket.NoDelay);
@@ -995,19 +1025,17 @@ public class TcpAsyncClient : IDisposable
     /// <summary>Gets the receive buffer.</summary>
     /// <value>The receive buffer.</value>
     /// <remarks>
-    /// Use lock on this buffer to ensure thread safety when using concurrent access to the <see cref="Stream" /> property,
-    /// <see cref="GetStream()" /> function and/or <see cref="Received" /> callbacks.
+    /// Use lock on this buffer to ensure thread safety when using concurrent access to the <see cref="Stream"/> property, <see cref="GetStream()"/> function
+    /// and/or <see cref="Received"/> callbacks.
     /// </remarks>
     public FifoStream ReceiveBuffer { get; } = new();
 
     /// <summary>Gets or sets the amount of time, in milliseconds, that a read operation blocks waiting for data.</summary>
     /// <value>
     /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value,
-    /// <see
-    ///     cref="Timeout.Infinite" />
-    /// , specifies that the read operation does not time out.
+    /// <see cref="Timeout.Infinite"/> , specifies that the read operation does not time out.
     /// </value>
-    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)" />.</remarks>
+    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
     public int ReceiveTimeout
     {
         get => CachedValue(ref receiveTimeout, () => uncheckedSocket.ReceiveTimeout);
@@ -1021,11 +1049,9 @@ public class TcpAsyncClient : IDisposable
     /// <summary>Gets or sets the amount of time, in milliseconds, that a write operation blocks waiting for transmission.</summary>
     /// <value>
     /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value,
-    /// <see
-    ///     cref="Timeout.Infinite" />
-    /// , specifies that the write operation does not time out.
+    /// <see cref="Timeout.Infinite"/> , specifies that the write operation does not time out.
     /// </value>
-    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)" />.</remarks>
+    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
     public int SendTimeout
     {
         get => CachedValue(ref sendTimeout, () => uncheckedSocket.SendTimeout);
@@ -1044,7 +1070,7 @@ public class TcpAsyncClient : IDisposable
     public TcpAsyncStream Stream { get; }
 
     /// <summary>Gets or sets a value that specifies the Time To Live (TTL) value of Internet Protocol (IP) packets sent by the Socket.</summary>
-    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)" />.</remarks>
+    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
     public short Ttl
     {
         get => CachedValue(ref ttl, () => uncheckedSocket.Ttl);
@@ -1055,7 +1081,7 @@ public class TcpAsyncClient : IDisposable
 
     #region Public Methods
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override string ToString()
     {
         if (RemoteEndPoint.AddressFamily == AddressFamily.InterNetworkV6)
