@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Linq;
 using System.Security;
 using System.Security.Authentication;
 using System.Security.Cryptography;
@@ -25,17 +26,20 @@ public class SslClient : IDisposable
     #region public events
 
     /// <summary>
-    /// Event to be executed on each new incoming connection to be authenticated. The event may prohibit authentication based on the
-    /// certificate, chain and errors encountered
+    /// Event to be executed on each new incoming connection to be authenticated. The event may prohibit authentication based on the certificate, chain and
+    /// errors encountered
     /// </summary>
-    public event EventHandler<SslAuthenticationEventArgs> Authenticate;
+    public event EventHandler<SslAuthenticationEventArgs>? Authenticate;
+
+    /// <summary>Event to be executed on each new incoming connection before authentication. This is the certificate that will be</summary>
+    public event LocalCertificateSelectionCallback? LocalCertificateSelection;
 
     #endregion public events
 
     #region private implementation
 
-    TcpClient client;
-    SslStream stream;
+    TcpClient? client;
+    SslStream? stream;
 
     /// <summary>Called when [select local cert].</summary>
     /// <param name="sender">The sender.</param>
@@ -43,16 +47,11 @@ public class SslClient : IDisposable
     /// <param name="localCertificates">The local certificates.</param>
     /// <param name="remoteCertificate">The remote certificate.</param>
     /// <param name="acceptableIssuers">The acceptable issuers.</param>
-    /// <returns>Returns the selected <see cref="X509Certificate" /> instance.</returns>
-    protected virtual X509Certificate OnSelectLocalCert(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
-    {
-        foreach (var cert in localCertificates)
-        {
-            return cert;
-        }
-
-        return null;
-    }
+    /// <returns>Returns the selected <see cref="X509Certificate"/> instance.</returns>
+    protected virtual X509Certificate OnSelectLocalCert(object sender, string targetHost, X509CertificateCollection localCertificates, X509Certificate? remoteCertificate, string[] acceptableIssuers)
+        => LocalCertificateSelection?.Invoke(this, targetHost, localCertificates, remoteCertificate, acceptableIssuers) ??
+        localCertificates.Cast<X509Certificate>().FirstOrDefault() ??
+        throw new InvalidOperationException("No valid local user certificate found!");
 
     /// <summary>Called when [validate remote cert].</summary>
     /// <param name="sender">The sender.</param>
@@ -60,7 +59,7 @@ public class SslClient : IDisposable
     /// <param name="chain">The chain.</param>
     /// <param name="sslPolicyErrors">The SSL policy errors.</param>
     /// <returns>Returns true if the remote certificate was validated or false otherwise.</returns>
-    protected virtual bool OnValidateRemoteCert(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+    protected virtual bool OnValidateRemoteCert(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
     {
         if (PolicyErrors == 0)
         {
@@ -132,10 +131,7 @@ public class SslClient : IDisposable
         // free native resources if there are any.
     }
 
-    /// <summary>
-    /// This function will be called while authenticating a connection to another sslclient instance and runs the
-    /// <see cref="Authenticate" /> event.
-    /// </summary>
+    /// <summary>This function will be called while authenticating a connection to another sslclient instance and runs the <see cref="Authenticate"/> event.</summary>
     /// <param name="eventArgs">Ssl authentication arguments.</param>
     protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs)
     {
@@ -167,15 +163,18 @@ public class SslClient : IDisposable
 
     #region constructors
 
-    /// <summary>Initializes a new instance of the <see cref="SslClient" /> class.</summary>
-    public SslClient() { }
+    /// <summary>Initializes a new instance of the <see cref="SslClient"/> class.</summary>
+    public SslClient()
+    {
+        RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+    }
 
-    /// <summary>Initializes a new instance of the <see cref="SslClient" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="SslClient"/> class.</summary>
     /// <param name="client">Client to use.</param>
     public SslClient(TcpClient client)
     {
         this.client = client ?? throw new ArgumentNullException(nameof(client));
-        RemoteEndPoint = (IPEndPoint)this.client.Client.RemoteEndPoint;
+        RemoteEndPoint = (this.client.Client.RemoteEndPoint as IPEndPoint) ?? throw new InvalidCastException("Could not cast RemoteEndPoint"); ;
     }
 
     #endregion constructors
@@ -195,10 +194,10 @@ public class SslClient : IDisposable
     /// <summary>Gets the policy errors found while authenticating.</summary>
     public SslPolicyErrors PolicyErrors { get; private set; }
 
-    /// <summary>Gets the remote <see cref="IPEndPoint" /> this client is/was connected to.</summary>
+    /// <summary>Gets the remote <see cref="IPEndPoint"/> this client is/was connected to.</summary>
     public IPEndPoint RemoteEndPoint { get; private set; }
 
-    /// <summary>Gets the <see cref="Stream" /> instance for the client.</summary>
+    /// <summary>Gets the <see cref="Stream"/> instance for the client.</summary>
     public Stream Stream => stream ?? throw new InvalidOperationException("TLS negotiation not jet started!");
 
     /// <summary>Gets the validation errors.</summary>
@@ -235,7 +234,7 @@ public class SslClient : IDisposable
         }
 
         client = new(host, port);
-        RemoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
+        RemoteEndPoint = (client.Client.RemoteEndPoint as IPEndPoint) ?? throw new InvalidCastException("Could not cast socket endpoint!");
     }
 
     /// <summary>Creates a connection to the specified host and port.</summary>
@@ -250,7 +249,7 @@ public class SslClient : IDisposable
 
         client = new();
         client.Connect(address, port);
-        RemoteEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
+        RemoteEndPoint = (client.Client.RemoteEndPoint as IPEndPoint) ?? throw new InvalidCastException("Could not cast socket endpoint!");
     }
 
     /// <summary>Releases all resources used by the this instance.</summary>
@@ -261,19 +260,19 @@ public class SslClient : IDisposable
     }
 
     /// <summary>
-    /// Starts TLS negotiation and authenticates as client. Use the Authenticate event to implement user defined policy checking! By
-    /// default SslPolicyErrors will be ignored.
+    /// Starts TLS negotiation and authenticates as client. Use the Authenticate event to implement user defined policy checking! By default SslPolicyErrors
+    /// will be ignored.
     /// </summary>
     /// <param name="serverCN">Server common name (has to be present at the server certificate).</param>
     public void DoClientTLS(string serverCN) => DoClientTLS(serverCN, null);
 
     /// <summary>
-    /// Starts TLS negotiation and authenticates as client. Use the Authenticate event to implement user defined policy checking! By
-    /// default SslPolicyErrors will be ignored.
+    /// Starts TLS negotiation and authenticates as client. Use the Authenticate event to implement user defined policy checking! By default SslPolicyErrors
+    /// will be ignored.
     /// </summary>
     /// <param name="serverCN">The servers common name (this is checked against the server certificate).</param>
     /// <param name="certificate">The clients certificate.</param>
-    public void DoClientTLS(string serverCN, X509Certificate2 certificate)
+    public void DoClientTLS(string serverCN, X509Certificate2? certificate)
     {
         if (stream != null)
         {
@@ -285,9 +284,23 @@ public class SslClient : IDisposable
             throw new InvalidOperationException("Please establish connection first!");
         }
 #if NET20 || NET35
+        if (certificate is null)
+        {
+            stream = new SslStream(client.GetStream(), false, new RemoteCertificateValidationCallback(OnValidateRemoteCert), null);
+        }
+        else
+        {
             stream = new SslStream(client.GetStream(), false, new RemoteCertificateValidationCallback(OnValidateRemoteCert), new LocalCertificateSelectionCallback(OnSelectLocalCert));
+        }
 #else
-        stream = new(client.GetStream(), false, OnValidateRemoteCert, OnSelectLocalCert, EncryptionPolicy.RequireEncryption);
+        if (certificate is null)
+        {
+            stream = new(client.GetStream(), false, OnValidateRemoteCert, null, EncryptionPolicy.RequireEncryption);
+        }
+        else
+        {
+            stream = new(client.GetStream(), false, OnValidateRemoteCert, OnSelectLocalCert, EncryptionPolicy.RequireEncryption);
+        }
 #endif
         var certificates = new X509CertificateCollection();
         if (certificate != null)
@@ -308,8 +321,8 @@ public class SslClient : IDisposable
     }
 
     /// <summary>
-    /// Starts TLS negotiation and authenticates as server. Use the Authenticate event to implement user defined policy checking! By
-    /// default SslPolicyErrors will be ignored.
+    /// Starts TLS negotiation and authenticates as server. Use the Authenticate event to implement user defined policy checking! By default SslPolicyErrors
+    /// will be ignored.
     /// </summary>
     /// <param name="certificate">Certificate to use for the server instance.</param>
     public void DoServerTLS(X509Certificate2 certificate)
@@ -336,7 +349,7 @@ public class SslClient : IDisposable
 
         PolicyErrors = 0;
         ValidationErrors = 0;
-        stream = new(client.GetStream(), false, OnValidateRemoteCert, OnSelectLocalCert);
+        stream = new(client.GetStream(), false, OnValidateRemoteCert, null);
         // Let the operating system decide what TLS protocol version to use. See https://docs.microsoft.com/dotnet/framework/network-programming/tls
         stream.AuthenticateAsServer(certificate, false, SslProtocols.None, CheckRevocation);
         if (!stream.IsEncrypted)

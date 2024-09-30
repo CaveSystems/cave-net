@@ -13,7 +13,7 @@ public struct SoaRecord
 {
     #region Private Methods
 
-    static MailAddress ParseEmailAddress(DataReader reader)
+    static MailAddress? ParseEmailAddress(DataReader reader)
     {
         long endposition = -1;
         var parts = new List<string>();
@@ -101,7 +101,7 @@ public struct SoaRecord
     public int RefreshInterval;
 
     /// <summary>The responsible name.</summary>
-    public MailAddress ResponsibleName;
+    public MailAddress? ResponsibleName;
 
     /// <summary>The retry interval (seconds).</summary>
     public int RetryInterval;
@@ -115,11 +115,12 @@ public struct SoaRecord
 
     /// <summary>Parses the record using the specified reader.</summary>
     /// <param name="reader">The reader.</param>
-    /// <returns>Returns a new <see cref="SoaRecord" /> structure.</returns>
-    public static SoaRecord Parse(DataReader reader)
+    /// <param name="exception">Throw exception (default <see langword="false"/>)</param>
+    /// <returns>Returns a new <see cref="SoaRecord"/> structure.</returns>
+    public static SoaRecord Parse(DataReader reader, bool exception = false)
     {
-        DomainName masterName;
-        MailAddress responsibleName;
+        DomainName? masterName;
+        MailAddress? responsibleName;
         try
         {
             masterName = DomainName.Parse(reader);
@@ -127,9 +128,9 @@ public struct SoaRecord
         }
         catch (Exception ex)
         {
-            masterName = null;
-            responsibleName = null;
+            if (exception) throw;
             Trace.TraceError(ex.ToString());
+            return default;
         }
 
         var result = new SoaRecord
@@ -145,8 +146,8 @@ public struct SoaRecord
         return result;
     }
 
-    /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
-    /// <returns>A <see cref="string" /> that represents this instance.</returns>
+    /// <summary>Returns a <see cref="string"/> that represents this instance.</summary>
+    /// <returns>A <see cref="string"/> that represents this instance.</returns>
     public override string ToString() =>
         string.Format(
             "{0}. {1}. (\n" +

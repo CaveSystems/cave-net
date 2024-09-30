@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -12,14 +13,31 @@ namespace Cave.Net;
 [DebuggerDisplay("{RemoteEndPoint}")]
 public class UdpAsyncClient : IDisposable
 {
+    #region Private Fields
+
+    long bytesReceived;
+    long bytesSent;
+    bool closing;
+    Socket? socket;
+
+    #endregion Private Fields
+
     #region Private Methods
 
-    void ReceiveCompleted(object sender, SocketAsyncEventArgs e)
+    void ReceiveCompleted(object? sender, SocketAsyncEventArgs e)
     {
         // taken from Cave.TcpAsyncClient
-        var socket = (Socket)sender;
+        if (sender is not Socket socket) return;
+        if (e is null) return;
+        if (e.Buffer is null) throw new InvalidDataException("Empty buffer!");
+
         ReadCompletedBegin:
         var bytesTransferred = e.BytesTransferred;
+
+        if (e.RemoteEndPoint is not IPEndPoint remote)
+        {
+            remote = new IPEndPoint(IPAddress.Any, 0);
+        }
 
         switch (e.SocketError)
         {
@@ -27,7 +45,7 @@ public class UdpAsyncClient : IDisposable
                 break;
 
             default:
-                OnError((IPEndPoint)e.RemoteEndPoint, new SocketException((int)e.SocketError));
+                OnError(remote, new SocketException((int)e.SocketError));
                 return;
         }
 
@@ -36,7 +54,7 @@ public class UdpAsyncClient : IDisposable
             Interlocked.Add(ref bytesReceived, bytesTransferred);
 
             // call event
-            OnReceived((IPEndPoint)e.RemoteEndPoint, e.Buffer, e.Offset, bytesTransferred);
+            OnReceived(remote, e.Buffer, e.Offset, bytesTransferred);
 
             if (socket.ReceiveTimeout != ReceiveTimeout)
             {
@@ -50,43 +68,49 @@ public class UdpAsyncClient : IDisposable
                 goto ReadCompletedBegin;
 
                 // we could do a function call to myself here but with slow OnReceived() functions and fast networks we might get a stack overflow caused by
-                // infinite recursion spawning threads using the threadpool is not a good idea either, because multiple receives will mess up our
-                // (sequential) stream reading.
+                // infinite recursion spawning threads using the threadpool is not a good idea either, because multiple receives will mess up our (sequential)
+                // stream reading.
             }
             return;
         }
         catch (Exception ex)
         {
-            OnError(null, ex);
+            OnError(remote, ex);
         }
         Close();
     }
 
     #endregion Private Methods
 
-    #region Private Fields
+    #region Protected Methods
 
-    long bytesReceived;
-    long bytesSent;
-    bool closing;
-    Socket socket;
+    /// <summary>Releases the unmanaged resources used by this instance and optionally releases the managed resources.</summary>
+    /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        closing = true;
+        if (socket != null)
+        {
+            if (socket is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+            socket = null;
+        }
+    }
 
-    #endregion Private Fields
-
-    #region protected functions
-
-    /// <summary>Calls the <see cref="Connected" /> event.</summary>
+    /// <summary>Calls the <see cref="Connected"/> event.</summary>
     protected virtual void OnConnect() => Connected?.Invoke(this, new());
 
-    /// <summary>Calls the <see cref="Disconnected" /> event.</summary>
+    /// <summary>Calls the <see cref="Disconnected"/> event.</summary>
     protected virtual void OnDisconnect() => Disconnected?.Invoke(this, new());
 
-    /// <summary>Calls the <see cref="Error" /> event.</summary>
+    /// <summary>Calls the <see cref="Error"/> event.</summary>
     /// <param name="remoteEndPoint">The remote endpoint causing the error. This may be null if the host encountered an error.</param>
-    /// <param name="ex">The exception (most of the time this will be a <see cref="SocketException" />.</param>
+    /// <param name="ex">The exception (most of the time this will be a <see cref="SocketException"/>.</param>
     protected virtual void OnError(IPEndPoint remoteEndPoint, Exception ex) => Error?.Invoke(this, new(remoteEndPoint, ex));
 
-    /// <summary>Calls the <see cref="Received" /> event.</summary>
+    /// <summary>Calls the <see cref="Received"/> event.</summary>
     /// <param name="remoteEndPoint">Remote endpoint this message was received from.</param>
     /// <param name="buffer">The buffer containing the received data.</param>
     /// <param name="offset">Byte offset the received data starts.</param>
@@ -101,27 +125,58 @@ public class UdpAsyncClient : IDisposable
         }
     }
 
-    #endregion protected functions
+    #endregion Protected Methods
 
-    #region events
+    #region Public Events
 
     /// <summary>Event to be called after the connection was established</summary>
-    public event EventHandler<EventArgs> Connected;
+    public event EventHandler<EventArgs>? Connected;
 
     /// <summary>Event to be called after the connection was closed</summary>
-    public event EventHandler<EventArgs> Disconnected;
+    public event EventHandler<EventArgs>? Disconnected;
 
     /// <summary>Event to be called after an error was encountered</summary>
-    public event EventHandler<RemoteEndPointExceptionEventArgs> Error;
+    public event EventHandler<RemoteEndPointExceptionEventArgs>? Error;
 
     /// <summary>Event to be called after a buffer was received</summary>
-    public event EventHandler<RemoteEndPointBufferEventArgs> Received;
+    public event EventHandler<RemoteEndPointBufferEventArgs>? Received;
 
-    #endregion events
+    #endregion Public Events
+
+    #region Public Properties
+
+    /// <summary>Gets the number of bytes received.</summary>
+    public long BytesReceived => Interlocked.Read(ref bytesReceived);
+
+    /// <summary>Gets the number of bytes sent.</summary>
+    public long BytesSent => Interlocked.Read(ref bytesSent);
+
+    /// <summary>Gets a value indicating whether the client is bound to a port or not.</summary>
+    public bool IsBound => !closing && (socket?.IsBound ?? false);
+
+    /// <summary>Gets the local end point.</summary>
+    /// <value>The local end point.</value>
+    public IPEndPoint LocalEndPoint { get; private set; } = new IPEndPoint(IPAddress.Any, 0);
+
+    /// <summary>Gets or sets the amount of time, in milliseconds, that a read operation blocks waiting for data.</summary>
+    /// <value>
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the read operation does not time out.
+    /// </value>
+    public int ReceiveTimeout { get; set; }
+
+    /// <summary>Gets or sets the amount of time, in milliseconds, that a write operation blocks waiting for transmission.</summary>
+    /// <value>
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the write operation does not time out.
+    /// </value>
+    public int SendTimeout { get; set; }
+
+    #endregion Public Properties
 
     #region Public Methods
 
-    /// <summary>Listens at the specified <paramref name="address" /> and <paramref name="port" />.</summary>
+    /// <summary>Listens at the specified <paramref name="address"/> and <paramref name="port"/>.</summary>
     /// <param name="address">The ip address to listen at.</param>
     /// <param name="port">The port to listen at.</param>
     /// <exception cref="ObjectDisposedException">UdpAsyncClient.</exception>
@@ -157,7 +212,7 @@ public class UdpAsyncClient : IDisposable
                 break;
         }
         socket.Bind(endPoint);
-        LocalEndPoint = (IPEndPoint)socket.LocalEndPoint;
+        LocalEndPoint = (socket.LocalEndPoint as IPEndPoint) ?? throw new InvalidCastException("Could not cast LocalEndPoint");
 
         // start receiving
         var e = new SocketAsyncEventArgs
@@ -190,9 +245,6 @@ public class UdpAsyncClient : IDisposable
         {
             throw new ObjectDisposedException(nameof(UdpAsyncClient));
         }
-#if NETSTANDARD13
-            Bind(new IPEndPoint(IPAddress.Any, port));
-#else
         useIPv6 ??= NetworkInterface.GetAllNetworkInterfaces().Any(n => n.GetIPProperties().UnicastAddresses.Any(u => u.Address.AddressFamily == AddressFamily.InterNetworkV6));
         if (useIPv6.GetValueOrDefault(true))
         {
@@ -202,7 +254,6 @@ public class UdpAsyncClient : IDisposable
         {
             Bind(new IPEndPoint(IPAddress.Any, port));
         }
-#endif
     }
 
     /// <summary>Closes this instance gracefully.</summary>
@@ -214,13 +265,16 @@ public class UdpAsyncClient : IDisposable
         }
 
         closing = true;
-#if NETSTANDARD13
-            socket?.Dispose();
-#else
         socket?.Close();
-#endif
         socket = null;
         OnDisconnect();
+    }
+
+    /// <summary>Releases unmanaged and managed resources.</summary>
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        Dispose(true);
     }
 
     /// <summary>Sends a message to the specified remote.</summary>
@@ -241,46 +295,18 @@ public class UdpAsyncClient : IDisposable
     /// <param name="length">The number of bytes to send.</param>
     public void SendTo(IPEndPoint remote, byte[] data, int offset, int length)
     {
-        if (data == null)
-        {
-            throw new ArgumentNullException(nameof(data));
-        }
-        if (remote == null)
-        {
-            throw new ArgumentNullException(nameof(remote));
-        }
-
-        socket.SendTo(data, offset, length, SocketFlags.None, remote);
+        if (data == null) throw new ArgumentNullException(nameof(data));
+        if (remote == null) throw new ArgumentNullException(nameof(remote));
+        socket?.SendTo(data, offset, length, SocketFlags.None, remote);
     }
 
     /// <summary>Sends a message to the specified remote.</summary>
     /// <param name="remote">Remote address and port to send message to.</param>
     /// <param name="data">An array of type Byte that contains the data to be sent.</param>
     /// <param name="callback">Callback method to be called after completion.</param>
-    public void SendToAsync(IPEndPoint remote, byte[] data, Action callback = null) => SendToAsync(remote, data, 0, data.Length, callback);
-
-    /// <summary>Sends a message to the specified remote.</summary>
-    /// <param name="remote">Remote address and port to send message to.</param>
-    /// <param name="data">An array of type Byte that contains the data to be sent.</param>
-    /// <param name="length">The number of bytes to send.</param>
-    /// <param name="callback">Callback method to be called after completion.</param>
-    public void SendToAsync(IPEndPoint remote, byte[] data, int length, Action callback = null) => SendToAsync(remote, data, 0, length, callback);
-
-    /// <summary>Sends a message to the specified remote.</summary>
-    /// <param name="remote">Remote address and port to send message to.</param>
-    /// <param name="data">An array of type Byte that contains the data to be sent.</param>
-    /// <param name="offset">The position in the data buffer at which to begin sending data.</param>
-    /// <param name="length">The number of bytes to send.</param>
-    /// <param name="callback">Callback method to be called after completion.</param>
-    public void SendToAsync(IPEndPoint remote, byte[] data, int offset, int length, Action callback = null) => SendToAsync(remote, data, offset, length, callback);
-
-    /// <summary>Sends a message to the specified remote.</summary>
-    /// <param name="remote">Remote address and port to send message to.</param>
-    /// <param name="data">An array of type Byte that contains the data to be sent.</param>
-    /// <param name="callback">Callback method to be called after completion.</param>
     /// <param name="state">State to pass to the callback.</param>
-    /// <typeparam name="T">Type for the callback <paramref name="state" /> parameter.</typeparam>
-    public void SendToAsync<T>(IPEndPoint remote, byte[] data, Action<T> callback = null, T state = default) => SendToAsync(remote, data, 0, data.Length, callback, state);
+    /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
+    public void SendToAsync<T>(IPEndPoint remote, byte[] data, Action<T?>? callback = null, T? state = default) => SendToAsync(remote, data, 0, data.Length, callback, state);
 
     /// <summary>Sends a message to the specified remote.</summary>
     /// <param name="remote">Remote address and port to send message to.</param>
@@ -288,8 +314,8 @@ public class UdpAsyncClient : IDisposable
     /// <param name="length">The number of bytes to send.</param>
     /// <param name="callback">Callback method to be called after completion.</param>
     /// <param name="state">State to pass to the callback.</param>
-    /// <typeparam name="T">Type for the callback <paramref name="state" /> parameter.</typeparam>
-    public void SendToAsync<T>(IPEndPoint remote, byte[] data, int length, Action<T> callback = null, T state = default) => SendToAsync(remote, data, 0, length, callback, state);
+    /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
+    public void SendToAsync<T>(IPEndPoint remote, byte[] data, int length, Action<T?>? callback = null, T? state = default) => SendToAsync(remote, data, 0, length, callback, state);
 
     /// <summary>Sends a message to the specified remote.</summary>
     /// <param name="remote">Remote address and port to send message to.</param>
@@ -298,21 +324,16 @@ public class UdpAsyncClient : IDisposable
     /// <param name="length">The number of bytes to send.</param>
     /// <param name="callback">Callback method to be called after completion.</param>
     /// <param name="state">State to pass to the callback.</param>
-    /// <typeparam name="T">Type for the callback <paramref name="state" /> parameter.</typeparam>
-    public void SendToAsync<T>(IPEndPoint remote, byte[] data, int offset, int length, Action<T> callback = null, T state = default)
+    /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
+    public void SendToAsync<T>(IPEndPoint remote, byte[] data, int offset, int length, Action<T?>? callback = null, T? state = default)
     {
-        if (data == null)
-        {
-            throw new ArgumentNullException(nameof(data));
-        }
-        if (remote == null)
-        {
-            throw new ArgumentNullException(nameof(remote));
-        }
+        if (data == null) throw new ArgumentNullException(nameof(data));
+        if (remote == null) throw new ArgumentNullException(nameof(remote));
+        if (socket is null) return;
 
-        void SendCompleted(object sender, SocketAsyncEventArgs e)
+        void SendCompleted(object? sender, SocketAsyncEventArgs e)
         {
-            var remoteEndPoint = (IPEndPoint)e.RemoteEndPoint;
+            var remoteEndPoint = e.RemoteEndPoint as IPEndPoint ?? throw new InvalidCastException("Could not cast RemoteEndPoint");
             Interlocked.Add(ref bytesSent, e.BytesTransferred);
             e.Dispose();
             callback?.Invoke(state);
@@ -320,8 +341,7 @@ public class UdpAsyncClient : IDisposable
 
         try
         {
-            var e = new SocketAsyncEventArgs
-                { RemoteEndPoint = remote };
+            var e = new SocketAsyncEventArgs { RemoteEndPoint = remote };
             e.Completed += SendCompleted;
             e.SetBuffer(data, offset, length);
             if (socket.SendTimeout != SendTimeout)
@@ -347,65 +367,4 @@ public class UdpAsyncClient : IDisposable
     public override string ToString() => $"udp://{LocalEndPoint}";
 
     #endregion Public Methods
-
-    #region properties
-
-    /// <summary>Gets the number of bytes received.</summary>
-    public long BytesReceived => Interlocked.Read(ref bytesReceived);
-
-    /// <summary>Gets the number of bytes sent.</summary>
-    public long BytesSent => Interlocked.Read(ref bytesSent);
-
-    /// <summary>Gets a value indicating whether the client is bound to a port or not.</summary>
-    public bool IsBound => !closing && (socket?.IsBound ?? false);
-
-    /// <summary>Gets the local end point.</summary>
-    /// <value>The local end point.</value>
-    public IPEndPoint LocalEndPoint { get; private set; }
-
-    /// <summary>Gets or sets the amount of time, in milliseconds, that a read operation blocks waiting for data.</summary>
-    /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value,
-    /// <see
-    ///     cref="Timeout.Infinite" />
-    /// , specifies that the read operation does not time out.
-    /// </value>
-    public int ReceiveTimeout { get; set; }
-
-    /// <summary>Gets or sets the amount of time, in milliseconds, that a write operation blocks waiting for transmission.</summary>
-    /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value,
-    /// <see
-    ///     cref="Timeout.Infinite" />
-    /// , specifies that the write operation does not time out.
-    /// </value>
-    public int SendTimeout { get; set; }
-
-    #endregion properties
-
-    #region IDisposable Support
-
-    /// <summary>Releases the unmanaged resources used by this instance and optionally releases the managed resources.</summary>
-    /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool disposing)
-    {
-        closing = true;
-        if (socket != null)
-        {
-            if (socket is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
-            socket = null;
-        }
-    }
-
-    /// <summary>Releases unmanaged and managed resources.</summary>
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
-        Dispose(true);
-    }
-
-    #endregion IDisposable Support
 }

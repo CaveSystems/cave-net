@@ -7,6 +7,89 @@ namespace Cave.Mail;
 /// <summary>Provides conversion routines for rfc822 datetime fields.</summary>
 public static class Rfc822DateTime
 {
+    #region Private Structs
+
+    struct SimpleDate
+    {
+        #region Public Fields
+
+        public int Day;
+        public int Hour;
+        public int Min;
+        public int Month;
+        public int Sec;
+        public int Year;
+
+        #endregion Public Fields
+    }
+
+    #endregion Private Structs
+
+    #region Private Fields
+
+    static readonly char[] timeZoneSeparator = ['+', '-'];
+
+    #endregion Private Fields
+
+    #region Private Methods
+
+    static bool CheckString(ref string date, string pattern)
+    {
+        var index = date.IndexOf(pattern);
+        if (index < 0)
+        {
+            return false;
+        }
+
+        date = date.Remove(index, pattern.Length);
+        return true;
+    }
+
+    static List<int> ValueExtractor(string date)
+    {
+        var result = new List<int>();
+        var gotOne = false;
+        var current = 0;
+        foreach (var c in date)
+        {
+            switch (c)
+            {
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    gotOne = true;
+                    current = (current * 10) + (c - '0');
+                    break;
+
+                default:
+                    if (gotOne)
+                    {
+                        result.Add(current);
+                        current = 0;
+                        gotOne = false;
+                    }
+                    break;
+            }
+        }
+        if (gotOne)
+        {
+            result.Add(current);
+        }
+
+        return result;
+    }
+
+    #endregion Private Methods
+
+    #region Public Methods
+
     /// <summary>Decodes a rfc822 datetime field.</summary>
     /// <param name="rfc822DateTime"></param>
     /// <returns></returns>
@@ -79,7 +162,7 @@ public static class Rfc822DateTime
                 result.Month = 12;
             }
 
-            var timeZoneIndex = date.IndexOfAny(new[] { '+', '-' });
+            var timeZoneIndex = date.IndexOfAny(timeZoneSeparator);
             if (timeZoneIndex > -1)
             {
                 var timeZone = date.Substring(timeZoneIndex).Trim();
@@ -294,65 +377,5 @@ public static class Rfc822DateTime
         return dateTime.ToString("ddd, dd MMM yyyy HH':'mm':'ss " + localDifference);
     }
 
-    static bool CheckString(ref string date, string pattern)
-    {
-        var index = date.IndexOf(pattern);
-        if (index < 0)
-        {
-            return false;
-        }
-
-        date = date.Remove(index, pattern.Length);
-        return true;
-    }
-
-    static List<int> ValueExtractor(string date)
-    {
-        var result = new List<int>();
-        var gotOne = false;
-        var current = 0;
-        foreach (var c in date)
-        {
-            switch (c)
-            {
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                    gotOne = true;
-                    current = (current * 10) + (c - '0');
-                    break;
-                default:
-                    if (gotOne)
-                    {
-                        result.Add(current);
-                        current = 0;
-                        gotOne = false;
-                    }
-                    break;
-            }
-        }
-        if (gotOne)
-        {
-            result.Add(current);
-        }
-
-        return result;
-    }
-
-    struct SimpleDate
-    {
-        public int Day;
-        public int Month;
-        public int Year;
-        public int Hour;
-        public int Min;
-        public int Sec;
-    }
+    #endregion Public Methods
 }

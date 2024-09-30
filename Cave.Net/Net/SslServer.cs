@@ -6,21 +6,28 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
+#nullable enable
+
 namespace Cave.Net;
 
-/// <summary>Provides a ssl server implementation accepting and authenticating <see cref="SslClient" /> connections.</summary>
+/// <summary>Provides a ssl server implementation accepting and authenticating <see cref="SslClient"/> connections.</summary>
 public class SslServer
 {
-    #region private implementation
+    #region Private Fields
 
     readonly List<TcpListener> listeners = new();
     bool isClosed;
 
-    void ClientAuthenticate(object sender, SslAuthenticationEventArgs e) => OnAuthenticate(e);
+    #endregion Private Fields
 
-    void Listen(object obj)
+    #region Private Methods
+
+    void ClientAuthenticate(object? sender, SslAuthenticationEventArgs e) => OnAuthenticate(e);
+
+    void Listen(object? obj)
     {
-        var listener = obj as TcpListener;
+        if (Certificate is null) throw new InvalidOperationException("Set Certificate first!");
+        if (obj is not TcpListener listener) return;
         listener.Start();
         while (!isClosed)
         {
@@ -34,7 +41,7 @@ public class SslServer
             }
 
             // accept client
-            TcpClient tcpClient = null;
+            TcpClient? tcpClient = null;
             try
             {
                 tcpClient = listener.AcceptTcpClient();
@@ -58,15 +65,15 @@ public class SslServer
         }
     }
 
-    #endregion private implementation
+    #endregion Private Methods
 
-    #region event starters
+    #region Protected Methods
 
-    /// <summary>Calls the <see cref="Authenticate" /> event.</summary>
+    /// <summary>Calls the <see cref="Authenticate"/> event.</summary>
     /// <param name="eventArgs">Event arguments.</param>
     protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs) => Authenticate?.Invoke(this, eventArgs);
 
-    /// <summary>Handles the incoming connection and calls the <see cref="Connected" /> event.</summary>
+    /// <summary>Handles the incoming connection and calls the <see cref="Connected"/> event.</summary>
     /// <param name="client">The client.</param>
     protected virtual void OnConnected(SslClient client)
     {
@@ -91,29 +98,25 @@ public class SslServer
         }
     }
 
-    #endregion event starters
+    #endregion Protected Methods
 
-    #region public events
+    #region Public Events
 
     /// <summary>
-    /// Event to be executed on each new incoming connection to be authenticated. The event may prohibit authentication based on the
-    /// certificate, chain and errors encountered
+    /// Event to be executed on each new incoming connection to be authenticated. The event may prohibit authentication based on the certificate, chain and
+    /// errors encountered
     /// </summary>
-    public event EventHandler<SslAuthenticationEventArgs> Authenticate;
+    public event EventHandler<SslAuthenticationEventArgs>? Authenticate;
 
     /// <summary>Event to be executed on each new incoming connection</summary>
-    public event EventHandler<SslClientEventArgs> Connected;
+    public event EventHandler<SslClientEventArgs>? Connected;
 
-    #endregion public events
+    #endregion Public Events
 
-    #region public functionality
-
-    /// <summary>Initializes a new instance of the <see cref="SslServer" /> class.</summary>
-    /// <param name="certificate">The certificate.</param>
-    public SslServer(X509Certificate2 certificate) => Certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
+    #region Public Properties
 
     /// <summary>Gets the certificate the server uses.</summary>
-    public X509Certificate2 Certificate { get; }
+    public X509Certificate2? Certificate { get; set; }
 
     /// <summary>Gets a list of local IPEndPoints currently listened at.</summary>
     public IPEndPoint[] LocalEndPoints
@@ -129,6 +132,10 @@ public class SslServer
             return result;
         }
     }
+
+    #endregion Public Properties
+
+    #region Public Methods
 
     /// <summary>Stops listening and closes all client connections and the server.</summary>
     public void Close()
@@ -167,7 +174,7 @@ public class SslServer
         listeners.Add(listener);
     }
 
-    /// <summary>Starts listening at the specified local <see cref="IPEndPoint" />.</summary>
+    /// <summary>Starts listening at the specified local <see cref="IPEndPoint"/>.</summary>
     /// <param name="iPEndPoint">The local IPEndPoint to listen at.</param>
     public void Listen(IPEndPoint iPEndPoint)
     {
@@ -184,5 +191,5 @@ public class SslServer
         listeners.Add(listener);
     }
 
-    #endregion public functionality
+    #endregion Public Methods
 }

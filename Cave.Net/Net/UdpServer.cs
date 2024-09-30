@@ -8,12 +8,13 @@ namespace Cave.Net;
 /// <summary>Provides a simple udp server socket.</summary>
 public class UdpServer : IDisposable
 {
-    #region Public Properties
+    #region Private Fields
 
-    /// <summary>Gets or sets a value indicating whether async callbacks are used for received packets.</summary>
-    public bool AsyncCallback { get; set; }
+    byte[] buffer = new byte[2048];
+    EndPoint client = new IPEndPoint(0, 0);
+    Socket? socket;
 
-    #endregion Public Properties
+    #endregion Private Fields
 
     #region Private Methods
 
@@ -35,7 +36,7 @@ public class UdpServer : IDisposable
         };
         if (AsyncCallback)
         {
-            void CallOnReceived(object p) => OnReceived((UdpPacket)p);
+            void CallOnReceived(object? p) => OnReceived((UdpPacket)p!);
             Task.Factory.StartNew(CallOnReceived, packet);
         }
         else
@@ -48,21 +49,13 @@ public class UdpServer : IDisposable
 
     #endregion Private Methods
 
-    #region Private Fields
-
-    byte[] buffer = new byte[2048];
-    EndPoint client = new IPEndPoint(0, 0);
-    Socket socket;
-
-    #endregion Private Fields
-
     #region Protected Methods
 
-    /// <summary>Calls the <see cref="Received" /> event.</summary>
+    /// <summary>Calls the <see cref="Received"/> event.</summary>
     /// <param name="packet">The received udp packet.</param>
     protected virtual void OnReceived(UdpPacket packet) => Received?.Invoke(this, new(packet));
 
-    /// <summary>Calls the <see cref="Sent" /> event after the package has been sent.</summary>
+    /// <summary>Calls the <see cref="Sent"/> event after the package has been sent.</summary>
     /// <param name="packet">The sent udp packet.</param>
     protected virtual void OnSent(UdpPacket packet) => Sent?.Invoke(this, new(packet));
 
@@ -71,12 +64,19 @@ public class UdpServer : IDisposable
     #region Public Events
 
     /// <summary>Provides an event for each received package.</summary>
-    public event EventHandler<UdpPacketEventArgs> Received;
+    public event EventHandler<UdpPacketEventArgs>? Received;
 
     /// <summary>Provides an event for each sent package.</summary>
-    public event EventHandler<UdpPacketEventArgs> Sent;
+    public event EventHandler<UdpPacketEventArgs>? Sent;
 
     #endregion Public Events
+
+    #region Public Properties
+
+    /// <summary>Gets or sets a value indicating whether async callbacks are used for received packets.</summary>
+    public bool AsyncCallback { get; set; }
+
+    #endregion Public Properties
 
     #region Public Methods
 
@@ -95,8 +95,6 @@ public class UdpServer : IDisposable
             disposable.Dispose();
         }
         socket = null;
-        buffer = null;
-        client = null;
         GC.SuppressFinalize(this);
     }
 
@@ -119,6 +117,7 @@ public class UdpServer : IDisposable
     /// <param name="packet">Packet to send.</param>
     public void Send(UdpPacket packet)
     {
+        if (socket is null) throw new ObjectDisposedException(nameof(UdpAsyncClient));
         socket.SendTo(packet.Data, packet.Size, SocketFlags.None, packet.RemoteEndPoint);
         OnSent(packet);
     }

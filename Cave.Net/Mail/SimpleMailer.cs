@@ -16,36 +16,32 @@ namespace Cave.Mail;
 /// <summary>Provides (html) email sending.</summary>
 public class SimpleMailer
 {
-    #region private implementation
+    #region Private Fields
 
-    string server;
-    string username;
-    string password;
+    string? password;
     int port;
+    string? server;
+    string? username;
 
-    /// <summary>Gets or sets from address.</summary>
-    /// <value>From address.</value>
-    public MailAddress From { get; set; }
+    #endregion Private Fields
 
-    /// <summary>Gets to addresses.</summary>
-    /// <value>Toaddresses.</value>
-    public Set<MailAddress> To { get; } = new();
+    #region Public Properties
 
     /// <summary>Gets the BCC addresses.</summary>
     /// <value>The BCC addresses.</value>
     public Set<MailAddress> Bcc { get; } = new();
 
-    /// <summary>Gets or sets the subject.</summary>
-    /// <value>The subject.</value>
-    public string Subject { get; set; }
-
     /// <summary>Gets or sets the content HTML.</summary>
     /// <value>The content HTML.</value>
-    public string ContentHtml { get; set; }
+    public string ContentHtml { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the content text.</summary>
     /// <value>The content text.</value>
-    public string ContentText { get; set; }
+    public string ContentText { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets from address.</summary>
+    /// <value>From address.</value>
+    public MailAddress? From { get; set; }
 
     /// <summary>Gets the name of the log source.</summary>
     /// <value>The name of the log source.</value>
@@ -62,25 +58,33 @@ public class SimpleMailer
         }
     }
 
-    /// <summary>Gets or sets the server.</summary>
-    /// <value>The server.</value>
-    public string Server { get => server; set => server = value; }
+    /// <summary>Gets or sets the password.</summary>
+    /// <value>The password.</value>
+    public string Password { get => password ?? string.Empty; set => password = value; }
 
     /// <summary>Gets or sets the port.</summary>
     /// <value>The port.</value>
     public int Port { get => port; set => port = value; }
 
-    /// <summary>Gets or sets the password.</summary>
-    /// <value>The password.</value>
-    public string Password { get => password; set => password = value; }
+    /// <summary>Gets or sets the server.</summary>
+    /// <value>The server.</value>
+    public string Server { get => server ?? string.Empty; set => server = value; }
+
+    /// <summary>Gets or sets the subject.</summary>
+    /// <value>The subject.</value>
+    public string Subject { get; set; } = string.Empty;
+
+    /// <summary>Gets to addresses.</summary>
+    /// <value>Toaddresses.</value>
+    public Set<MailAddress> To { get; } = new();
 
     /// <summary>Gets or sets the username.</summary>
     /// <value>The username.</value>
-    public string Username { get => username; set => username = value; }
+    public string Username { get => username ?? string.Empty; set => username = value; }
 
-    #endregion
+    #endregion Public Properties
 
-    #region public functionality
+    #region Public Methods
 
     /// <summary>Loads the mailer configuration from the specified ini file. This reads [Mail] Server, Port, Password and Username.</summary>
     /// <param name="config">The configuration.</param>
@@ -95,68 +99,9 @@ public class SimpleMailer
         }
         //TODO: Optional Display Name for Sender
         var from = config.ReadSetting("Mail", "From");
-        From = new(from);
+        From = from is null ? null : new(from);
         To.LoadAddresses(config.ReadSection("SendTo", true));
         Bcc.LoadAddresses(config.ReadSection("BlindCarbonCopy", true));
-    }
-
-    /// <summary>Sends an email.</summary>
-    public void Send(Dictionary<string, string> headers = null)
-    {
-        if (To.Count == 0)
-        {
-            throw new("No recepient (SendTo) address.");
-        }
-
-        using var message = new MailMessage();
-        if (headers != null)
-        {
-            foreach (var i in headers)
-            {
-                message.Headers[i.Key] = i.Value;
-            }
-        }
-        foreach (var a in To)
-        {
-            message.To.Add(a);
-        }
-
-        foreach (var a in Bcc)
-        {
-            message.Bcc.Add(a);
-        }
-
-        message.Subject = Subject;
-        message.From = From;
-        var plainText = AlternateView.CreateAlternateViewFromString(ContentText, null, MediaTypeNames.Text.Plain);
-        var htmlText = AlternateView.CreateAlternateViewFromString(ContentHtml, Encoding.UTF8, MediaTypeNames.Text.Html);
-        message.AlternateViews.Add(plainText);
-        message.AlternateViews.Add(htmlText);
-        for (var i = 0;; i++)
-        {
-            try
-            {
-                var client = new SmtpClient(Server, Port)
-                {
-                    Timeout = 50000,
-                    EnableSsl = true,
-                    Credentials = new NetworkCredential(Username, Password)
-                };
-                client.Send(message);
-                (client as IDisposable)?.Dispose();
-                Trace.TraceInformation("Sent email '<green>{0}<default>' to <cyan>{1}", message.Subject, message.To);
-                break;
-            }
-            catch
-            {
-                if (i > 3)
-                {
-                    throw;
-                }
-
-                Thread.Sleep(1000);
-            }
-        }
     }
 
     /// <summary>Loads a content from html and txt file for the specified culture.</summary>
@@ -185,5 +130,64 @@ public class SimpleMailer
         }
     }
 
-    #endregion
+    /// <summary>Sends an email.</summary>
+    public void Send(Dictionary<string, string>? headers = null)
+    {
+        if (To.Count == 0)
+        {
+            throw new("No recepient (SendTo) address.");
+        }
+
+        using var message = new MailMessage();
+        if (headers != null)
+        {
+            foreach (var i in headers)
+            {
+                message.Headers[i.Key] = i.Value;
+            }
+        }
+        foreach (var a in To)
+        {
+            message.To.Add(a);
+        }
+
+        foreach (var a in Bcc)
+        {
+            message.Bcc.Add(a);
+        }
+
+        message.Subject = Subject;
+        if (From is not null) message.From = From;
+        var plainText = AlternateView.CreateAlternateViewFromString(ContentText, null, MediaTypeNames.Text.Plain);
+        var htmlText = AlternateView.CreateAlternateViewFromString(ContentHtml, Encoding.UTF8, MediaTypeNames.Text.Html);
+        message.AlternateViews.Add(plainText);
+        message.AlternateViews.Add(htmlText);
+        for (var i = 0; ; i++)
+        {
+            try
+            {
+                var client = new SmtpClient(Server, Port)
+                {
+                    Timeout = 50000,
+                    EnableSsl = true,
+                    Credentials = new NetworkCredential(Username, Password)
+                };
+                client.Send(message);
+                (client as IDisposable)?.Dispose();
+                Trace.TraceInformation("Sent email '<green>{0}<default>' to <cyan>{1}", message.Subject, message.To);
+                break;
+            }
+            catch
+            {
+                if (i > 3)
+                {
+                    throw;
+                }
+
+                Thread.Sleep(1000);
+            }
+        }
+    }
+
+    #endregion Public Methods
 }

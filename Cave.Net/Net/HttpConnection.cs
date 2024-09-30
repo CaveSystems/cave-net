@@ -1,15 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.IO;
 using System.Net;
 using System.Net.Cache;
 using System.Text;
 using Cave.IO;
-
-#if !NETSTANDARD2_0_OR_GREATER && !NET5_0_OR_GREATER
-using System.Diagnostics;
-using System.Reflection;
-#endif
+using Cave.Progress;
 
 #if NET6_0_OR_GREATER
 //class uses old WebRequest functionality
@@ -22,6 +21,8 @@ namespace Cave.Net
     public sealed class HttpConnection
     {
 #if !NETCOREAPP && !NETSTANDARD
+
+        [SuppressMessage("Globalization", "CA1304")]
         static HttpConnection()
         {
             try
@@ -66,161 +67,23 @@ namespace Cave.Net
             }
             Trace.WriteLine("UseUnsafeHeaderParsing disabled.");
         }
+
 #endif
 
-        #region Public Constructors
+        #region Private Fields
 
-        /// <summary>Initializes a new instance of the <see cref="HttpConnection"/> class.</summary>
-        public HttpConnection() { }
+        static readonly string[] BypassProxyList = ["localhost"];
 
-        #endregion Public Constructors
+        #endregion Private Fields
 
-        #region Public Properties
-
-        /// <summary>The accept string.</summary>
-        public string Accept { get; set; }
-
-        /// Gets or sets the
-        /// <see cref="RequestCachePolicy"/>
-        /// .
-        public RequestCachePolicy CachePolicy { get; set; } = HttpWebRequest.DefaultCachePolicy;
-
-        /// <summary>Gets or sets the <see cref="CookieContainer"/>.</summary>
-        public CookieContainer Cookies { get; set; } = new();
-
-        /// <summary>The headers to use.</summary>
-        public Dictionary<string, string> Headers { get; } = new();
-
-        /// <summary>Gets or sets a value indicating if caching shall be prevented using multiple measures.</summary>
-        /// <remarks>
-        /// This is setting <see cref="CachePolicy"/> to <see cref="HttpRequestCacheLevel.NoCacheNoStore"/>, <see cref="HttpRequestHeader.IfModifiedSince"/> and
-        /// Header[Pragma] = no-cache and Header[RequestId] = new guid.
-        /// </remarks>
-        public bool PreventCaching { get; set; }
-
-        /// <summary>Gets or sets the protocol version.</summary>
-        /// <value>The protocol version.</value>
-        public Version ProtocolVersion { get; set; } = new("1.1");
-
-        /// <summary>Gets or sets the proxy.</summary>
-        /// <value>The proxy.</value>
-        public IWebProxy Proxy { get; set; }
-
-        /// <summary>Gets or sets the referer.</summary>
-        /// <value>The referer.</value>
-        public string Referer { get; set; }
-
-        /// <summary>Download Timeout.</summary>
-        public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
-
-        /// <summary>Gets or sets the user agent.</summary>
-        /// <value>The user agent.</value>
-        public string UserAgent { get; set; } = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)";
-
-        #endregion Public Properties
-
-        #region Public Methods
-
-        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
-        /// <param name="connectionString">The full connectionstring for the download.</param>
-        /// <param name="stream">Stream to copy the received content to.</param>
-        /// <param name="proxy">The proxy.</param>
-        /// <returns>Returns the number of bytes copied.</returns>
-        public static long Copy(ConnectionString connectionString, Stream stream, ConnectionString? proxy = null)
-        {
-            var connection = new HttpConnection();
-            if (proxy.HasValue)
-            {
-                connection.SetProxy(proxy.Value);
-            }
-
-            return connection.Download(connectionString, stream);
-        }
-
-        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
-        /// <param name="connectionString">The full connectionstring for the download.</param>
-        /// <param name="stream">Stream to copy the received content to.</param>
-        /// <param name="callback">Callback to run after each block or null.</param>
-        /// <param name="proxy">The proxy.</param>
-        /// <param name="userItem">The user item.</param>
-        /// <returns>Returns the number of bytes copied.</returns>
-        public static long Copy(ConnectionString connectionString, Stream stream, ProgressCallback callback, ConnectionString? proxy = null, object userItem = null)
-        {
-            var connection = new HttpConnection();
-            if (proxy.HasValue)
-            {
-                connection.SetProxy(proxy.Value);
-            }
-
-            return connection.Download(connectionString, stream, callback, userItem);
-        }
-
-        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
-        /// <param name="connectionString">The full connectionstring for the download.</param>
-        /// <param name="proxy">The proxy.</param>
-        /// <returns>Returns the downloaded byte array.</returns>
-        public static byte[] Get(ConnectionString connectionString, ConnectionString? proxy = null)
-        {
-            var connection = new HttpConnection();
-            if (proxy.HasValue)
-            {
-                connection.SetProxy(proxy.Value);
-            }
-
-            return connection.Download(connectionString);
-        }
-
-        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
-        /// <param name="connectionString">The full connectionstring for the download.</param>
-        /// <param name="callback">Callback to run after each block or null.</param>
-        /// <param name="proxy">The proxy.</param>
-        /// <param name="userItem">The user item.</param>
-        /// <returns>Returns the downloaded byte array.</returns>
-        public static byte[] Get(ConnectionString connectionString, ProgressCallback callback, ConnectionString? proxy = null, object userItem = null)
-        {
-            var connection = new HttpConnection();
-            if (proxy.HasValue)
-            {
-                connection.SetProxy(proxy.Value);
-            }
-
-            return connection.Download(connectionString, callback, userItem);
-        }
-
-        /// <summary>Directly obtains the data of the file represented by the specified connectionstring as string.</summary>
-        /// <param name="connectionString">The full connectionstring for the download.</param>
-        /// <param name="proxy">The proxy.</param>
-        /// <returns>Returns downloaded data as string (utf8).</returns>
-        public static string GetString(ConnectionString connectionString, ConnectionString? proxy = null) => Encoding.UTF8.GetString(Get(connectionString, proxy));
-
-        /// <summary>Performs a post request ath the specified connectionstring.</summary>
-        /// <param name="connectionString">The full connectionstring for the post request.</param>
-        /// <param name="postData">Post data to send to the server.</param>
-        /// <param name="callback">Callback to run after each block or null (will be called from 0..100% for upload and download).</param>
-        /// <param name="proxy">The proxy.</param>
-        /// <param name="userItem">The user item.</param>
-        /// <returns>Returns the downloaded byte array.</returns>
-        public static byte[] Post(ConnectionString connectionString, IList<PostData> postData, ProgressCallback callback, ConnectionString? proxy = null, object userItem = null)
-        {
-            var connection = new HttpConnection();
-            if (proxy.HasValue)
-            {
-                connection.SetProxy(proxy.Value);
-            }
-
-            return connection.Post(connectionString, postData, callback, userItem);
-        }
-
-        #endregion Public Methods
-
-        #region private functionality
+        #region Private Methods
 
         HttpWebRequest CreateRequest(ConnectionString connectionString)
         {
             var target = connectionString.ToUri();
             HttpWebRequest request;
             request = (HttpWebRequest)WebRequest.Create(target);
-#if NETSTANDARD20
+#if NETSTANDARD2_0_OR_GREATER || NET5_0_OR_GREATER
             request.AllowReadStreamBuffering = false;
 #endif
 
@@ -271,7 +134,148 @@ namespace Cave.Net
             return request;
         }
 
-        #endregion private functionality
+        #endregion Private Methods
+
+        #region Public Constructors
+
+        /// <summary>Initializes a new instance of the <see cref="HttpConnection"/> class.</summary>
+        public HttpConnection() { }
+
+        #endregion Public Constructors
+
+        #region Public Properties
+
+        /// <summary>The accept string.</summary>
+        public string? Accept { get; set; }
+
+        /// <summary>Gets or sets the <see cref="RequestCachePolicy"/>.</summary>
+        public RequestCachePolicy? CachePolicy { get; set; } = HttpWebRequest.DefaultCachePolicy;
+
+        /// <summary>Gets or sets the <see cref="CookieContainer"/>.</summary>
+        public CookieContainer? Cookies { get; set; }
+
+        /// <summary>The headers to use.</summary>
+        public Dictionary<string, string> Headers { get; } = new();
+
+        /// <summary>Gets or sets a value indicating if caching shall be prevented using multiple measures.</summary>
+        /// <remarks>
+        /// This is setting <see cref="CachePolicy"/> to <see cref="HttpRequestCacheLevel.NoCacheNoStore"/>, <see cref="HttpRequestHeader.IfModifiedSince"/> and
+        /// Header[Pragma] = no-cache and Header[RequestId] = new guid.
+        /// </remarks>
+        public bool PreventCaching { get; set; }
+
+        /// <summary>Gets or sets the protocol version.</summary>
+        /// <value>The protocol version.</value>
+        public Version ProtocolVersion { get; set; } = new("1.1");
+
+        /// <summary>Gets or sets the proxy.</summary>
+        /// <value>The proxy.</value>
+        public IWebProxy? Proxy { get; set; }
+
+        /// <summary>Gets or sets the referer.</summary>
+        /// <value>The referer.</value>
+        public string? Referer { get; set; }
+
+        /// <summary>Download Timeout.</summary>
+        public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(5);
+
+        /// <summary>Gets or sets the user agent.</summary>
+        /// <value>The user agent.</value>
+        public string UserAgent { get; set; } = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)";
+
+        #endregion Public Properties
+
+        #region Public Methods
+
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <param name="stream">Stream to copy the received content to.</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <returns>Returns the number of bytes copied.</returns>
+        public static long Copy(ConnectionString connectionString, Stream stream, ConnectionString? proxy = null)
+        {
+            var connection = new HttpConnection();
+            if (proxy.HasValue)
+            {
+                connection.SetProxy(proxy.Value);
+            }
+
+            return connection.Download(connectionString, stream);
+        }
+
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <param name="stream">Stream to copy the received content to.</param>
+        /// <param name="callback">Callback to run after each block or null.</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <param name="userItem">The user item.</param>
+        /// <returns>Returns the number of bytes copied.</returns>
+        public static long Copy(ConnectionString connectionString, Stream stream, ProgressCallback callback, ConnectionString? proxy = null, object? userItem = null)
+        {
+            var connection = new HttpConnection();
+            if (proxy.HasValue)
+            {
+                connection.SetProxy(proxy.Value);
+            }
+
+            return connection.Download(connectionString, stream, callback, userItem);
+        }
+
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <returns>Returns the downloaded byte array.</returns>
+        public static byte[] Get(ConnectionString connectionString, ConnectionString? proxy = null)
+        {
+            var connection = new HttpConnection();
+            if (proxy.HasValue)
+            {
+                connection.SetProxy(proxy.Value);
+            }
+
+            return connection.Download(connectionString);
+        }
+
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <param name="callback">Callback to run after each block or null.</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <param name="userItem">The user item.</param>
+        /// <returns>Returns the downloaded byte array.</returns>
+        public static byte[] Get(ConnectionString connectionString, ProgressCallback callback, ConnectionString? proxy = null, object? userItem = null)
+        {
+            var connection = new HttpConnection();
+            if (proxy.HasValue)
+            {
+                connection.SetProxy(proxy.Value);
+            }
+
+            return connection.Download(connectionString, callback, userItem);
+        }
+
+        /// <summary>Directly obtains the data of the file represented by the specified connectionstring as string.</summary>
+        /// <param name="connectionString">The full connectionstring for the download.</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <returns>Returns downloaded data as string (utf8).</returns>
+        public static string GetString(ConnectionString connectionString, ConnectionString? proxy = null) => Encoding.UTF8.GetString(Get(connectionString, proxy));
+
+        /// <summary>Performs a post request ath the specified connectionstring.</summary>
+        /// <param name="connectionString">The full connectionstring for the post request.</param>
+        /// <param name="postData">Post data to send to the server.</param>
+        /// <param name="callback">Callback to run after each block or null (will be called from 0..100% for upload and download).</param>
+        /// <param name="proxy">The proxy.</param>
+        /// <param name="userItem">The user item.</param>
+        /// <returns>Returns the downloaded byte array.</returns>
+        public static byte[] Post(ConnectionString connectionString, IList<PostData> postData, ProgressCallback callback, ConnectionString? proxy = null, object? userItem = null)
+        {
+            var connection = new HttpConnection();
+            if (proxy.HasValue)
+            {
+                connection.SetProxy(proxy.Value);
+            }
+
+            return connection.Post(connectionString, postData, callback, userItem);
+        }
 
         /// <summary>Downloads a file.</summary>
         /// <param name="connectionString">The full connectionstring for the download.</param>
@@ -291,7 +295,7 @@ namespace Cave.Net
         /// <param name="callback">Callback to run after each block or null.</param>
         /// <param name="userItem">The user item.</param>
         /// <returns>Returns a byte array.</returns>
-        public byte[] Download(ConnectionString connectionString, ProgressCallback callback, object userItem = null)
+        public byte[] Download(ConnectionString connectionString, ProgressCallback callback, object? userItem = null)
         {
             var request = CreateRequest(connectionString);
             using var response = (HttpWebResponse)request.GetResponse();
@@ -321,30 +325,19 @@ namespace Cave.Net
         /// <param name="callback">Callback to run after each block or null.</param>
         /// <param name="userItem">The user item.</param>
         /// <returns>Returns the number of bytes downloaded.</returns>
-        public long Download(ConnectionString connectionString, Stream stream, ProgressCallback callback, object userItem = null)
+        public long Download(ConnectionString connectionString, Stream stream, ProgressCallback callback, object? userItem = null)
         {
-            HttpWebResponse response = null;
-            try
+            var request = CreateRequest(connectionString);
+            if (Proxy != null)
             {
-                var request = CreateRequest(connectionString);
-                if (Proxy != null)
-                {
-                    request.Proxy = Proxy;
-                }
+                request.Proxy = Proxy;
+            }
 
-                response = (HttpWebResponse)request.GetResponse();
-                var responseStream = response.GetResponseStream();
-                var size = responseStream.CopyBlocksTo(stream, response.ContentLength, callback, userItem);
-                responseStream.Close();
-                return size;
-            }
-            finally
-            {
-                if (response != null)
-                {
-                    response.Close();
-                }
-            }
+            using var response = (HttpWebResponse)request.GetResponse();
+            using var responseStream = response.GetResponseStream();
+            var size = responseStream.CopyBlocksTo(stream, response.ContentLength, callback, userItem);
+            responseStream.Close();
+            return size;
         }
 
         /// <summary>Performs a post request ath the specified connectionstring.</summary>
@@ -353,7 +346,7 @@ namespace Cave.Net
         /// <param name="callback">Callback to run after each block or null (will be called from 0..100% for upload and download).</param>
         /// <param name="userItem">The user item.</param>
         /// <returns>Returns the downloaded byte array.</returns>
-        public byte[] Post(ConnectionString connectionString, IList<PostData> postData, ProgressCallback callback = null, object userItem = null)
+        public byte[] Post(ConnectionString connectionString, IList<PostData> postData, ProgressCallback? callback = null, object? userItem = null)
         {
             var boundary = $"---boundary-{Base64.UrlChars.Encode(DateTime.Now.Ticks)}";
             var request = CreateRequest(connectionString);
@@ -382,6 +375,8 @@ namespace Cave.Net
 
         /// <summary>Sets the proxy.</summary>
         /// <param name="proxy">The proxy.</param>
-        public void SetProxy(ConnectionString proxy) => Proxy = new WebProxy(proxy.ToString(ConnectionStringPart.Server), true, new[] { "localhost" }, new NetworkCredential(proxy.UserName, proxy.Password));
+        public void SetProxy(ConnectionString proxy) => Proxy = new WebProxy(proxy.ToString(ConnectionStringPart.Server), true, BypassProxyList, new NetworkCredential(proxy.UserName, proxy.Password));
+
+        #endregion Public Methods
     }
 }

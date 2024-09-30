@@ -11,95 +11,150 @@ namespace Cave.Mail;
 /// <summary>Provides en-/decoding routines for rfc2047 encoded strings.</summary>
 public static class Rfc2047
 {
-    /// <summary>Obtains whether the specified string is rfc2047 encoded.</summary>
+    #region Private Methods
+
+    /// <summary>Decodes a rfc2047 string with correct start and end marks. If a header line needs to be decoded can be tested with <see cref="IsEncodedString"/>.</summary>
     /// <param name="data">TransferEncoded ascii data.</param>
     /// <returns></returns>
-    public static bool IsEncodedString(string data)
+    static string DecodeInternal(string data)
     {
-        if (data == null)
+        if (IsEncodedString(data))
         {
-            throw new ArgumentNullException(nameof(data));
-        }
-
-        return !data.Contains(' ') && data.StartsWith("=?") && data.EndsWith("?=");
-    }
-
-    /// <summary>
-    /// Encodes a text to quoted printable 7bit ascii data. The data is not split into parts of the correct length. The caller has to do
-    /// this manually by inserting '=' + LF at the approprioate positions.
-    /// </summary>
-    /// <param name="encoding">The binary encoding to use.</param>
-    /// <param name="text">The text to encode.</param>
-    /// <returns></returns>
-    public static byte[] EncodeQuotedPrintable(Encoding encoding, string text)
-    {
-        if (encoding == null)
-        {
-            throw new ArgumentNullException(nameof(encoding));
-        }
-
-        if (text == null)
-        {
-            throw new ArgumentNullException(nameof(text));
-        }
-
-        var result = new List<byte>();
-        foreach (var ch in encoding.GetBytes(text))
-        {
-            if (ch is > 32 and < 128)
+            var encoded = data.Substring(2, data.Length - 4);
+            var parts = new string[3];
+            var part = 0;
+            var start = 0;
+            for (var i = 0; i < encoded.Length; i++)
             {
-                result.Add(ch);
-                continue;
+                if (encoded[i] == '?')
+                {
+                    parts[part++] = encoded.Substring(start, i - start);
+                    start = ++i;
+                    if (part == 2)
+                    {
+                        break;
+                    }
+                }
             }
-            switch (ch)
+            parts[2] = encoded.Substring(start, encoded.Length - start);
+            //load default encoding used as fallback
+            var encoding = Encoding.GetEncoding(1252);
+            //try to get encoding by webname, many non standard email services use whatever they want as encoding string
+            try { encoding = Encoding.GetEncoding(parts[0].UnboxText(false)); }
+            catch
             {
-                case (byte)' ':
-                    result.Add((byte)'_');
-                    continue;
-                case (byte)'_':
-                case (byte)'=':
-                case (byte)'?':
-                default:
-                    result.Add((byte)'=');
-                    var hex = ch.ToString("X2");
-                    result.Add((byte)hex[0]);
-                    result.Add((byte)hex[1]);
-                    continue;
+                //.. so we get in one of 10 emails no valid encoding here. maybe they used the codepage prefixed or suffixed with a string:
+                try { encoding = Encoding.GetEncoding(int.Parse(parts[0].GetValidChars(ASCII.Strings.Digits))); }
+                catch
+                {
+                    /* no they didn't, so we use the default and hope the best... */
+                }
+            }
+            try
+            {
+                return parts[1].ToUpperInvariant() switch
+                {
+                    "B" => encoding.GetString(Convert.FromBase64String(parts[2])),
+                    "Q" => DecodeQuotedPrintable(encoding, parts[2]),
+                    _ => throw new InvalidDataException(string.Format("Unknown encoding '{0}'!", parts[1]))
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidDataException("Invalid data encountered!", ex);
             }
         }
-        return result.ToArray();
+        return data;
     }
 
-    /// <summary>Encodes text without start and end marks.</summary>
-    /// <param name="transferEncoding">The transfer encoding to use.</param>
-    /// <param name="encoding">The binary encoding to use.</param>
-    /// <param name="text">The text to encode.</param>
-    /// <returns></returns>
-    public static byte[] EncodeText(TransferEncoding transferEncoding, Encoding encoding, string text)
+    static int IndexOfEndMark(string text, int start)
     {
-        if (encoding == null)
+        if (start < 0)
         {
-            throw new ArgumentNullException(nameof(encoding));
+            return -1;
         }
 
-        switch (transferEncoding)
+        var markers = 4;
+        for (var i = start; i < text.Length; i++)
         {
-            case TransferEncoding.SevenBit:
-                return ASCII.GetBytes(text);
-            case TransferEncoding.Base64:
-                var bytes = encoding.GetBytes(text);
-                return ASCII.GetBytes(Base64.NoPadding.Encode(bytes));
-            case TransferEncoding.QuotedPrintable:
-                return EncodeQuotedPrintable(encoding, text);
-            default:
-                throw new InvalidDataException(string.Format("The specified encoding '{0}' is not valid for text!", transferEncoding.ToString()));
+            if (text[i] == '?')
+            {
+                if (--markers == 0)
+                {
+                    return i;
+                }
+            }
         }
+        return -1;
     }
+
+    #endregion Private Methods
+
+    #region Public Constructors
+
+    static Rfc2047() => DefaultEncoding = Encoding.GetEncoding(1252);
+
+    #endregion Public Constructors
+
+    #region Public Properties
 
     /// <summary>Provides the default encoding of email content / header lines in quoted printable format.</summary>
     public static Encoding DefaultEncoding { get; private set; }
 
-    /// <summary>Decodes a <see cref="MailAddress" />.</summary>
+    #endregion Public Properties
+
+    #region Public Methods
+
+    /// <summary>Decodes a rfc2047 string with correct start and end marks. If a header line needs to be decoded can be tested with <see cref="IsEncodedString"/>.</summary>
+    /// <param name="data">TransferEncoded ascii data.</param>
+    /// <returns></returns>
+    public static string Decode(byte[] data) => Decode(ASCII.GetString(data));
+
+    /// <summary>Decodes multiple <see cref="MailAddress"/> es.</summary>
+    /// <param name="data">TransferEncoded ascii data.</param>
+    /// <returns></returns>
+    public static string Decode(string data)
+    {
+        if (data is null)
+        {
+            return string.Empty;
+        }
+
+        var start = data.IndexOf("=?");
+        var end = IndexOfEndMark(data, start);
+        if (start >= end)
+        {
+            return data;
+        }
+
+        var result = new StringBuilder(data.Length);
+        var pos = 0;
+        int size;
+        while ((start > -1) && (start < end))
+        {
+            //copy text without decoding ?
+            size = start - pos;
+            if (size > 0)
+            {
+                result.Append(data.Substring(pos, size));
+            }
+            //decode
+            size = (end - start) + 2;
+            result.Append(DecodeInternal(data.Substring(start, size)));
+            pos = end + 2;
+            start = data.IndexOf("=?", pos);
+            end = IndexOfEndMark(data, start);
+        }
+        size = data.Length - pos;
+        if (size > 0)
+        {
+            result.Append(data.Substring(pos, size));
+        }
+
+        return result.ToString();
+    }
+
+    /// <summary>Decodes a <see cref="MailAddress"/>.</summary>
     /// <param name="data"></param>
     /// <returns></returns>
     public static MailAddress DecodeMailAddress(string data)
@@ -120,28 +175,13 @@ public static class Rfc2047
         return new(GetRandomPrintableString(20) + "@" + NetTools.HostName, cleanString);
     }
 
-    /// <summary>Obtains a random printable string of the specified length.</summary>
-    /// <param name="count"></param>
-    /// <returns></returns>
-    public static string GetRandomPrintableString(int count)
-    {
-        var random = new Random();
-        var buffer = new char[count];
-        for (var i = 0; i < count; i++)
-        {
-            buffer[i] = (char)random.Next(33, 127);
-        }
-
-        return new(buffer);
-    }
-
-    /// <summary>Decodes quoted printable 7bit ascii data to the specified <see cref="Encoding" />.</summary>
+    /// <summary>Decodes quoted printable 7bit ascii data to the specified <see cref="Encoding"/>.</summary>
     /// <param name="encoding">The binary encoding to use.</param>
     /// <param name="data">TransferEncoded ascii data.</param>
     /// <returns></returns>
     public static string DecodeQuotedPrintable(Encoding encoding, byte[] data) => DecodeQuotedPrintable(encoding, ASCII.GetString(data));
 
-    /// <summary>Decodes quoted printable 7bit ascii data to the specified <see cref="Encoding" />.</summary>
+    /// <summary>Decodes quoted printable 7bit ascii data to the specified <see cref="Encoding"/>.</summary>
     /// <param name="encoding">The binary encoding to use.</param>
     /// <param name="data">TransferEncoded ascii data.</param>
     /// <returns></returns>
@@ -202,7 +242,7 @@ public static class Rfc2047
         return encoding.GetString(result.ToArray());
     }
 
-    /// <summary>Decodes ascii 7bit data using the specified <see cref="TransferEncoding" />.</summary>
+    /// <summary>Decodes ascii 7bit data using the specified <see cref="TransferEncoding"/>.</summary>
     /// <param name="transferEncoding">The transfer encoding to use.</param>
     /// <param name="encoding">The binary encoding to use.</param>
     /// <param name="data">TransferEncoded ascii data.</param>
@@ -228,7 +268,7 @@ public static class Rfc2047
         };
     }
 
-    /// <summary>Decodes ascii 7bit data using the specified <see cref="TransferEncoding" />.</summary>
+    /// <summary>Decodes ascii 7bit data using the specified <see cref="TransferEncoding"/>.</summary>
     /// <param name="transferEncoding">The transfer encoding to use.</param>
     /// <param name="encoding">The binary encoding to use.</param>
     /// <param name="data">TransferEncoded ascii data.</param>
@@ -248,59 +288,7 @@ public static class Rfc2047
         return DecodeText(transferEncoding, encoding, ASCII.GetString(data));
     }
 
-    /// <summary>
-    /// Decodes a rfc2047 string with correct start and end marks. If a header line needs to be decoded can be tested with
-    /// <see cref="IsEncodedString" />.
-    /// </summary>
-    /// <param name="data">TransferEncoded ascii data.</param>
-    /// <returns></returns>
-    public static string Decode(byte[] data) => Decode(ASCII.GetString(data));
-
-    /// <summary>Decodes multiple <see cref="MailAddress" />es.</summary>
-    /// <param name="data">TransferEncoded ascii data.</param>
-    /// <returns></returns>
-    public static string Decode(string data)
-    {
-        if (data == null)
-        {
-            return null;
-        }
-
-        var start = data.IndexOf("=?");
-        var end = IndexOfEndMark(data, start);
-        if (start >= end)
-        {
-            return data;
-        }
-
-        var result = new StringBuilder(data.Length);
-        var pos = 0;
-        int size;
-        while ((start > -1) && (start < end))
-        {
-            //copy text without decoding ?
-            size = start - pos;
-            if (size > 0)
-            {
-                result.Append(data.Substring(pos, size));
-            }
-            //decode
-            size = (end - start) + 2;
-            result.Append(DecodeInternal(data.Substring(start, size)));
-            pos = end + 2;
-            start = data.IndexOf("=?", pos);
-            end = IndexOfEndMark(data, start);
-        }
-        size = data.Length - pos;
-        if (size > 0)
-        {
-            result.Append(data.Substring(pos, size));
-        }
-
-        return result.ToString();
-    }
-
-    /// <summary>Encodes a string to a valid rfc2047 string with the specified <see cref="TransferEncoding" />.</summary>
+    /// <summary>Encodes a string to a valid rfc2047 string with the specified <see cref="TransferEncoding"/>.</summary>
     /// <param name="transferEncoding">The transfer encoding to use.</param>
     /// <param name="encoding">The binary encoding to use.</param>
     /// <param name="text">The string to encode.</param>
@@ -320,7 +308,7 @@ public static class Rfc2047
         };
     }
 
-    /// <summary>Encodes a <see cref="MailAddress" />.</summary>
+    /// <summary>Encodes a <see cref="MailAddress"/>.</summary>
     /// <param name="transferEncoding">The transfer encoding to use.</param>
     /// <param name="encoding">The binary encoding to use.</param>
     /// <param name="address">The address to encode.</param>
@@ -344,83 +332,108 @@ public static class Rfc2047
         return "\"" + Encode(transferEncoding, encoding, address.DisplayName) + "\" <" + address.Address + ">";
     }
 
-    static int IndexOfEndMark(string text, int start)
+    /// <summary>
+    /// Encodes a text to quoted printable 7bit ascii data. The data is not split into parts of the correct length. The caller has to do this manually by
+    /// inserting '=' + LF at the approprioate positions.
+    /// </summary>
+    /// <param name="encoding">The binary encoding to use.</param>
+    /// <param name="text">The text to encode.</param>
+    /// <returns></returns>
+    public static byte[] EncodeQuotedPrintable(Encoding encoding, string text)
     {
-        if (start < 0)
+        if (encoding == null)
         {
-            return -1;
+            throw new ArgumentNullException(nameof(encoding));
         }
 
-        var markers = 4;
-        for (var i = start; i < text.Length; i++)
+        if (text == null)
         {
-            if (text[i] == '?')
+            throw new ArgumentNullException(nameof(text));
+        }
+
+        var result = new List<byte>();
+        foreach (var ch in encoding.GetBytes(text))
+        {
+            if (ch is > 32 and < 128)
             {
-                if (--markers == 0)
-                {
-                    return i;
-                }
+                result.Add(ch);
+                continue;
+            }
+            switch (ch)
+            {
+                case (byte)' ':
+                    result.Add((byte)'_');
+                    continue;
+                case (byte)'_':
+                case (byte)'=':
+                case (byte)'?':
+                default:
+                    result.Add((byte)'=');
+                    var hex = ch.ToString("X2");
+                    result.Add((byte)hex[0]);
+                    result.Add((byte)hex[1]);
+                    continue;
             }
         }
-        return -1;
+        return [.. result];
     }
 
-    /// <summary>
-    /// Decodes a rfc2047 string with correct start and end marks. If a header line needs to be decoded can be tested with
-    /// <see cref="IsEncodedString" />.
-    /// </summary>
+    /// <summary>Encodes text without start and end marks.</summary>
+    /// <param name="transferEncoding">The transfer encoding to use.</param>
+    /// <param name="encoding">The binary encoding to use.</param>
+    /// <param name="text">The text to encode.</param>
+    /// <returns></returns>
+    public static byte[] EncodeText(TransferEncoding transferEncoding, Encoding encoding, string text)
+    {
+        if (encoding == null)
+        {
+            throw new ArgumentNullException(nameof(encoding));
+        }
+
+        switch (transferEncoding)
+        {
+            case TransferEncoding.SevenBit:
+                return ASCII.GetBytes(text);
+
+            case TransferEncoding.Base64:
+                var bytes = encoding.GetBytes(text);
+                return ASCII.GetBytes(Base64.NoPadding.Encode(bytes));
+
+            case TransferEncoding.QuotedPrintable:
+                return EncodeQuotedPrintable(encoding, text);
+
+            default:
+                throw new InvalidDataException(string.Format("The specified encoding '{0}' is not valid for text!", transferEncoding.ToString()));
+        }
+    }
+
+    /// <summary>Obtains a random printable string of the specified length.</summary>
+    /// <param name="count"></param>
+    /// <returns></returns>
+    public static string GetRandomPrintableString(int count)
+    {
+        var random = new Random();
+        var buffer = new char[count];
+        for (var i = 0; i < count; i++)
+        {
+            buffer[i] = (char)random.Next(33, 127);
+        }
+
+        return new(buffer);
+    }
+
+    /// <summary>Obtains whether the specified string is rfc2047 encoded.</summary>
     /// <param name="data">TransferEncoded ascii data.</param>
     /// <returns></returns>
-    static string DecodeInternal(string data)
+    public static bool IsEncodedString(string data)
     {
-        if (IsEncodedString(data))
+        if (data == null)
         {
-            var encoded = data.Substring(2, data.Length - 4);
-            var parts = new string[3];
-            var part = 0;
-            var start = 0;
-            for (var i = 0; i < encoded.Length; i++)
-            {
-                if (encoded[i] == '?')
-                {
-                    parts[part++] = encoded.Substring(start, i - start);
-                    start = ++i;
-                    if (part == 2)
-                    {
-                        break;
-                    }
-                }
-            }
-            parts[2] = encoded.Substring(start, encoded.Length - start);
-            //load default encoding used as fallback
-            var encoding = Encoding.GetEncoding(1252);
-            //try to get encoding by webname, many non standard email services use whatever they want as encoding string
-            try { encoding = Encoding.GetEncoding(parts[0].UnboxText(false)); }
-            catch
-            {
-                //.. so we get in one of 10 emails no valid encoding here. maybe they used the codepage prefixed or suffixed with a string:
-                try { encoding = Encoding.GetEncoding(int.Parse(parts[0].GetValidChars(ASCII.Strings.Digits))); }
-                catch
-                {
-                    /* no they didn't, so we use the default and hope the best... */
-                }
-            }
-            try
-            {
-                return parts[1].ToUpperInvariant() switch
-                {
-                    "B" => encoding.GetString(Convert.FromBase64String(parts[2])),
-                    "Q" => DecodeQuotedPrintable(encoding, parts[2]),
-                    _ => throw new InvalidDataException(string.Format("Unknown encoding '{0}'!", parts[1]))
-                };
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidDataException("Invalid data encountered!", ex);
-            }
+            throw new ArgumentNullException(nameof(data));
         }
-        return data;
+
+        return !data.Contains(' ') && data.StartsWith("=?") && data.EndsWith("?=");
     }
 
-    static Rfc2047() => DefaultEncoding = Encoding.GetEncoding(1252);
+    #endregion Public Methods
 }

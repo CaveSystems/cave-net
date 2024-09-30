@@ -14,7 +14,7 @@ pool:
   vmImage: 'windows-latest'
 
 variables:
-  fixedBuildVersion: '3.0'
+  fixedBuildVersion: '4.0'
   solution: '**/*.sln'
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
@@ -34,10 +34,6 @@ steps:
       $fixedVersion = [Version]"$(fixedBuildVersion)"
       $gitTag = "$(git describe --tags --always)".Trim().TrimStart('v')
       # possible return values: 'hash' (no tags), 'tag-hash' (old tag), 'tag' (if commit == tag)
-      if (!$gitTag.Contains('.'))
-      {
-        $gitTag = "$(git describe --tags $(git rev-list --tags --max-count=1))-$env:BUILD_SOURCEBRANCHNAME".Trim().TrimStart('v')
-      }
       if (!$gitTag.Contains('.'))
       {
         echo "no tag set yet!"
@@ -82,31 +78,10 @@ steps:
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
 - task: UseDotNet@2
-  displayName: 'Install .NET sdk 7'
-  inputs:
-    packageType: sdk
-    version: 7.x
-    installationPath: $(Agent.ToolsDirectory)/dotnet
-
-- task: UseDotNet@2
   displayName: 'Install .NET sdk 6'
   inputs:
     packageType: sdk
     version: 6.x
-    installationPath: $(Agent.ToolsDirectory)/dotnet
-
-- task: UseDotNet@2
-  displayName: 'Install .NET sdk 5'
-  inputs:
-    packageType: sdk
-    version: 5.x
-    installationPath: $(Agent.ToolsDirectory)/dotnet
-    
-- task: UseDotNet@2
-  displayName: 'Install .NET Core sdk 3.1'
-  inputs:
-    packageType: sdk
-    version: 3.1.x
     installationPath: $(Agent.ToolsDirectory)/dotnet
 
 - task: NuGetCommand@2
@@ -121,17 +96,6 @@ steps:
     solution: '$(solution)'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
-
-- task: VSTest@2
-  displayName: Test netcore
-  inputs:
-    runSettingsFile: 'Tests.RunSettings'
-    runInParallel: false
-    platform: '$(buildPlatform)'
-    configuration: '$(buildConfiguration)'
-    codeCoverageEnabled: true
-    testAssemblyVer2: |
-      **/bin/$(buildConfiguration)/netcoreapp*/Test.dll
 
 - task: VSTest@2
   displayName: Test net5+

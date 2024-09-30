@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using Cave.Net.Dns;
 
 namespace Cave.Net;
 
@@ -12,7 +13,7 @@ public static class NetTools
 {
     #region Private Fields
 
-    static string myHostName;
+    static string? myHostName;
 
     #endregion Private Fields
 
@@ -40,7 +41,7 @@ public static class NetTools
     /// <summary>Obtains the fqdn (hostname) of the system.</summary>
     static string GetHostName()
     {
-        string hostName = null;
+        string? hostName = null;
         {
             try
             {
@@ -85,7 +86,7 @@ public static class NetTools
             hostName = "localhost";
         }
 
-        string domainName = null;
+        string? domainName = null;
         {
             try
             {
@@ -137,7 +138,7 @@ public static class NetTools
     /// <returns>Returns the first matching ip address.</returns>
     public static IPAddress GetAddress(string hostName, AddressFamily addressFamily)
     {
-        foreach (var address in System.Net.Dns.GetHostAddresses(hostName))
+        foreach (var address in DnsClient.Default.GetHostAddresses(hostName))
         {
             if (address.AddressFamily == addressFamily)
             {
@@ -154,14 +155,14 @@ public static class NetTools
     public static IPAddress[] GetAddresses(string hostName, AddressFamily addressFamily)
     {
         var addresses = new List<IPAddress>();
-        foreach (var address in System.Net.Dns.GetHostAddresses(hostName))
+        foreach (var address in DnsClient.Default.GetHostAddresses(hostName))
         {
             if (address.AddressFamily == addressFamily)
             {
                 addresses.Add(address);
             }
         }
-        return addresses.ToArray();
+        return [.. addresses];
     }
 
     /// <summary>Tries to find a free tcp port.</summary>
@@ -212,10 +213,7 @@ public static class NetTools
     /// <returns>Returns an array of <see cref="IPEndPoint"/> s.</returns>
     public static IPEndPoint[] GetIPEndPoints(string text, int defaultPort)
     {
-        if (string.IsNullOrEmpty(text))
-        {
-            return null;
-        }
+        if (string.IsNullOrEmpty(text)) return [];
 
         var port = defaultPort;
         var portIndex = text.LastIndexOf(':');
@@ -230,24 +228,24 @@ public static class NetTools
 
         if ((text == string.Empty) || (text == "any"))
         {
-            return new IPEndPoint[]
-            {
+            return
+            [
                 new(IPAddress.Any, port),
                 new(IPAddress.IPv6Any, port)
-            };
+            ];
         }
 
         if (IPAddress.TryParse(text, out var a))
         {
-            return new IPEndPoint[] { new(a, port) };
+            return [new(a, port)];
         }
 
         var result = new List<IPEndPoint>();
-        foreach (var address in System.Net.Dns.GetHostEntry(text).AddressList)
+        foreach (var address in DnsClient.Default.GetHostAddresses(text))
         {
             result.Add(new(address, port));
         }
-        return result.ToArray();
+        return [.. result];
     }
 
     /// <summary>Retrieves all local addresses.</summary>
@@ -269,7 +267,7 @@ public static class NetTools
                 result.Add(ip);
             }
         }
-        return result.ToArray();
+        return [.. result];
     }
 
     /// <summary>Retrieves local addresses with the specified addresfamily.</summary>
@@ -278,14 +276,14 @@ public static class NetTools
     public static IPAddress[] GetLocalAddresses(AddressFamily addressFamily)
     {
         var result = new List<IPAddress>();
-        foreach (var addr in System.Net.Dns.GetHostAddresses(System.Net.Dns.GetHostName()))
+        foreach (var addr in DnsClient.Default.GetHostAddresses(NetTools.HostName))
         {
             if (addr.AddressFamily == addressFamily)
             {
                 result.Add(addr);
             }
         }
-        return result.ToArray();
+        return [.. result];
     }
 
     /// <summary>Determines whether the specified address is localhost.</summary>

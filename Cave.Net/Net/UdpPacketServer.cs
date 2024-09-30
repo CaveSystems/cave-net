@@ -6,29 +6,13 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Cave.IO;
+using Cave.Net.Dns;
 
 namespace Cave.Net;
 
-/// <summary>Provides a udp server using <see cref="UdpPacket" /> client server communication.</summary>
+/// <summary>Provides a udp server using <see cref="UdpPacket"/> client server communication.</summary>
 public class UdpPacketServer
 {
-    #region Public Fields
-
-    /// <summary>Obtains the number of bytes a package may contain maximally until it may get fragmented.</summary>
-    public const int MaximumPayloadSize = 576 - 40 - 8;
-
-    #endregion Public Fields
-
-    #region Public Properties
-
-    /// <summary>
-    /// Gets or sets the timeout <see cref="TimeSpan" />. Connections without any activity for the specified timeout
-    /// <see cref="TimeSpan" /> will be considered dead.
-    /// </summary>
-    public TimeSpan Timeout { get; set; }
-
-    #endregion Public Properties
-
     #region Private Fields
 
     readonly Dictionary<IPEndPoint, UdpPacketClient> clients = new();
@@ -41,28 +25,28 @@ public class UdpPacketServer
 
     #region Private Methods
 
-    void ListenThread_ReadPackets(object socketObject)
+    void ListenThread_ReadPackets(object? socketObject)
     {
-        var socket = (Socket)socketObject;
+        var socket = (socketObject as Socket) ?? throw new InvalidOperationException("Could not cast socket object!");
         Thread.CurrentThread.IsBackground = true;
         while (!closed)
         {
+            EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
             try
             {
                 var packet = new UdpPacket
                 {
-                    LocalEndPoint = (IPEndPoint)socket.LocalEndPoint
+                    LocalEndPoint = (socket.LocalEndPoint as IPEndPoint) ?? throw new InvalidCastException("Could not cast socket endpoint!")
                 };
-                EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
                 var bufferSize = socket.Available > 0 ? socket.Available : MaximumPayloadSize;
                 packet.Data = new byte[bufferSize];
                 packet.Size = (ushort)socket.ReceiveFrom(packet.Data, ref remoteEndPoint);
                 packet.RemoteEndPoint = (IPEndPoint)remoteEndPoint;
-                Task.Factory.StartNew(p => NewPacket((UdpPacket)p, socket), packet);
+                Task.Factory.StartNew(p => NewPacket((UdpPacket)p!, socket), packet);
             }
             catch (Exception ex)
             {
-                OnException(ex);
+                OnException((IPEndPoint)remoteEndPoint, ex);
             }
         }
         socket.Close();
@@ -95,7 +79,7 @@ public class UdpPacketServer
             }
             catch (Exception ex)
             {
-                OnException(ex);
+                OnException(packet.RemoteEndPoint, ex);
             }
         }
 
@@ -106,7 +90,7 @@ public class UdpPacketServer
         }
         catch (Exception ex)
         {
-            OnException(ex);
+            OnException(packet.RemoteEndPoint, ex);
         }
     }
 
@@ -142,7 +126,7 @@ public class UdpPacketServer
                     }
                     catch (Exception ex)
                     {
-                        OnException(ex);
+                        OnException(new IPEndPoint(client.Address, client.Port), ex);
                     }
                 }
             }
@@ -155,18 +139,16 @@ public class UdpPacketServer
 
     #endregion Private Methods
 
-    #region Eventhandling
+    #region Protected Methods
 
-    /// <summary>
-    /// Will be called whenever an exception occurs in an background thread. If you override this function do not forget to call the base
-    /// method.
-    /// </summary>
+    /// <summary>Will be called whenever an exception occurs in an background thread. If you override this function do not forget to call the base method.</summary>
+    /// <param name="remoteEndPoint">Remote endpoint.</param>
     /// <param name="ex">Exception.</param>
-    protected virtual void OnException(Exception ex)
+    protected virtual void OnException(IPEndPoint remoteEndPoint, Exception ex)
     {
         try
         {
-            ExceptionEvent?.Invoke(this, new(ex));
+            Error?.Invoke(this, new(remoteEndPoint, ex));
         }
         catch
         {
@@ -180,11 +162,11 @@ public class UdpPacketServer
     {
         try
         {
-            NewConnectionEvent?.Invoke(this, new(remoteEndPoint));
+            Connected?.Invoke(this, new(remoteEndPoint));
         }
         catch (Exception ex)
         {
-            OnException(ex);
+            OnException(remoteEndPoint, ex);
         }
     }
 
@@ -194,18 +176,15 @@ public class UdpPacketServer
     {
         try
         {
-            PacketIncomingEvent?.Invoke(this, new(packet));
+            PacketReceived?.Invoke(this, new(packet));
         }
         catch (Exception ex)
         {
-            OnException(ex);
+            OnException(packet.RemoteEndPoint, ex);
         }
     }
 
-    /// <summary>
-    /// Will be called whenever a timeout occured in a background thread. If you override this function do not forget to call the base
-    /// method.
-    /// </summary>
+    /// <summary>Will be called whenever a timeout occured in a background thread. If you override this function do not forget to call the base method.</summary>
     /// <param name="remoteEndPoint">Remote endpoint.</param>
     protected virtual void OnTimeout(IPEndPoint remoteEndPoint)
     {
@@ -215,72 +194,96 @@ public class UdpPacketServer
         }
         catch (Exception ex)
         {
-            OnException(ex);
+            OnException(remoteEndPoint, ex);
         }
     }
 
-    /// <summary>Provides an event for retrieving the exceptions that occure during send / receive</summary>
-    public event EventHandler<ExceptionEventArgs> ExceptionEvent;
+    #endregion Protected Methods
 
-    /// <summary>Provides new connection events</summary>
-    public event EventHandler<IPEndPointEventArgs> NewConnectionEvent;
+    #region Public Fields
 
-    /// <summary>Provides packet incoming events</summary>
-    public event EventHandler<UdpPacketEventArgs> PacketIncomingEvent;
+    /// <summary>Obtains the number of bytes a package may contain maximally until it may get fragmented.</summary>
+    public const int MaximumPayloadSize = 576 - 40 - 8;
 
-    /// <summary>Provides timeout events</summary>
-    public event EventHandler<IPEndPointEventArgs> TimeoutEvent;
+    #endregion Public Fields
 
-    #endregion Eventhandling
+    #region Public Constructors
 
-    #region IPacketServer Member
-
-    /// <summary>Initializes a new instance of the <see cref="UdpPacketServer" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="UdpPacketServer"/> class.</summary>
     public UdpPacketServer() => new Thread(TimeoutCheckThread).Start();
 
-    /// <summary>Gets a list of all clients seen active within <see cref="Timeout" />.</summary>
+    #endregion Public Constructors
+
+    #region Public Events
+
+    /// <summary>Event to be called after the connection was established</summary>
+    public event EventHandler<RemoteEndPointEventArgs>? Connected;
+
+    /// <summary>Event to be called after an error was encountered</summary>
+    public event EventHandler<RemoteEndPointExceptionEventArgs>? Error;
+
+    /// <summary>Event to be called on received packets</summary>
+    public event EventHandler<UdpPacketEventArgs>? PacketReceived;
+
+    /// <summary>Provides timeout events</summary>
+    public event EventHandler<RemoteEndPointEventArgs>? TimeoutEvent;
+
+    #endregion Public Events
+
+    #region Public Properties
+
+    /// <summary>Gets a list of all clients seen active within <see cref="Timeout"/>.</summary>
     public UdpPacketClient[] Clients
     {
         get
         {
             lock (clients)
             {
-                return clients.Values.ToArray();
+                return [.. clients.Values];
             }
         }
     }
 
-    /// <summary>Gets the local <see cref="IPEndPoint" /> s currently connected.</summary>
-    public IPEndPoint[] LocalEndPoints
+    /// <summary>Gets the local <see cref="IPEndPoint"/> s currently connected.</summary>
+    public IList<IPEndPoint> LocalEndPoints
     {
         get
         {
-            IPEndPoint[] result;
+            var result = new List<IPEndPoint>();
             lock (sockets)
             {
-                result = new IPEndPoint[sockets.Count];
-                for (var i = 0; i < result.Length; i++)
+                foreach (var socket in sockets)
                 {
-                    result[i] = (IPEndPoint)sockets[i].LocalEndPoint;
+                    var ep = socket.LocalEndPoint as IPEndPoint;
+                    if (ep != null) result.Add(ep);
                 }
             }
             return result;
         }
     }
 
-    /// <summary>Gets the remote <see cref="IPEndPoint" /> s currently connected.</summary>
-    public IPEndPoint[] RemoteEndPoints
+    /// <summary>Gets the remote <see cref="IPEndPoint"/> s currently connected.</summary>
+    public IList<IPEndPoint> RemoteEndPoints
     {
         get
         {
             lock (clients)
             {
-                return clients.Keys.ToArray();
+                return [.. clients.Keys];
             }
         }
     }
 
-    /// <summary>Closes the <see cref="UdpPacketServer" />.</summary>
+    /// <summary>
+    /// Gets or sets the timeout <see cref="TimeSpan"/>. Connections without any activity for the specified timeout <see cref="TimeSpan"/> will be considered dead.
+    /// </summary>
+    public TimeSpan Timeout { get; set; }
+
+    #endregion Public Properties
+
+    #region Public Methods
+
+    /// <summary>Closes the <see cref="UdpPacketServer"/>.</summary>
     public virtual void Close()
     {
         // do not try to close multiple times
@@ -292,7 +295,7 @@ public class UdpPacketServer
         closed = true;
     }
 
-    /// <summary>Starts listening at the specified <see cref="IPEndPoint" />.</summary>
+    /// <summary>Starts listening at the specified <see cref="IPEndPoint"/>.</summary>
     /// <param name="ipEndPoint">Ip endpoint to listen at.</param>
     public void Listen(EndPoint ipEndPoint)
     {
@@ -317,7 +320,7 @@ public class UdpPacketServer
     /// <param name="port">Port to listen at.</param>
     public void Listen(string hostName, int port)
     {
-        foreach (var address in System.Net.Dns.GetHostAddresses(hostName))
+        foreach (var address in DnsClient.Default.GetHostAddresses(hostName))
         {
             Listen(address, port);
         }
@@ -396,5 +399,5 @@ public class UdpPacketServer
     /// <returns>A string that represents the current object.</returns>
     public override string ToString() => string.Format("UcpPacketServer<{0}>", LocalEndPoints.Join(","));
 
-    #endregion IPacketServer Member
+    #endregion Public Methods
 }

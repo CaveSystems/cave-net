@@ -17,6 +17,8 @@ namespace Test.Tcp
     [TestFixture]
     public class TcpServerTest2
     {
+        public TcpServerTest2() => ThreadPool.SetMinThreads(100, 100);
+
         #region Private Methods
 
         static IPAddress[] GetMyAddresses(bool includeLoopback)

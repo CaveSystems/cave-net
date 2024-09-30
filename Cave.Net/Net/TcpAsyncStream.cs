@@ -6,7 +6,7 @@ using Cave.IO;
 
 namespace Cave.Net;
 
-/// <summary>Provides a stream implementation for <see cref="TcpAsyncClient" />.</summary>
+/// <summary>Provides a stream implementation for <see cref="TcpAsyncClient"/>.</summary>
 /// <remarks>All functions of this class are threadsafe.</remarks>
 public class TcpAsyncStream : Stream
 {
@@ -20,7 +20,7 @@ public class TcpAsyncStream : Stream
 
     #region Private Methods
 
-    void AsyncSendNext(object unused)
+    void AsyncSendNext(object? unused)
     {
         try
         {
@@ -35,10 +35,8 @@ public class TcpAsyncStream : Stream
                 }
 
                 buffer = sendBuffer.Dequeue(sendBuffer.Length);
+                client.SendAsync(buffer, QueueNext);
             }
-
-            void QueueNext() => ThreadPool.QueueUserWorkItem(AsyncSendNext);
-            client.SendAsync(buffer, QueueNext);
         }
         catch (Exception ex)
         {
@@ -52,11 +50,13 @@ public class TcpAsyncStream : Stream
         }
     }
 
+    void QueueNext() => ThreadPool.QueueUserWorkItem(AsyncSendNext);
+
     #endregion Private Methods
 
     #region Public Constructors
 
-    /// <summary>Initializes a new instance of the <see cref="TcpAsyncStream" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="TcpAsyncStream"/> class.</summary>
     /// <param name="client">Client to be used by this stream.</param>
     public TcpAsyncStream(TcpAsyncClient client) => this.client = client;
 
@@ -87,13 +87,13 @@ public class TcpAsyncStream : Stream
     public override bool CanWrite => true;
 
     /// <summary>
-    /// Gets or sets a value indicating whether the stream use direct writes on the clients socket for each call to
-    /// <see cref="Write(byte[], int, int)" />. Default is false buffering all writes. You need to set this to true if you use the clients
-    /// <see cref="TcpAsyncClient.Send(byte[])" /> function and stream writing at the same time.
+    /// Gets or sets a value indicating whether the stream use direct writes on the clients socket for each call to <see cref="Write(byte[], int, int)"/>.
+    /// Default is false buffering all writes. You need to set this to true if you use the clients <see cref="TcpAsyncClient.Send(byte[])"/> function and stream
+    /// writing at the same time.
     /// </summary>
     public bool DirectWrites { get; set; }
 
-    /// <summary>Gets the number of bytes at the buffer ( <see cref="TcpAsyncClient.ReceiveBuffer" />).</summary>
+    /// <summary>Gets the number of bytes at the buffer ( <see cref="TcpAsyncClient.ReceiveBuffer"/>).</summary>
     public override long Length
     {
         get
@@ -122,10 +122,8 @@ public class TcpAsyncStream : Stream
 
     /// <summary>Gets or sets the amount of time, in milliseconds, that a read operation blocks waiting for data.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value,
-    /// <see
-    ///     cref="Timeout.Infinite" />
-    /// , specifies that the read operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the read operation does not time out.
     /// </value>
     public override int ReadTimeout
     {
@@ -133,7 +131,7 @@ public class TcpAsyncStream : Stream
         set => client.ReceiveTimeout = value;
     }
 
-    /// <summary>Gets the number of bytes present at the send buffer when using <see cref="DirectWrites" /> == false (default).</summary>
+    /// <summary>Gets the number of bytes present at the send buffer when using <see cref="DirectWrites"/> == false (default).</summary>
     public int SendBufferLength
     {
         get
@@ -146,17 +144,14 @@ public class TcpAsyncStream : Stream
     }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the stream shall only be written to the underlying <see cref="TcpAsyncClient" /> when
-    /// using <see cref="Flush" />.
+    /// Gets or sets a value indicating whether the stream shall only be written to the underlying <see cref="TcpAsyncClient"/> when using <see cref="Flush"/>.
     /// </summary>
     public bool SendOnFlush { get; set; }
 
     /// <summary>Gets or sets the amount of time, in milliseconds, that a write operation blocks waiting for transmission.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value,
-    /// <see
-    ///     cref="Timeout.Infinite" />
-    /// , specifies that the write operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the write operation does not time out.
     /// </value>
     public override int WriteTimeout
     {
@@ -168,22 +163,15 @@ public class TcpAsyncStream : Stream
 
     #region Public Methods
 
-#if NETSTANDARD1_3
-    /// <summary>Closes the tcp connection</summary>
-    public virtual void Close()
-#else
     /// <summary>Closes the tcp connection.</summary>
     public override void Close()
-#endif
     {
         if (client.IsConnected)
         {
             Flush();
             client.Close();
         }
-#if !NETSTANDARD1_3
         base.Close();
-#endif
     }
 
     /// <summary>Waits until all buffered data is sent.</summary>
@@ -243,17 +231,17 @@ public class TcpAsyncStream : Stream
     }
 
     /// <summary>
-    /// Reads data from the the buffers. A maximum of count bytes is read but if less is available any number of bytes may be read. If no
-    /// bytes are available the read method will block until at least one byte is available, the connection is closed or the timeout is reached.
+    /// Reads data from the the buffers. A maximum of count bytes is read but if less is available any number of bytes may be read. If no bytes are available
+    /// the read method will block until at least one byte is available, the connection is closed or the timeout is reached.
     /// </summary>
     /// <param name="buffer">byte array to write data to.</param>
     /// <param name="offset">start offset at array to begin writing at.</param>
     /// <param name="count">number of bytes to read.</param>
     /// <returns>
-    /// The total number of bytes read into the buffer. This can be less than the number of bytes requested if that many bytes are not
-    /// currently available, or zero (0) if the end of the stream has been reached.
+    /// The total number of bytes read into the buffer. This can be less than the number of bytes requested if that many bytes are not currently available, or
+    /// zero (0) if the end of the stream has been reached.
     /// </returns>
-    /// <exception cref="TimeoutException">A timeout occured while waiting for incoming data. (See <see cref="ReadTimeout" />).</exception>
+    /// <exception cref="TimeoutException">A timeout occured while waiting for incoming data. (See <see cref="ReadTimeout"/>).</exception>
     public override int Read(byte[] buffer, int offset, int count)
     {
         var timeout = client.ReceiveTimeout > 0 ? DateTime.UtcNow + TimeSpan.FromMilliseconds(client.ReceiveTimeout) : DateTime.MaxValue;
@@ -282,8 +270,8 @@ public class TcpAsyncStream : Stream
     }
 
     /// <summary>Not supported.</summary>
-    /// <param name="offset">A byte offset relative to the <paramref name="origin" /> parameter.</param>
-    /// <param name="origin">A value of type <see cref="SeekOrigin" /> indicating the reference point used to obtain the new position.</param>
+    /// <param name="offset">A byte offset relative to the <paramref name="origin"/> parameter.</param>
+    /// <param name="origin">A value of type <see cref="SeekOrigin"/> indicating the reference point used to obtain the new position.</param>
     /// <returns>The new position within the current stream.</returns>
     /// <exception cref="NotSupportedException">The stream does not support seeking.</exception>
     public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException("The stream does not support seeking.");
@@ -293,15 +281,9 @@ public class TcpAsyncStream : Stream
     /// <exception cref="NotSupportedException">The stream does not support both writing and seeking.</exception>
     public override void SetLength(long value) => throw new NotSupportedException("The stream does not support both writing and seeking.");
 
-    /// <summary>
-    /// Writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes
-    /// written.
-    /// </summary>
-    /// <param name="buffer">
-    /// An array of bytes. This method copies <paramref name="count" /> bytes from <paramref name="buffer" /> to the current
-    /// stream.
-    /// </param>
-    /// <param name="offset">The zero-based byte offset in <paramref name="buffer" /> at which to begin copying bytes to the current stream.</param>
+    /// <summary>Writes a sequence of bytes to the current stream and advances the current position within this stream by the number of bytes written.</summary>
+    /// <param name="buffer">An array of bytes. This method copies <paramref name="count"/> bytes from <paramref name="buffer"/> to the current stream.</param>
+    /// <param name="offset">The zero-based byte offset in <paramref name="buffer"/> at which to begin copying bytes to the current stream.</param>
     /// <param name="count">The number of bytes to be written to the current stream.</param>
     public override void Write(byte[] buffer, int offset, int count)
     {

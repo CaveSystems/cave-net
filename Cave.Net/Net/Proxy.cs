@@ -9,10 +9,10 @@ public class Proxy
     #region Public Properties
 
     /// <summary>Gets or sets the proxy credentials</summary>
-    public NetworkCredential Credentials { get; set; }
+    public NetworkCredential? Credentials { get; set; }
 
     /// <summary>Gets or sets the proxy host</summary>
-    public string Host { get; set; }
+    public string? Host { get; set; }
 
     /// <summary>Gets or sets the proxy port</summary>
     public int Port { get; set; }
@@ -36,6 +36,9 @@ public class Proxy
         };
         return builder.Uri;
     }
+
+    /// <inheritdoc/>
+    public override string ToString() => GetUri().ToString();
 
     #endregion Public Methods
 }

@@ -8,4 +8,5 @@ namespace Cave.Net;
 /// <typeparam name="TClient">The TcpAsyncClient{this}implementation to be used for client instances.</typeparam>
 [ComVisible(false)]
 public class TypedTcpServer<TClient> : TcpServer<TClient>
-    where TClient : TcpAsyncClient<TypedTcpServer<TClient>>, new() { }
+    where TClient : TcpAsyncClient<TypedTcpServer<TClient>>, new()
+{ }

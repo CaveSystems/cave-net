@@ -13,14 +13,14 @@
         <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
 
         <!-- Nullable -->
-        <!--<nullable>enable</nullable>-->
+        <nullable>enable</nullable>
 
         <!-- Analyzer -->
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
         <AnalysisLevel>latest</AnalysisLevel>
         <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
         <WarningsAsErrors>CS8600;CS8601;CS8602;CS8603;CS8604;CS8618;CS8620;CS8621;CS8622;CS8625;CS8764;CS8765;CS8766;CS8767</WarningsAsErrors>
-        <NoWarn>CS1685;NETSDK1138</NoWarn>
+        <NoWarn>IDE0047;IDE0079;CA1822;CS1685;</NoWarn>
 
         <!-- Compiler -->
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -52,6 +52,10 @@
         <DebugType>portable</DebugType>
         <DebugSymbols>true</DebugSymbols>
         <IncludeSymbols>true</IncludeSymbols>
+
+        <!-- Settings -->
+        <CheckEolTargetFramework>false</CheckEolTargetFramework>
+        <TargetLatestRuntimePatch>false</TargetLatestRuntimePatch>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -59,7 +63,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>

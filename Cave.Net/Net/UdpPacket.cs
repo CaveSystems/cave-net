@@ -8,10 +8,15 @@ public class UdpPacket
 {
     #region Public Constructors
 
-    /// <summary>Initializes a new instance of the <see cref="UdpPacket" /> class.</summary>
-    public UdpPacket() { }
+    /// <summary>Initializes a new instance of the <see cref="UdpPacket"/> class.</summary>
+    public UdpPacket()
+    {
+        Data = [];
+        LocalEndPoint = new IPEndPoint(IPAddress.Any, 0);
+        RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+    }
 
-    /// <summary>Initializes a new instance of the <see cref="UdpPacket" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="UdpPacket"/> class.</summary>
     /// <param name="local">Local endpoint.</param>
     /// <param name="remote">Remote endpoint.</param>
     /// <param name="data">Data.</param>
