@@ -13,7 +13,7 @@ public class DnsRecord
 
     /// <summary>Gets the domain name.</summary>
     /// <value>The name.</value>
-    public DomainName Name { get; private set; }
+    public DomainName? Name { get; private set; }
 
     /// <summary>Gets the record class.</summary>
     /// <value>The record class.</value>
@@ -29,7 +29,7 @@ public class DnsRecord
 
     /// <summary>Gets the value.</summary>
     /// <value>The value.</value>
-    public object Value { get; private set; }
+    public object? Value { get; private set; }
 
     #endregion Public Properties
 
@@ -62,7 +62,7 @@ public class DnsRecord
                 DnsRecordType.SOA => SoaRecord.Parse(reader),
                 DnsRecordType.MX => MxRecord.Parse(reader),
                 DnsRecordType.TXT => TxtRecord.Parse(reader, length),
-                _ => DomainName.Parse(reader)
+                _ => DomainName.Parse(reader),
             };
         }
         catch (Exception ex)
@@ -72,8 +72,8 @@ public class DnsRecord
         return result;
     }
 
-    /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
-    /// <returns>A <see cref="string" /> that represents this instance.</returns>
+    /// <summary>Returns a <see cref="string"/> that represents this instance.</summary>
+    /// <returns>A <see cref="string"/> that represents this instance.</returns>
     public override string ToString()
     {
         var result = new StringBuilder();

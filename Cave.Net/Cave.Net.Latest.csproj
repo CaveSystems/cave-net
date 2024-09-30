@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Version>4.999</Version>
+
+        <!--project-->
+        <RootNamespace>Cave</RootNamespace>
+        <AssemblyOriginatorKeyFile>cave-net.snk</AssemblyOriginatorKeyFile>
+        <Product>CaveSystems Networking Library</Product>
+        <PackageTags>CaveSystems Networking TcpServer TcpAsyncClient UdpServer UdpAsyncClient DNS NTP WakeOnLan</PackageTags>
+        <Description>Provides classes for fast and easy access to fast async tcp streaming, dns client, ssl client and server and ntp client and server implementations.</Description>
+        <PackageProjectUrl>https://github.com/CaveSystems/cave-net</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/CaveSystems/cave-net</RepositoryUrl>
+
+        <!--settings-->
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageReleaseNotes />
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\cave-extensions\Cave.Extensions\Cave.Extensions.Latest.csproj" />
+        <ProjectReference Include="..\..\cave-io\Cave.IO\Cave.IO.Latest.csproj" />
+    </ItemGroup>
+</Project>

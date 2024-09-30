@@ -13,30 +13,11 @@ namespace Cave.Net;
 
 /// <summary>Provides a fast TcpServer implementation.</summary>
 /// <typeparam name="TClient">The type of the client.</typeparam>
-/// <seealso cref="IDisposable" />
+/// <seealso cref="IDisposable"/>
 [ComVisible(false)]
 public class TcpServer<TClient> : ITcpServer
     where TClient : TcpAsyncClient, new()
 {
-#if NETSTANDARD13 || NET20
-        readonly Dictionary<SocketAsyncEventArgs, SocketAsyncEventArgs> pendingAccepts = new();
-        readonly Dictionary<TClient, TClient> clients = new();
-
-        void AddPendingAccept(SocketAsyncEventArgs e) => pendingAccepts.Add(e, e);
-
-        void AddClient(TClient client) => clients.Add(client, client);
-
-        void RemoveClient(TClient client)
-        {
-            if (clients.ContainsKey(client))
-            {
-                clients.Remove(client);
-            }
-        }
-
-        IEnumerable<TClient> ClientList => clients.Keys;
-        IEnumerable<SocketAsyncEventArgs> PendingAcceptList => pendingAccepts.Keys;
-#else
     IEnumerable<TClient> ClientList => clients;
     readonly HashSet<SocketAsyncEventArgs> pendingAccepts = new();
     readonly HashSet<TClient> clients = new();
@@ -54,9 +35,8 @@ public class TcpServer<TClient> : ITcpServer
     }
 
     IEnumerable<SocketAsyncEventArgs> PendingAcceptList => pendingAccepts;
-#endif
 
-    Socket socket;
+    Socket? socket;
     int acceptBacklog = 20;
     int acceptThreads = Environment.ProcessorCount * 2;
     int tcpBufferSize = 64 * 1024;
@@ -98,9 +78,9 @@ public class TcpServer<TClient> : ITcpServer
 
             if (!pending)
             {
-                void AcceptCompletedAction(object o) => AcceptCompleted(this, (SocketAsyncEventArgs)o);
+                void AcceptCompletedAction(object? o) => AcceptCompleted(this, (SocketAsyncEventArgs)o!);
 #if NET20 || NET35
-                    ThreadPool.QueueUserWorkItem(AcceptCompletedAction, asyncAccept);
+                ThreadPool.QueueUserWorkItem(AcceptCompletedAction, asyncAccept);
 #else
                 Task.Factory.StartNew(AcceptCompletedAction, asyncAccept);
 #endif
@@ -108,9 +88,9 @@ public class TcpServer<TClient> : ITcpServer
         }
     }
 
-    void AcceptCompleted(object sender, SocketAsyncEventArgs e)
+    void AcceptCompleted(object? sender, SocketAsyncEventArgs e)
     {
-        AcceptCompletedBegin:
+    AcceptCompletedBegin:
         var waiting = Interlocked.Decrement(ref acceptWaiting);
         if (waiting == 0)
         {
@@ -172,34 +152,35 @@ public class TcpServer<TClient> : ITcpServer
                 // AcceptCompleted(this, e);
                 goto AcceptCompletedBegin;
 
-                // we could do a function call to myself here but with slow OnClientAccepted() functions and fast networks we might get a stack overflow caused by infinite recursion
+                // we could do a function call to myself here but with slow OnClientAccepted() functions and fast networks we might get a stack overflow caused
+                // by infinite recursion
             }
         }
     }
 
-    void ClientDisconnected(object sender, EventArgs e)
+    void ClientDisconnected(object? sender, EventArgs e)
     {
         // perform cleanup of client list
-        var client = (TClient)sender;
+        var client = (sender as TClient) ?? throw new InvalidCastException($"{nameof(sender)} is not of type {typeof(TClient)}!");
         lock (clients)
         {
             RemoveClient(client);
         }
     }
 
-    /// <summary>Calls the <see cref="ClientException" /> event (if set).</summary>
+    /// <summary>Calls the <see cref="ClientException"/> event (if set).</summary>
     /// <param name="source">The source of the exception.</param>
     /// <param name="exception">The exception.</param>
     protected virtual void OnClientException(TClient source, Exception exception) => ClientException?.Invoke(this, new(source, exception));
 
-    /// <summary>Calls the <see cref="AcceptTasksBusy" /> event (if set).</summary>
+    /// <summary>Calls the <see cref="AcceptTasksBusy"/> event (if set).</summary>
     protected virtual void OnAcceptTasksBusy() => AcceptTasksBusy?.Invoke(this, new());
 
-    /// <summary>Calls the <see cref="ClientAccepted" /> event (if set).</summary>
+    /// <summary>Calls the <see cref="ClientAccepted"/> event (if set).</summary>
     /// <param name="client">The client that was accepted.</param>
     protected virtual void OnClientAccepted(TClient client) => ClientAccepted?.Invoke(this, new(client));
 
-    /// <summary>Initializes a new instance of the <see cref="TcpServer{TClient}" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="TcpServer{TClient}"/> class.</summary>
     public TcpServer() { }
 
     /// <summary>Gets or sets a value indicating whether the Socket allows only one process to bind to a port or not.</summary>
@@ -218,7 +199,7 @@ public class TcpServer<TClient> : ITcpServer
         }
     }
 
-    /// <summary>Listens at the specified <paramref name="address" /> and <paramref name="port" />.</summary>
+    /// <summary>Listens at the specified <paramref name="address"/> and <paramref name="port"/>.</summary>
     /// <param name="address">The ip address to listen at.</param>
     /// <param name="port">The port to listen at.</param>
     public void Listen(IPAddress address, int port) => Listen(new IPEndPoint(address, port));
@@ -243,6 +224,7 @@ public class TcpServer<TClient> : ITcpServer
         {
             case AddressFamily.InterNetwork:
                 break;
+
             case AddressFamily.InterNetworkV6:
                 socket.EnableDualSocket();
                 break;
@@ -251,7 +233,7 @@ public class TcpServer<TClient> : ITcpServer
         socket.ExclusiveAddressUse = !noExclusiveAddressUse;
         socket.Bind(endPoint);
         socket.Listen(AcceptBacklog);
-        LocalEndPoint = (IPEndPoint)socket.LocalEndPoint;
+        LocalEndPoint = (socket.LocalEndPoint as IPEndPoint) ?? throw new InvalidCastException("Could not cast socket endpoint!");
         AcceptStart();
     }
 
@@ -270,9 +252,6 @@ public class TcpServer<TClient> : ITcpServer
         {
             throw new ObjectDisposedException(nameof(TcpServer));
         }
-#if NETSTANDARD13
-            Listen(new IPEndPoint(IPAddress.Any, port));
-#else
         useIPv6 ??= NetworkInterface.GetAllNetworkInterfaces().Any(n => n.GetIPProperties().UnicastAddresses.Any(u => u.Address.AddressFamily == AddressFamily.InterNetworkV6));
         if (useIPv6.GetValueOrDefault(true))
         {
@@ -282,7 +261,6 @@ public class TcpServer<TClient> : ITcpServer
         {
             Listen(new IPEndPoint(IPAddress.Any, port));
         }
-#endif
     }
 
     /// <summary>Disconnects all clients.</summary>
@@ -312,11 +290,7 @@ public class TcpServer<TClient> : ITcpServer
 
             if (socket != null)
             {
-#if NETSTANDARD13
-                    socket.Dispose();
-#else
                 socket.Close();
-#endif
                 socket = null;
             }
         }
@@ -327,7 +301,7 @@ public class TcpServer<TClient> : ITcpServer
 
     /// <summary>Gets or sets the maximum number of pending connections.</summary>
     /// <value>The maximum length of the pending connections queue.</value>
-    /// <remarks>On high load this should be 10 x <see cref="AcceptThreads" />.</remarks>
+    /// <remarks>On high load this should be 10 x <see cref="AcceptThreads"/>.</remarks>
     /// <exception cref="InvalidOperationException">Socket is already listening.</exception>
     public int AcceptBacklog
     {
@@ -385,34 +359,34 @@ public class TcpServer<TClient> : ITcpServer
 
     /// <summary>Gets or sets the amount of time, in milliseconds, thata read operation blocks waiting for data.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value,
-    /// <see cref="Timeout.Infinite" />, specifies that the read operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/>, specifies that the read operation does not time out.
     /// </value>
     public int ReceiveTimeout { get; set; } = Timeout.Infinite;
 
     /// <summary>Gets or sets the amount of time, in milliseconds, thata write operation blocks waiting for data.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value,
-    /// <see cref="Timeout.Infinite" />, specifies that the write operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/>, specifies that the write operation does not time out.
     /// </value>
     public int SendTimeout { get; set; } = Timeout.Infinite;
 
     /// <summary>Gets the local end point.</summary>
     /// <value>The local end point.</value>
-    public IPEndPoint LocalEndPoint { get; private set; }
+    public IPEndPoint LocalEndPoint { get; private set; } = new IPEndPoint(IPAddress.Any, 0);
 
     /// <summary>Gets a value indicating whether this instance is listening.</summary>
     /// <value><c>true</c> if this instance is listening; otherwise, <c>false</c>.</value>
     public bool IsListening => (socket != null) && socket.IsBound;
 
     /// <summary>Event to be called whenever all accept tasks get busy. This may indicate declined connections attempts (due to a full backlog).</summary>
-    public event EventHandler<EventArgs> AcceptTasksBusy;
+    public event EventHandler<EventArgs>? AcceptTasksBusy;
 
     /// <summary>Event to be called after a client was accepted occured</summary>
-    public event EventHandler<TcpServerClientEventArgs<TClient>> ClientAccepted;
+    public event EventHandler<TcpServerClientEventArgs<TClient>>? ClientAccepted;
 
     /// <summary>Event to be called after a client exception occured that cannot be handled by the clients Error event.</summary>
-    public event EventHandler<TcpServerClientExceptionEventArgs<TClient>> ClientException;
+    public event EventHandler<TcpServerClientExceptionEventArgs<TClient>>? ClientException;
 
     /// <summary>Gets all connected clients.</summary>
     /// <value>The clients.</value>
@@ -453,9 +427,9 @@ public class TcpServer<TClient> : ITcpServer
         GC.SuppressFinalize(this);
     }
 
-    #endregion
+    #endregion IDisposable Support
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override string ToString() =>
         LocalEndPoint.Address.AddressFamily == AddressFamily.InterNetwork
             ? $"tcp://{LocalEndPoint}"

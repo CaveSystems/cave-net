@@ -9,53 +9,29 @@ using System.Text;
 namespace Cave.Mail;
 
 /// <summary>
-/// Provides an <see cref="ICollection{Rfc822Message}" /> for <see cref="Rfc822Message" />s This object directly works on the rfc822
-/// header data of a message.
+/// Provides an <see cref="ICollection{Rfc822Message}"/> for <see cref="Rfc822Message"/> s This object directly works on the rfc822 header data of a message.
 /// </summary>
 public class Rfc822AddressCollection : ICollection<MailAddress>
 {
-    #region IEnumerable<MailAddress> Member
+    #region Private Fields
 
-    /// <summary>Obtains a typed enumerator.</summary>
-    /// <returns></returns>
-    public IEnumerator<MailAddress> GetEnumerator() => Parse().GetEnumerator();
-
-    #endregion
-
-    #region IEnumerable Member
-
-    /// <summary>Obtains an untyped enumerator.</summary>
-    /// <returns></returns>
-    IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)Parse()).GetEnumerator();
-
-    #endregion
-
-    /// <summary>Provides the header data.</summary>
-    /// <returns></returns>
-    public override string ToString() => key + ": " + Data;
-
-    #region private functionality
-
+    readonly Encoding encoding;
     readonly NameValueCollection header;
     readonly string key;
-    readonly Encoding encoding;
 
-    internal Rfc822AddressCollection(string key, NameValueCollection header, Encoding encoding)
-    {
-        this.encoding = encoding;
-        this.header = header;
-        this.key = key;
-        if (this.header[this.key] == null)
-        {
-            this.header[this.key] = "";
-        }
-    }
+    #endregion Private Fields
+
+    #region Private Properties
 
     string Data
     {
-        get => header[key] == null ? "" : header[key].Trim();
+        get => header[key]?.Trim() ?? string.Empty;
         set => header[key] = value;
     }
+
+    #endregion Private Properties
+
+    #region Private Methods
 
     List<MailAddress> Parse()
     {
@@ -83,11 +59,38 @@ public class Rfc822AddressCollection : ICollection<MailAddress>
         Data = data.ToString();
     }
 
-    #endregion
+    #endregion Private Methods
 
-    #region ICollection<MailAddress> Member
+    #region Internal Constructors
 
-    /// <summary>Adds a <see cref="MailAddress" />.</summary>
+    internal Rfc822AddressCollection(string key, NameValueCollection header, Encoding encoding)
+    {
+        this.encoding = encoding;
+        this.header = header;
+        this.key = key;
+        if (this.header[this.key] == null)
+        {
+            this.header[this.key] = "";
+        }
+    }
+
+    internal Rfc822AddressCollection(string key) : this(key, new(), Encoding.ASCII) { }
+
+    #endregion Internal Constructors
+
+    #region Public Properties
+
+    /// <summary>Obtains the number of <see cref="MailAddress"/> present.</summary>
+    public int Count => Parse().Count;
+
+    /// <summary>returns always false.</summary>
+    public bool IsReadOnly => false;
+
+    #endregion Public Properties
+
+    #region Public Methods
+
+    /// <summary>Adds a <see cref="MailAddress"/>.</summary>
     /// <param name="item"></param>
     public void Add(MailAddress item)
     {
@@ -109,23 +112,21 @@ public class Rfc822AddressCollection : ICollection<MailAddress>
     /// <summary>Clears all addresses.</summary>
     public void Clear() => Data = "";
 
-    /// <summary>Checks whether a specified <see cref="MailAddress" /> is part of the list.</summary>
+    /// <summary>Checks whether a specified <see cref="MailAddress"/> is part of the list.</summary>
     /// <param name="item"></param>
     /// <returns></returns>
     public bool Contains(MailAddress item) => Parse().Contains(item);
 
-    /// <summary>Copies all <see cref="MailAddress" />es to a specified array.</summary>
+    /// <summary>Copies all <see cref="MailAddress"/> es to a specified array.</summary>
     /// <param name="array"></param>
     /// <param name="arrayIndex"></param>
     public void CopyTo(MailAddress[] array, int arrayIndex) => Parse().CopyTo(array, arrayIndex);
 
-    /// <summary>Obtains the number of <see cref="MailAddress" /> present.</summary>
-    public int Count => Parse().Count;
+    /// <summary>Obtains a typed enumerator.</summary>
+    /// <returns></returns>
+    public IEnumerator<MailAddress> GetEnumerator() => Parse().GetEnumerator();
 
-    /// <summary>returns always false.</summary>
-    public bool IsReadOnly => false;
-
-    /// <summary>Removes a <see cref="MailAddress" /> from the list.</summary>
+    /// <summary>Removes a <see cref="MailAddress"/> from the list.</summary>
     /// <param name="item"></param>
     /// <returns></returns>
     public bool Remove(MailAddress item)
@@ -139,5 +140,13 @@ public class Rfc822AddressCollection : ICollection<MailAddress>
         return true;
     }
 
-    #endregion
+    /// <summary>Provides the header data.</summary>
+    /// <returns></returns>
+    public override string ToString() => key + ": " + Data;
+
+    /// <summary>Obtains an untyped enumerator.</summary>
+    /// <returns></returns>
+    IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable)Parse()).GetEnumerator();
+
+    #endregion Public Methods
 }

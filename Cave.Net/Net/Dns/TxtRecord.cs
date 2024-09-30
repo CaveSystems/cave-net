@@ -11,7 +11,7 @@ public class TxtRecord
 
     /// <summary>Gets the parts.</summary>
     /// <value>The parts.</value>
-    public string[] Parts { get; private set; }
+    public string[] Parts { get; private set; } = [];
 
     #endregion Public Properties
 
@@ -20,7 +20,7 @@ public class TxtRecord
     /// <summary>Parses the record using the specified reader.</summary>
     /// <param name="reader">The reader.</param>
     /// <param name="length">The length.</param>
-    /// <returns>Returns a new <see cref="TxtRecord" /> instance.</returns>
+    /// <returns>Returns a new <see cref="TxtRecord"/> instance.</returns>
     public static TxtRecord Parse(DataReader reader, int length)
     {
         var end = reader.BaseStream.Position + length;
@@ -31,12 +31,12 @@ public class TxtRecord
             int len = reader.ReadByte();
             parts.Add(reader.ReadString(len));
         }
-        result.Parts = parts.ToArray();
+        result.Parts = [.. parts];
         return result;
     }
 
-    /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
-    /// <returns>A <see cref="string" /> that represents this instance.</returns>
+    /// <summary>Returns a <see cref="string"/> that represents this instance.</summary>
+    /// <returns>A <see cref="string"/> that represents this instance.</returns>
     public override string ToString()
     {
         var result = new StringBuilder();
@@ -47,10 +47,10 @@ public class TxtRecord
                 result.Append(' ');
             }
 
-            if (part.IndexOfAny(new[] { ' ', '"' }) > -1)
+            if (part.IndexOfAny([' ', '"']) > -1)
             {
                 result.Append('"');
-                result.Append(part.Replace("\"", "\"\""));
+                result.Append(part.Escape());
                 result.Append('"');
             }
             else

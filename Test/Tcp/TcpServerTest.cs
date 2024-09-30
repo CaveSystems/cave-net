@@ -14,6 +14,12 @@ namespace Test.Tcp
     [TestFixture]
     public class TcpServerTest
     {
+        #region Public Constructors
+
+        public TcpServerTest() => ThreadPool.SetMinThreads(100, 100);
+
+        #endregion Public Constructors
+
         #region Public Methods
 
         [Test]
@@ -470,6 +476,54 @@ namespace Test.Tcp
         }
 
         [Test]
+        public void TestSendAllBeforeCloseClient2ServerCloseBeforeRead()
+        {
+            var port = Tools.GetPort();
+            var server = new TcpServer();
+            server.Listen(port);
+            using var completed = new ManualResetEvent(false);
+            try
+            {
+                Task t = null;
+                server.ClientAccepted += (sender, eventArgs) => t = Task.Factory.StartNew((c) =>
+                {
+                    var client = (TcpAsyncClient)c;
+                    var stream = client.GetStream();
+                    //wait for client disco
+                    while (client.IsConnected) Thread.Sleep(1);
+                    //read after client disco
+                    using (var reader = new StreamReader(stream))
+                    {
+                        for (var i = 0; i < 10000; i++)
+                        {
+                            var s = reader.ReadLine();
+                            Assert.AreEqual(i.ToString(), s);
+                        }
+                    }
+                    completed.Set();
+                }, eventArgs.Client);
+                using (var client = new TcpAsyncClient())
+                {
+                    client.Connect(IPAddress.Loopback, port);
+                    using (var writer = new StreamWriter(client.GetStream()))
+                    {
+                        for (var i = 0; i < 10000; i++)
+                        {
+                            writer.WriteLine(i);
+                        }
+                    }
+                    client.Close();
+                }
+                if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
+                Assert.AreEqual(null, t?.Exception, $"{t.Exception}");
+            }
+            finally
+            {
+                server.Close();
+            }
+        }
+
+        [Test]
         public void TestSendAllBeforeCloseClient2ServerDefault()
         {
             var port = Tools.GetPort();
@@ -622,54 +676,6 @@ namespace Test.Tcp
                     }
                 }
                 if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
-            }
-            finally
-            {
-                server.Close();
-            }
-        }
-
-        [Test]
-        public void TestSendAllBeforeCloseClient2ServerCloseBeforeRead()
-        {
-            var port = Tools.GetPort();
-            var server = new TcpServer();
-            server.Listen(port);
-            using var completed = new ManualResetEvent(false);
-            try
-            {
-                Task t = null;
-                server.ClientAccepted += (sender, eventArgs) => t = Task.Factory.StartNew((c) =>
-                {
-                    var client = (TcpAsyncClient)c;
-                    var stream = client.GetStream();
-                    //wait for client disco
-                    while (client.IsConnected) Thread.Sleep(1);
-                    //read after client disco
-                    using (var reader = new StreamReader(stream))
-                    {
-                        for (var i = 0; i < 10000; i++)
-                        {
-                            var s = reader.ReadLine();
-                            Assert.AreEqual(i.ToString(), s);
-                        }
-                    }
-                    completed.Set();
-                }, eventArgs.Client);
-                using (var client = new TcpAsyncClient())
-                {
-                    client.Connect(IPAddress.Loopback, port);
-                    using (var writer = new StreamWriter(client.GetStream()))
-                    {
-                        for (var i = 0; i < 10000; i++)
-                        {
-                            writer.WriteLine(i);
-                        }
-                    }
-                    client.Close();
-                }
-                if (!completed.WaitOne(Settings.Timeout)) throw new TimeoutException();
-                Assert.AreEqual(null, t?.Exception, $"{t.Exception}");
             }
             finally
             {

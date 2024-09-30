@@ -19,16 +19,7 @@ if %errorlevel% neq 0 exit /b %errorlevel%
 rem msbuild /p:Configuration=Release /p:Platform="Any CPU" documentation.shfbproj
 rem if %errorlevel% neq 0 exit /b %errorlevel%
 
-dotnet run Tests\bin\Release\netcoreapp1.0\Tests.dll
-dotnet run Tests\bin\Release\netcoreapp1.1\Tests.dll
-dotnet run Tests\bin\Release\netcoreapp2.0\Tests.dll
-dotnet run Tests\bin\Release\netcoreapp2.1\Tests.dll
-dotnet run Tests\bin\Release\netcoreapp3.0\Tests.dll
-dotnet run Tests\bin\Release\netcoreapp3.1\Tests.dll
-Tests\bin\Release\net20\Tests.exe
-Tests\bin\Release\net35\Tests.exe
-Tests\bin\Release\net40\Tests.exe
-Tests\bin\Release\net45\Tests.exe
-Tests\bin\Release\net50\Tests.exe
-Tests\bin\Release\net60\Tests.exe
-Tests\bin\Release\net70\Tests.exe
+for /r %%f in ("Test*.exe") do (
+  vstest.console "%%f"
+  if %errorlevel% neq 0 exit /b %errorlevel%
+)

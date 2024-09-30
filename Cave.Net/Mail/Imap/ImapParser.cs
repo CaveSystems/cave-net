@@ -97,6 +97,6 @@ static class ImapParser
         {
             parts.Add(answer.Substring(start));
         }
-        return parts.ToArray();
+        return [.. parts];
     }
 }

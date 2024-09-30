@@ -5,15 +5,12 @@ using Cave.IO;
 
 namespace Cave.Net;
 
-/// <summary>
-/// Provides post data for
-/// <see cref="HttpConnection.Post(ConnectionString, System.Collections.Generic.IList{PostData}, ProgressCallback, object)" />.
-/// </summary>
+/// <summary>Provides post data for <see cref="HttpConnection.Post(ConnectionString, System.Collections.Generic.IList{PostData}, ProgressCallback, object)"/>.</summary>
 public class PostData
 {
     #region Protected Constructors
 
-    /// <summary>Creates a new <see cref="PostData" /> instance.</summary>
+    /// <summary>Creates a new <see cref="PostData"/> instance.</summary>
     protected PostData() { }
 
     #endregion Protected Constructors
@@ -21,29 +18,29 @@ public class PostData
     #region Protected Properties
 
     /// <summary>Source stream containing the data to be sent.</summary>
-    protected Stream Source { get; set; }
+    protected Stream? Source { get; set; }
 
     #endregion Protected Properties
 
     #region Public Properties
 
     /// <summary>Content type to transmit.</summary>
-    public string ContentType { get; protected set; }
+    public string? ContentType { get; protected set; }
 
     /// <summary>File name. Set to null to skip file name transmission.</summary>
-    public string FileName { get; protected set; }
+    public string? FileName { get; protected set; }
 
     /// <summary>Parameter name</summary>
-    public string Name { get; protected set; }
+    public string? Name { get; protected set; }
 
     #endregion Public Properties
 
     #region Public Methods
 
-    /// <summary>Creates a new <see cref="PostData" /> instance using name value combination transmitted using utf-8 text/plain encoding.</summary>
+    /// <summary>Creates a new <see cref="PostData"/> instance using name value combination transmitted using utf-8 text/plain encoding.</summary>
     /// <param name="name">Parameter name.</param>
     /// <param name="data">Content to send.</param>
-    /// <returns>Returns a new <see cref="PostData" /> instance.</returns>
+    /// <returns>Returns a new <see cref="PostData"/> instance.</returns>
     public static PostData Binary(string name, byte[] data) => new()
     {
         Source = new MemoryStream(data),
@@ -51,12 +48,12 @@ public class PostData
         ContentType = "application/octet-stream"
     };
 
-    /// <summary>Creates a new <see cref="PostData" /> instance using a local file.</summary>
+    /// <summary>Creates a new <see cref="PostData"/> instance using a local file.</summary>
     /// <param name="name">Parameter name.</param>
     /// <param name="fullPath">Full path to access the file.</param>
     /// <param name="contentType">Content type to use (defaults to application/octet-stream)</param>
-    /// <returns>Returns a new <see cref="PostData" /> instance.</returns>
-    public static PostData FromFile(string name, string fullPath, string contentType = null)
+    /// <returns>Returns a new <see cref="PostData"/> instance.</returns>
+    public static PostData FromFile(string name, string fullPath, string? contentType = null)
     {
         var fileName = Path.GetFileName(fullPath);
         return new()
@@ -68,10 +65,10 @@ public class PostData
         };
     }
 
-    /// <summary>Creates a new <see cref="PostData" /> instance using name value combination transmitted using utf-8 text/plain encoding.</summary>
+    /// <summary>Creates a new <see cref="PostData"/> instance using name value combination transmitted using utf-8 text/plain encoding.</summary>
     /// <param name="name">Parameter name.</param>
     /// <param name="value">Content to send.</param>
-    /// <returns>Returns a new <see cref="PostData" /> instance.</returns>
+    /// <returns>Returns a new <see cref="PostData"/> instance.</returns>
     public static PostData Text(string name, string value) => new()
     {
         Source = new MemoryStream(Encoding.UTF8.GetBytes(value)),
@@ -84,8 +81,9 @@ public class PostData
     /// <param name="length">Length of data (defaults to -1 to send everything.)</param>
     /// <param name="callback">Callback to be called during copy or null.</param>
     /// <param name="userItem">The user item used at callback.</param>
-    public virtual void WriteTo(DataWriter writer, long length = -1, ProgressCallback callback = null, object userItem = null)
+    public virtual void WriteTo(DataWriter writer, long length = -1, ProgressCallback? callback = null, object? userItem = null)
     {
+        if (Source is null) throw new InvalidOperationException("Source is not set!");
         writer.Write($"Content-Disposition: form-data; name=\"{Name}\"");
         if (FileName != null)
         {

@@ -1,21 +1,29 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
+using System.Linq;
 using System.Net.Mail;
 using System.Net.Sockets;
 using Cave.Net;
+using Cave.Net.Dns;
 
 namespace Cave.Mail;
 
 /// <summary>Provides email validation by asking the reciepients smtp server.</summary>
 public class SmtpValidator
 {
+    #region Private Fields
+
+    private static readonly char[] answerSeparator = [' '];
+
+    #endregion Private Fields
+
     #region Private Methods
 
-    static int ParseAnswer(string answer)
+    static int ParseAnswer(string? answer)
     {
-        var parts = answer.Split(new[] { ' ' }, 2);
+        if (answer is null) throw new InvalidDataException("SmtpValidator_ProtocolError");
+        var parts = answer.Split(answerSeparator, 2);
         if (!int.TryParse(parts[0], out var code))
         {
             throw new InvalidDataException("SmtpValidator_ProtocolError");
@@ -42,7 +50,7 @@ public class SmtpValidator
     /// <param name="sender">Our email address.</param>
     public SmtpValidator(string server, MailAddress sender)
     {
-        if (Dns.GetHostEntry(server) == null)
+        if (!DnsClient.Default.GetHostAddresses(server).Any())
         {
             throw new NetworkException("Cannot find my own server name in dns!");
         }

@@ -6,8 +6,103 @@ namespace Cave.Mail.Imap;
 /// <summary>Provides a search class for imap searches.</summary>
 public class ImapSearch
 {
+    #region Private Fields
+
+    readonly string text;
+
+    #endregion Private Fields
+
+    #region Private Constructors
+
+    ImapSearch(ImapSearchType type)
+            : this(type, null) { }
+
+    ImapSearch(ImapSearchType type, string? parameters)
+    {
+        text = parameters ?? string.Empty;
+        if (string.IsNullOrEmpty(parameters))
+        {
+            if (type == ImapSearchType._MULTIPLE)
+            {
+                throw new InvalidOperationException();
+            }
+
+            text = type.ToString();
+            return;
+        }
+        if (type == ImapSearchType._MULTIPLE)
+        {
+            return;
+        }
+        text = type + " " + parameters;
+    }
+
+    #endregion Private Constructors
+
+    #region Private Methods
+
+    static string CheckString(string text)
+    {
+        if (Encoding.ASCII.GetString(Encoding.ASCII.GetBytes(text)) != text)
+        {
+            throw new ArgumentException("ImapSearch does not allow string searches with characters not part of US-ASCII !", nameof(text));
+        }
+
+        return text;
+    }
+
+    #endregion Private Methods
+
+    #region Public Properties
+
     /// <summary>Searches all messages in the mailbox.</summary>
     public static ImapSearch ALL => new(ImapSearchType.ALL);
+
+    /// <summary>Searches messages with the \Answered flag set.</summary>
+    public static ImapSearch ANSWERED => new(ImapSearchType.ANSWERED);
+
+    /// <summary>Searches messages that contain the specified string in the envelope structure's BCC field.</summary>
+    public static ImapSearch BCC => new(ImapSearchType.BCC);
+
+    /// <summary>Searches for messages with the \Deleted flag set.</summary>
+    public static ImapSearch DELETED => new(ImapSearchType.DELETED);
+
+    /// <summary>Searches for messages with the \Draft flag set.</summary>
+    public static ImapSearch DRAFT => new(ImapSearchType.DRAFT);
+
+    /// <summary>Searches for messages with the \Flagged flag set.</summary>
+    public static ImapSearch FLAGGED => new(ImapSearchType.FLAGGED);
+
+    /// <summary>Searches for messages that have the \Recent flag set but not the \Seen flag. This is functionally equivalent to "(RECENT UNSEEN)".</summary>
+    public static ImapSearch NEW => new(ImapSearchType.NEW);
+
+    /// <summary>Searches for messages that do not have the \Recent flag set. This is functionally equivalent to "NOT RECENT" (as opposed to "NOT NEW").</summary>
+    public static ImapSearch OLD => new(ImapSearchType.OLD);
+
+    /// <summary>Messages that have the \Recent flag set.</summary>
+    public static ImapSearch RECENT => new(ImapSearchType.RECENT);
+
+    /// <summary>Messages that have the \Seen flag set.</summary>
+    public static ImapSearch SEEN => new(ImapSearchType.SEEN);
+
+    /// <summary>Searches messages that do not have the \Deleted flag set.</summary>
+    public static ImapSearch UNANSWERED => new(ImapSearchType.UNANSWERED);
+
+    /// <summary>Searches messages that do not have the \Deleted flag set.</summary>
+    public static ImapSearch UNDELETED => new(ImapSearchType.UNDELETED);
+
+    /// <summary>Searches messages that do not have the \Draft flag set.</summary>
+    public static ImapSearch UNDRAFT => new(ImapSearchType.UNDRAFT);
+
+    /// <summary>Searches messages that do not have the \Flagged flag set.</summary>
+    public static ImapSearch UNFLAGGED => new(ImapSearchType.UNFLAGGED);
+
+    /// <summary>Searches messages that do not have the \Seen flag set.</summary>
+    public static ImapSearch UNSEEN => new(ImapSearchType.UNSEEN);
+
+    #endregion Public Properties
+
+    #region Public Methods
 
     /// <summary>Searches for messages that match all search keys.</summary>
     public static ImapSearch AND(params ImapSearch[] searches)
@@ -27,12 +122,6 @@ public class ImapSearch
         return new(ImapSearchType._MULTIPLE, result.ToString());
     }
 
-    /// <summary>Searches messages with the \Answered flag set.</summary>
-    public static ImapSearch ANSWERED => new(ImapSearchType.ANSWERED);
-
-    /// <summary>Searches messages that contain the specified string in the envelope structure's BCC field.</summary>
-    public static ImapSearch BCC => new(ImapSearchType.BCC);
-
     /// <summary>Searches messages whose internal date (disregarding time and timezone) is earlier than the specified date.</summary>
     public static ImapSearch BEFORE(DateTime dateTime) => new(ImapSearchType.BEFORE, dateTime.ToString("d-mmm-yyyy"));
 
@@ -42,22 +131,13 @@ public class ImapSearch
     /// <summary>Searches messages that contain the specified string in the envelope structure's CC field.</summary>
     public static ImapSearch CC(string address) => new(ImapSearchType.CC, CheckString(address));
 
-    /// <summary>Searches for messages with the \Deleted flag set.</summary>
-    public static ImapSearch DELETED => new(ImapSearchType.DELETED);
-
-    /// <summary>Searches for messages with the \Draft flag set.</summary>
-    public static ImapSearch DRAFT => new(ImapSearchType.DRAFT);
-
-    /// <summary>Searches for messages with the \Flagged flag set.</summary>
-    public static ImapSearch FLAGGED => new(ImapSearchType.FLAGGED);
-
     /// <summary>Searches for messages that contain the specified string in the envelope structure's FROM field.</summary>
     public static ImapSearch FROM(string address) => new(ImapSearchType.FROM, CheckString(address));
 
     /// <summary>
-    /// Searches for messages that have a header with the specified field-name (as defined in [RFC-2822]) and that contains the specified
-    /// string in the text of the header (what comes after the colon). If the string to search is zero-length, this matches all messages that have
-    /// a header line with the specified field-name regardless of the contents.
+    /// Searches for messages that have a header with the specified field-name (as defined in [RFC-2822]) and that contains the specified string in the text of
+    /// the header (what comes after the colon). If the string to search is zero-length, this matches all messages that have a header line with the specified
+    /// field-name regardless of the contents.
     /// </summary>
     public static ImapSearch HEADER(string fieldName, string text) => new(ImapSearchType.HEADER, CheckString(fieldName + " " + text));
 
@@ -67,17 +147,8 @@ public class ImapSearch
     /// <summary>Searches for messages with an [RFC-2822] size larger than the specified number of octets.</summary>
     public static ImapSearch LARGER(int size) => new(ImapSearchType.LARGER, size.ToString());
 
-    /// <summary>Searches for messages that have the \Recent flag set but not the \Seen flag. This is functionally equivalent to "(RECENT UNSEEN)".</summary>
-    public static ImapSearch NEW => new(ImapSearchType.NEW);
-
     /// <summary>Searches messages that do not match the specified search key.</summary>
     public static ImapSearch NOT(ImapSearch search) => new(ImapSearchType.NOT, search.ToString());
-
-    /// <summary>
-    /// Searches for messages that do not have the \Recent flag set. This is functionally equivalent to "NOT RECENT" (as opposed to "NOT
-    /// NEW").
-    /// </summary>
-    public static ImapSearch OLD => new(ImapSearchType.OLD);
 
     /// <summary>Searches for messages whose internal date (disregarding time and timezone) is within the specified date.</summary>
     public static ImapSearch ON(DateTime date) => new(ImapSearchType.ON, date.ToString("d-mmm-yyyy"));
@@ -99,12 +170,6 @@ public class ImapSearch
         }
         return new(ImapSearchType._MULTIPLE, result.ToString());
     }
-
-    /// <summary>Messages that have the \Recent flag set.</summary>
-    public static ImapSearch RECENT => new(ImapSearchType.RECENT);
-
-    /// <summary>Messages that have the \Seen flag set.</summary>
-    public static ImapSearch SEEN => new(ImapSearchType.SEEN);
 
     /// <summary>Searches for messages whose [RFC-2822] Date: header (disregarding time and timezone) is earlier than the specified date.</summary>
     public static ImapSearch SENTBEFORE(DateTime date) => new(ImapSearchType.SENTBEFORE, date.ToString("d-mmm-yyyy"));
@@ -130,32 +195,14 @@ public class ImapSearch
     /// <summary>Searches for messages that contain the specified string in the envelope structure's TO field.</summary>
     public static ImapSearch TO(string address) => new(ImapSearchType.TO, CheckString(address));
 
-    /// <summary>
-    /// Searches for messages with unique identifiers corresponding to the specified unique identifier set. Sequence set ranges are
-    /// permitted.
-    /// </summary>
+    /// <summary>Searches for messages with unique identifiers corresponding to the specified unique identifier set. Sequence set ranges are permitted.</summary>
     public static ImapSearch UID(uint uid) => new(ImapSearchType.UID, uid.ToString());
 
-    /// <summary>
-    /// Searches for messages with unique identifiers corresponding to the specified unique identifier set. Sequence set ranges are
-    /// permitted.
-    /// </summary>
+    /// <summary>Searches for messages with unique identifiers corresponding to the specified unique identifier set. Sequence set ranges are permitted.</summary>
     /// <param name="uidFirst"></param>
     /// <param name="uidLast"></param>
     /// <returns></returns>
     public static ImapSearch UID(uint uidFirst, int uidLast) => new(ImapSearchType.UID, uidFirst + " " + uidLast);
-
-    /// <summary>Searches messages that do not have the \Deleted flag set.</summary>
-    public static ImapSearch UNANSWERED => new(ImapSearchType.UNANSWERED);
-
-    /// <summary>Searches messages that do not have the \Deleted flag set.</summary>
-    public static ImapSearch UNDELETED => new(ImapSearchType.UNDELETED);
-
-    /// <summary>Searches messages that do not have the \Draft flag set.</summary>
-    public static ImapSearch UNDRAFT => new(ImapSearchType.UNDRAFT);
-
-    /// <summary>Searches messages that do not have the \Flagged flag set.</summary>
-    public static ImapSearch UNFLAGGED => new(ImapSearchType.UNFLAGGED);
 
     /// <summary>Searches messages that do not have the specified keyword flag set.</summary>
     public static ImapSearch UNKEYWORD(string keyword)
@@ -168,46 +215,9 @@ public class ImapSearch
         return new(ImapSearchType.UNKEYWORD, keyword);
     }
 
-    /// <summary>Searches messages that do not have the \Seen flag set.</summary>
-    public static ImapSearch UNSEEN => new(ImapSearchType.UNSEEN);
-
-    static string CheckString(string text)
-    {
-        if (Encoding.ASCII.GetString(Encoding.ASCII.GetBytes(text)) != text)
-        {
-            throw new("ImapSearch does not allow string searches with characters not part of US-ASCII !");
-        }
-
-        return text;
-    }
-
-    readonly string text;
-
-    ImapSearch(ImapSearchType type)
-        : this(type, null) { }
-
-    ImapSearch(ImapSearchType type, string parameters)
-    {
-        text = "";
-        if (string.IsNullOrEmpty(parameters))
-        {
-            if (type == ImapSearchType._MULTIPLE)
-            {
-                throw new InvalidOperationException();
-            }
-
-            text = type.ToString();
-            return;
-        }
-        if (type == ImapSearchType._MULTIPLE)
-        {
-            text = parameters;
-            return;
-        }
-        text = type + " " + parameters;
-    }
-
     /// <summary>Provides the searchtext.</summary>
     /// <returns></returns>
     public override string ToString() => text;
+
+    #endregion Public Methods
 }

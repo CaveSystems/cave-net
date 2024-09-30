@@ -5,12 +5,25 @@ namespace Cave.Mail;
 /// <summary>Provides a mail reader used to read rfc 822.</summary>
 public class Rfc822Reader
 {
+    #region Private Fields
+
     readonly byte[] data;
     int position;
 
-    /// <summary>Creates a new <see cref="Rfc822Reader" /> from the specified data.</summary>
+    #endregion Private Fields
+
+    #region Public Constructors
+
+    /// <summary>Creates a new <see cref="Rfc822Reader"/> from the specified data.</summary>
     /// <param name="data"></param>
     public Rfc822Reader(byte[] data) => this.data = data;
+
+    #endregion Public Constructors
+
+    #region Public Properties
+
+    /// <summary>Provides the overall length of data this reader works on.</summary>
+    public int Length => data.Length;
 
     /// <summary>Provides the current position in the reader.</summary>
     public int Position
@@ -23,8 +36,9 @@ public class Rfc822Reader
         }
     }
 
-    /// <summary>Provides the overall length of data this reader works on.</summary>
-    public int Length => data.Length;
+    #endregion Public Properties
+
+    #region Public Methods
 
     /// <summary>Extracts a byte buffer with the specified length starting at the specified position.</summary>
     /// <param name="start"></param>
@@ -81,26 +95,8 @@ public class Rfc822Reader
         return result;
     }
 
-    /// <summary>Reads a string with all bytes until the end is reached.</summary>
-    /// <returns></returns>
-    public virtual string ReadToEnd()
-    {
-        var result = ASCII.GetString(data, position, data.Length - position);
-        position = data.Length;
-        return result;
-    }
-
-    /// <summary>Reads a byte buffer with all bytes until the end is reached.</summary>
-    /// <returns></returns>
-    public byte[] ReadToEndData()
-    {
-        var start = position;
-        position = data.Length;
-        return Extract(start, position - start);
-    }
-
     /// <summary>Reads a line with the specified encoding without the trailing CR, LF, CRLF.</summary>
-    /// <returns></returns>
+    /// <returns>Returns a string containing the characters before the first [CR][LF]</returns>
     public virtual string ReadLine()
     {
         var start = position;
@@ -127,9 +123,29 @@ public class Rfc822Reader
         var size = data.Length - start;
         if (size == 0)
         {
-            return null;
+            return string.Empty;
         }
 
         return ASCII.GetString(data, start, size);
     }
+
+    /// <summary>Reads a string with all bytes until the end is reached.</summary>
+    /// <returns></returns>
+    public virtual string ReadToEnd()
+    {
+        var result = ASCII.GetString(data, position, data.Length - position);
+        position = data.Length;
+        return result;
+    }
+
+    /// <summary>Reads a byte buffer with all bytes until the end is reached.</summary>
+    /// <returns></returns>
+    public byte[] ReadToEndData()
+    {
+        var start = position;
+        position = data.Length;
+        return Extract(start, position - start);
+    }
+
+    #endregion Public Methods
 }

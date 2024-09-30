@@ -14,14 +14,8 @@ public sealed class DomainName
 {
     #region Private Fields
 
-#if NETSTANDARD1_0_OR_GREATER || NET5_0_OR_GREATER
-    static readonly string[] empty = Array.Empty<string>();
-#else
-        static readonly string[] empty = new string[0];
-#endif
-
     static readonly Regex asciiNameRegex = new("^[a-zA-Z0-9_-]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-
+    static readonly string[] empty = [];
     static readonly IdnMapping idnParser = new() { UseStd3AsciiRules = true };
 
     #endregion Private Fields
@@ -42,7 +36,7 @@ public sealed class DomainName
         }
         catch
         {
-            label = null;
+            label = string.Empty;
             return false;
         }
     }
@@ -58,14 +52,14 @@ public sealed class DomainName
 
     #region Public Constructors
 
-    /// <summary>Initializes a new instance of the <see cref="DomainName" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="DomainName"/> class.</summary>
     /// <param name="parts">The parts of the DomainName.</param>
     public DomainName(IEnumerable<string> parts)
         : this(parts?.ToArray()) { }
 
-    /// <summary>Initializes a new instance of the <see cref="DomainName" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="DomainName"/> class.</summary>
     /// <param name="parts">The parts of the DomainName.</param>
-    public DomainName(params string[] parts)
+    public DomainName(params string[]? parts)
     {
         Parts = parts ?? empty;
         foreach (var part in Parts)
@@ -93,14 +87,12 @@ public sealed class DomainName
 
     #region Public Methods
 
-    /// <summary>Performs an implicit conversion from <see cref="string" /> to <see cref="DomainName" />.</summary>
+    /// <summary>Performs an implicit conversion from <see cref="string"/> to <see cref="DomainName"/>.</summary>
     /// <param name="value">The value.</param>
     /// <returns>The result of the conversion.</returns>
     /// <exception cref="InvalidDataException">{0} is not a valid domain name.</exception>
     public static implicit operator DomainName(string value) =>
-        TryParse(value, out var name)
-            ? name
-            : throw new InvalidDataException(string.Format("{0} is not a valid domain name!", value));
+        (TryParse(value, out var name) ? name : null) ?? throw new InvalidDataException(string.Format("{0} is not a valid domain name!", value));
 
     /// <summary>Implements the operator !=.</summary>
     /// <param name="a">a.</param>
@@ -116,7 +108,7 @@ public sealed class DomainName
 
     /// <summary>Parses a domain name using the specified reader.</summary>
     /// <param name="reader">The reader.</param>
-    /// <returns>Returns a new <see cref="DomainName" /> instance.</returns>
+    /// <returns>Returns a new <see cref="DomainName"/> instance.</returns>
     /// <exception cref="NotSupportedException">Unsupported extended dns label.</exception>
     public static DomainName Parse(DataReader reader)
     {
@@ -133,7 +125,7 @@ public sealed class DomainName
                     reader.BaseStream.Position = endposition;
                 }
 
-                return new(parts.ToArray());
+                return new([.. parts]);
             }
             if (b >= 192)
             {
@@ -189,7 +181,7 @@ public sealed class DomainName
     /// <param name="value">The value.</param>
     /// <param name="name">The name.</param>
     /// <returns>Returns true if the value was parsed correctly, false otherwise.</returns>
-    public static bool TryParse(string value, out DomainName name)
+    public static bool TryParse(string value, out DomainName? name)
     {
         if (value == ".")
         {
@@ -231,14 +223,14 @@ public sealed class DomainName
             return false;
         }
 
-        name = new(parts.ToArray());
+        name = new([.. parts]);
         return true;
     }
 
-    /// <summary>Determines whether the specified <see cref="object" />, is equal to this instance.</summary>
-    /// <param name="obj">The <see cref="object" /> to compare with this instance.</param>
-    /// <returns><c>true</c> if the specified <see cref="object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
-    public override bool Equals(object obj) => obj is DomainName other && (ToString().ToLower() == other.ToString().ToLower());
+    /// <summary>Determines whether the specified <see cref="object"/>, is equal to this instance.</summary>
+    /// <param name="obj">The <see cref="object"/> to compare with this instance.</param>
+    /// <returns><c>true</c> if the specified <see cref="object"/> is equal to this instance; otherwise, <c>false</c>.</returns>
+    public override bool Equals(object? obj) => obj is DomainName other && (ToString().ToLowerInvariant() == other.ToString().ToLowerInvariant());
 
     /// <summary>Returns a hash code for this instance.</summary>
     /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>
@@ -269,7 +261,7 @@ public sealed class DomainName
     }
 
     /// <summary>Randomizes the character casing.</summary>
-    /// <returns>Returns a new <see cref="DomainName" /> instance with random case.</returns>
+    /// <returns>Returns a new <see cref="DomainName"/> instance with random case.</returns>
     public DomainName RandomCase()
     {
         var parts = Parts;
@@ -280,8 +272,8 @@ public sealed class DomainName
         return new(parts);
     }
 
-    /// <summary>Returns a <see cref="string" /> that represents this instance.</summary>
-    /// <returns>A <see cref="string" /> that represents this instance.</returns>
+    /// <summary>Returns a <see cref="string"/> that represents this instance.</summary>
+    /// <returns>A <see cref="string"/> that represents this instance.</returns>
     public override string ToString() => string.Join(".", Parts);
 
     #endregion Public Methods
