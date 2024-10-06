@@ -16,7 +16,7 @@ public class WakeOnLan
     /// <param name="macAddress">Physical address to send packet to.</param>
     /// <param name="secureOnPassword">Secure on password. (This is sent in clear text!).</param>
     /// <returns>Returns a dictionary with used ip address and exception.</returns>
-    public static IDictionary<IPAddress, Exception> SendMagicPacket(PhysicalAddress macAddress, string? secureOnPassword = null)
+    public static IDictionary<IPAddress, Exception?> SendMagicPacket(PhysicalAddress macAddress, string? secureOnPassword = null)
     {
         var result = new Dictionary<IPAddress, Exception?>();
         foreach (var local in NetTools.GetLocalAddresses(OperationalStatus.Up))

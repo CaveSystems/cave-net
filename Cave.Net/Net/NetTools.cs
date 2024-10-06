@@ -219,10 +219,10 @@ public static class NetTools
         var portIndex = text.LastIndexOf(':');
         if (portIndex > -1)
         {
-            var portString = text.Substring(portIndex + 1);
+            var portString = text[(portIndex + 1)..];
             if (int.TryParse(portString, out port))
             {
-                text = text.Substring(0, portIndex);
+                text = text[..portIndex];
             }
         }
 

@@ -22,7 +22,7 @@ struct ImapAnswer
         {
             throw new InvalidOperationException();
         }
-        throw new InvalidOperationException(Result.Substring(index));
+        throw new InvalidOperationException(Result[index..]);
     }
 
     #endregion Internal Methods

@@ -20,7 +20,7 @@ public static class Rfc2047
     {
         if (IsEncodedString(data))
         {
-            var encoded = data.Substring(2, data.Length - 4);
+            var encoded = data[2..^2];
             var parts = new string[3];
             var part = 0;
             var start = 0;
@@ -28,7 +28,7 @@ public static class Rfc2047
             {
                 if (encoded[i] == '?')
                 {
-                    parts[part++] = encoded.Substring(start, i - start);
+                    parts[part++] = encoded[start..i];
                     start = ++i;
                     if (part == 2)
                     {
@@ -36,7 +36,7 @@ public static class Rfc2047
                     }
                 }
             }
-            parts[2] = encoded.Substring(start, encoded.Length - start);
+            parts[2] = encoded[start..];
             //load default encoding used as fallback
             var encoding = Encoding.GetEncoding(1252);
             //try to get encoding by webname, many non standard email services use whatever they want as encoding string

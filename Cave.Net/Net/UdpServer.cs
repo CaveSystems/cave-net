@@ -10,7 +10,7 @@ public class UdpServer : IDisposable
 {
     #region Private Fields
 
-    byte[] buffer = new byte[2048];
+    readonly byte[] buffer = new byte[2048];
     EndPoint client = new IPEndPoint(0, 0);
     Socket? socket;
 

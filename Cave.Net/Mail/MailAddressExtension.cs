@@ -29,7 +29,7 @@ public static class MailAddressExtension
             throw new ArgumentOutOfRangeException(nameof(serverName), "ServerName needs to be a full qualified domain name!");
         }
 
-        var email = serverName.Substring(0, i) + '@' + serverName.Substring(i + 1);
+        var email = serverName[..i] + '@' + serverName[(i + 1)..];
         var validator = new SmtpValidator(serverName, new(email));
         validator.Validate(address, true);
     }

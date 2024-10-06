@@ -165,13 +165,13 @@ public static class Rfc822DateTime
             var timeZoneIndex = date.IndexOfAny(timeZoneSeparator);
             if (timeZoneIndex > -1)
             {
-                var timeZone = date.Substring(timeZoneIndex).Trim();
-                date = date.Substring(0, timeZoneIndex);
+                var timeZone = date[timeZoneIndex..].Trim();
+                date = date[..timeZoneIndex];
                 try
                 {
                     if (timeZone.Length > 5)
                     {
-                        timeZone = timeZone.Substring(0, 5);
+                        timeZone = timeZone[..5];
                     }
 
                     localDifference = int.Parse(timeZone) / 100.0;

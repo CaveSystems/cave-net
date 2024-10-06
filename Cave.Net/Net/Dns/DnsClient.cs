@@ -19,6 +19,7 @@ public class DnsClient
 {
     #region Private Fields
 
+    static readonly string[] NoSuffix = ["."];
     static readonly char[] resolvSeparator = [' ', '\t'];
 
     #endregion Private Fields
@@ -37,7 +38,7 @@ public class DnsClient
                     var i = s.IndexOf('#');
                     if (i > -1)
                     {
-                        s = s.Substring(0, i);
+                        s = s[..i];
                     }
 
                     var parts = s.Split(resolvSeparator, StringSplitOptions.RemoveEmptyEntries);
@@ -138,8 +139,8 @@ public class DnsClient
         }
         lock (results)
         {
-            exceptions = results.Select(r => r is Exception ex ? ex : null).Where(r => r is not null).ToList();
-            responses = results.Select(r => r is DnsResponse d ? d : null).Where(r => r is not null).ToList();
+            exceptions = results.Select(r => r is Exception ex ? ex : null).Where(r => r is not null).ToList()!;
+            responses = results.Select(r => r is DnsResponse d ? d : null).Where(r => r is not null).ToList()!;
             if ((exceptions.Count == 0) && (responses.Count == 0))
             {
                 throw new("No exceptions and no responses received. This indicates a fatal bug at DnsClient!");
@@ -421,7 +422,7 @@ public class DnsClient
 
         if (query.Name is null)
         {
-            throw new ArgumentNullException("Name", "Name must be provided");
+            throw new ArgumentException("Name must be provided");
         }
 
         var skipUdp = query.Length > 512;
@@ -545,7 +546,7 @@ public class DnsClient
 
         if (query.Name is null)
         {
-            throw new ArgumentNullException(nameof(query.Name), "Name must be provided");
+            throw new ArgumentException("Name must be provided");
         }
 
         var exceptions = new List<Exception>();
@@ -581,7 +582,7 @@ public class DnsClient
     /// <exception cref="AggregateException">Could not reach any dns server.</exception>
     public DnsResponse ResolveWithSearchSuffix(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
     {
-        SearchSuffixes ??= new string[] { "." }.Concat(NetworkInterface.GetAllNetworkInterfaces().Select(i => i.GetIPProperties().DnsSuffix)).Distinct().ToArray();
+        SearchSuffixes ??= NoSuffix.Concat(NetworkInterface.GetAllNetworkInterfaces().Select(i => i.GetIPProperties().DnsSuffix)).Distinct().ToArray();
         var exceptions = new Exception[SearchSuffixes.Length];
         var responses = new DnsResponse[SearchSuffixes.Length];
 

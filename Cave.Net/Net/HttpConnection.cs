@@ -20,56 +20,6 @@ namespace Cave.Net
     /// <summary>Provides a simple asynchronous http fetch.</summary>
     public sealed class HttpConnection
     {
-#if !NETCOREAPP && !NETSTANDARD
-
-        [SuppressMessage("Globalization", "CA1304")]
-        static HttpConnection()
-        {
-            try
-            {
-                new System.Net.Configuration.HttpWebRequestElement().UseUnsafeHeaderParsing = true;
-                return;
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex);
-            }
-            try
-            {
-                var outerType = typeof(System.Net.Configuration.SettingsSection);
-                var asm = Assembly.GetAssembly(outerType);
-                if (asm != null)
-                {
-                    // Use the assembly in order to get the internal type for the internal class
-                    var type = asm.GetType("System.Net.Configuration.SettingsSectionInternal");
-                    if (type != null)
-                    {
-                        // Use the internal static property to get an instance of the internal settings class. If the static instance isn't created allready the
-                        // property will create it for us.
-                        var obj = type.InvokeMember("Section", BindingFlags.Static | BindingFlags.GetProperty | BindingFlags.NonPublic, null, null, new object[] { });
-                        if (obj != null)
-                        {
-                            // Locate the private bool field that tells the framework is unsafe header parsing should be allowed or not
-                            var field = type.GetField("useUnsafeHeaderParsing", BindingFlags.NonPublic | BindingFlags.Instance);
-                            if (field != null)
-                            {
-                                field.SetValue(obj, true);
-                                Trace.WriteLine("UseUnsafeHeaderParsing enabled.");
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace.WriteLine(ex);
-            }
-            Trace.WriteLine("UseUnsafeHeaderParsing disabled.");
-        }
-
-#endif
-
         #region Private Fields
 
         static readonly string[] BypassProxyList = ["localhost"];
@@ -137,6 +87,54 @@ namespace Cave.Net
         #endregion Private Methods
 
         #region Public Constructors
+
+        [SuppressMessage("Globalization", "CA1304")]
+        static HttpConnection()
+        {
+#if !NETCOREAPP && !NETSTANDARD
+            try
+            {
+                new System.Net.Configuration.HttpWebRequestElement().UseUnsafeHeaderParsing = true;
+                return;
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex);
+            }
+            try
+            {
+                var outerType = typeof(System.Net.Configuration.SettingsSection);
+                var asm = Assembly.GetAssembly(outerType);
+                if (asm != null)
+                {
+                    // Use the assembly in order to get the internal type for the internal class
+                    var type = asm.GetType("System.Net.Configuration.SettingsSectionInternal");
+                    if (type != null)
+                    {
+                        // Use the internal static property to get an instance of the internal settings class. If the static instance isn't created allready the
+                        // property will create it for us.
+                        var obj = type.InvokeMember("Section", BindingFlags.Static | BindingFlags.GetProperty | BindingFlags.NonPublic, null, null, new object[] { });
+                        if (obj != null)
+                        {
+                            // Locate the private bool field that tells the framework is unsafe header parsing should be allowed or not
+                            var field = type.GetField("useUnsafeHeaderParsing", BindingFlags.NonPublic | BindingFlags.Instance);
+                            if (field != null)
+                            {
+                                field.SetValue(obj, true);
+                                Trace.WriteLine("UseUnsafeHeaderParsing enabled.");
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine(ex);
+            }
+            Trace.WriteLine("UseUnsafeHeaderParsing disabled.");
+#endif
+        }
 
         /// <summary>Initializes a new instance of the <see cref="HttpConnection"/> class.</summary>
         public HttpConnection() { }

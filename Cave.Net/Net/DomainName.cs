@@ -196,7 +196,7 @@ public sealed class DomainName
         {
             if ((value[i] == '.') && ((i == 0) || (value[i - 1] != '\\')))
             {
-                if (TryParsePart(value.Substring(start, i - start), out part) && (part.Length <= 64))
+                if (TryParsePart(value[start..i], out part) && (part.Length <= 64))
                 {
                     parts.Add(part);
                     start = i + 1;
@@ -213,7 +213,7 @@ public sealed class DomainName
         {
             // empty label --> name ends with dot
         }
-        else if (TryParsePart(value.Substring(start, value.Length - start), out part) && (part.Length <= 64))
+        else if (TryParsePart(value[start..], out part) && (part.Length <= 64))
         {
             parts.Add(part);
         }

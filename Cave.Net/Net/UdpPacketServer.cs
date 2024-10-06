@@ -56,7 +56,7 @@ public class UdpPacketServer
     {
         var newConnection = false;
 
-        // checl all present clients
+        // checks all present clients
         lock (clients)
         {
             if (!clients.ContainsKey(packet.RemoteEndPoint))
