@@ -229,7 +229,7 @@ public sealed class ImapClient : IDisposable
             throw new ArgumentOutOfRangeException(nameof(number));
         }
 
-        for (int retry = 0; ; retry++)
+        for (var retry = 0; ; retry++)
         {
             if (retry > 3) throw new Exception($"Could not get header of message {number}");
             var answer = SendCommand("FETCH " + number + " BODY[HEADER]");
@@ -237,7 +237,7 @@ public sealed class ImapClient : IDisposable
             var streamReader = answer.GetStreamReader(0);
             var header = streamReader.ReadLine();
             if (header is null) continue;
-            var size = int.Parse(header.Substring(header.LastIndexOf('{')).Unbox("{", "}"));
+            var size = int.Parse(header[header.LastIndexOf('{')..].Unbox("{", "}"));
             var dataReader = answer.GetDataReader(header.Length + 2);
             var messageData = dataReader.ReadBytes(size);
             if (messageData.Length != size) continue;
@@ -300,7 +300,7 @@ public sealed class ImapClient : IDisposable
         {
             if (line.StartsWith("* SEARCH "))
             {
-                var s = line.Substring(9);
+                var s = line[9..];
                 if (int.TryParse(s, out var value))
                 {
                     sequence += ImapNumberSequence.CreateList(value);

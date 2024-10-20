@@ -16,30 +16,65 @@ namespace Cave.Net;
 /// <summary>Provides a ssl client implementation.</summary>
 public class SslClient : IDisposable
 {
-    #region Public Fields
-
-    /// <summary>Check certificate revocation.</summary>
-    public bool CheckRevocation;
-
-    #endregion Public Fields
-
-    #region public events
-
-    /// <summary>
-    /// Event to be executed on each new incoming connection to be authenticated. The event may prohibit authentication based on the certificate, chain and
-    /// errors encountered
-    /// </summary>
-    public event EventHandler<SslAuthenticationEventArgs>? Authenticate;
-
-    /// <summary>Event to be executed on each new incoming connection before authentication. This is the certificate that will be</summary>
-    public event LocalCertificateSelectionCallback? LocalCertificateSelection;
-
-    #endregion public events
-
-    #region private implementation
+    #region Private Fields
 
     TcpClient? client;
+
     SslStream? stream;
+
+    #endregion Private Fields
+
+    #region Protected Methods
+
+    /// <summary>Releases the unmanaged resources used by this instance and optionally releases the managed resources.</summary>
+    /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            // free managed resources
+            if (stream != null)
+            {
+                stream.Dispose();
+                stream = null;
+            }
+            if (client != null)
+            {
+                ((IDisposable)client).Dispose();
+                client = null;
+            }
+        }
+
+        // free native resources if there are any.
+    }
+
+    /// <summary>This function will be called while authenticating a connection to another sslclient instance and runs the <see cref="Authenticate"/> event.</summary>
+    /// <param name="eventArgs">Ssl authentication arguments.</param>
+    protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs)
+    {
+        if (eventArgs == null)
+        {
+            throw new ArgumentNullException(nameof(eventArgs));
+        }
+
+        var auth = Authenticate;
+        if (auth != null)
+        {
+            auth.Invoke(this, eventArgs);
+        }
+        else
+        {
+            eventArgs.Validated &= eventArgs.SslValidationErrors == SslValidationErrors.None;
+            if (AllowClientAuthWithoutCert)
+            {
+                eventArgs.Validated &= (eventArgs.SslPolicyErrors & ~SslPolicyErrors.RemoteCertificateNotAvailable) == SslPolicyErrors.None;
+            }
+            else
+            {
+                eventArgs.Validated &= eventArgs.SslPolicyErrors == SslPolicyErrors.None;
+            }
+        }
+    }
 
     /// <summary>Called when [select local cert].</summary>
     /// <param name="sender">The sender.</param>
@@ -105,69 +140,19 @@ public class SslClient : IDisposable
         return e.Validated;
     }
 
-    #endregion private implementation
-
-    #region Protected Methods
-
-    /// <summary>Releases the unmanaged resources used by this instance and optionally releases the managed resources.</summary>
-    /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            // free managed resources
-            if (stream != null)
-            {
-                stream.Dispose();
-                stream = null;
-            }
-            if (client != null)
-            {
-                ((IDisposable)client).Dispose();
-                client = null;
-            }
-        }
-
-        // free native resources if there are any.
-    }
-
-    /// <summary>This function will be called while authenticating a connection to another sslclient instance and runs the <see cref="Authenticate"/> event.</summary>
-    /// <param name="eventArgs">Ssl authentication arguments.</param>
-    protected virtual void OnAuthenticate(SslAuthenticationEventArgs eventArgs)
-    {
-        if (eventArgs == null)
-        {
-            throw new ArgumentNullException(nameof(eventArgs));
-        }
-
-        var auth = Authenticate;
-        if (auth != null)
-        {
-            auth.Invoke(this, eventArgs);
-        }
-        else
-        {
-            eventArgs.Validated &= eventArgs.SslValidationErrors == SslValidationErrors.None;
-            if (AllowClientAuthWithoutCert)
-            {
-                eventArgs.Validated &= (eventArgs.SslPolicyErrors & ~SslPolicyErrors.RemoteCertificateNotAvailable) == SslPolicyErrors.None;
-            }
-            else
-            {
-                eventArgs.Validated &= eventArgs.SslPolicyErrors == SslPolicyErrors.None;
-            }
-        }
-    }
-
     #endregion Protected Methods
 
-    #region constructors
+    #region Public Fields
+
+    /// <summary>Check certificate revocation.</summary>
+    public bool CheckRevocation;
+
+    #endregion Public Fields
+
+    #region Public Constructors
 
     /// <summary>Initializes a new instance of the <see cref="SslClient"/> class.</summary>
-    public SslClient()
-    {
-        RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
-    }
+    public SslClient() => RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
     /// <summary>Initializes a new instance of the <see cref="SslClient"/> class.</summary>
     /// <param name="client">Client to use.</param>
@@ -177,7 +162,20 @@ public class SslClient : IDisposable
         RemoteEndPoint = (this.client.Client.RemoteEndPoint as IPEndPoint) ?? throw new InvalidCastException("Could not cast RemoteEndPoint"); ;
     }
 
-    #endregion constructors
+    #endregion Public Constructors
+
+    #region Public Events
+
+    /// <summary>
+    /// Event to be executed on each new incoming connection to be authenticated. The event may prohibit authentication based on the certificate, chain and
+    /// errors encountered
+    /// </summary>
+    public event EventHandler<SslAuthenticationEventArgs>? Authenticate;
+
+    /// <summary>Event to be executed on each new incoming connection before authentication. This is the certificate that will be</summary>
+    public event LocalCertificateSelectionCallback? LocalCertificateSelection;
+
+    #endregion Public Events
 
     #region Public Properties
 

@@ -19,13 +19,14 @@ public class DnsClient
 {
     #region Private Fields
 
-    static readonly char[] resolvSeparator = [' ', '\t'];
+    static readonly string[] NoSuffix = ["."];
+    static readonly char[] ResolvSeparator = [' ', '\t'];
 
     #endregion Private Fields
 
     #region Private Methods
 
-    static void LoadEtcResolvConf(IItemSet<IPAddress> result)
+    static void LoadEtcResolvConf(Set<IPAddress> result)
     {
         if (File.Exists("/etc/resolv.conf"))
         {
@@ -37,10 +38,10 @@ public class DnsClient
                     var i = s.IndexOf('#');
                     if (i > -1)
                     {
-                        s = s.Substring(0, i);
+                        s = s[..i];
                     }
 
-                    var parts = s.Split(resolvSeparator, StringSplitOptions.RemoveEmptyEntries);
+                    var parts = s.Split(ResolvSeparator, StringSplitOptions.RemoveEmptyEntries);
                     if (parts.Length > 1)
                     {
                         if (parts[0].ToUpperInvariant() != "NAMESERVER")
@@ -138,8 +139,8 @@ public class DnsClient
         }
         lock (results)
         {
-            exceptions = results.Select(r => r is Exception ex ? ex : null).Where(r => r is not null).ToList();
-            responses = results.Select(r => r is DnsResponse d ? d : null).Where(r => r is not null).ToList();
+            exceptions = results.Select(r => r is Exception ex ? ex : null).Where(r => r is not null).ToList()!;
+            responses = results.Select(r => r is DnsResponse d ? d : null).Where(r => r is not null).ToList()!;
             if ((exceptions.Count == 0) && (responses.Count == 0))
             {
                 throw new("No exceptions and no responses received. This indicates a fatal bug at DnsClient!");
@@ -421,7 +422,7 @@ public class DnsClient
 
         if (query.Name is null)
         {
-            throw new ArgumentNullException("Name", "Name must be provided");
+            throw new ArgumentException("Name must be provided");
         }
 
         var skipUdp = query.Length > 512;
@@ -479,7 +480,7 @@ public class DnsClient
 
         if (query.Name is null)
         {
-            throw new ArgumentNullException(nameof(query.Name), "Name must be provided");
+            throw new InvalidOperationException("Query.Name has to be provided!");
         }
 
         var skipUdp = query.Length > 512;
@@ -545,7 +546,7 @@ public class DnsClient
 
         if (query.Name is null)
         {
-            throw new ArgumentNullException(nameof(query.Name), "Name must be provided");
+            throw new ArgumentException("Name must be provided");
         }
 
         var exceptions = new List<Exception>();
@@ -581,7 +582,7 @@ public class DnsClient
     /// <exception cref="AggregateException">Could not reach any dns server.</exception>
     public DnsResponse ResolveWithSearchSuffix(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
     {
-        SearchSuffixes ??= new string[] { "." }.Concat(NetworkInterface.GetAllNetworkInterfaces().Select(i => i.GetIPProperties().DnsSuffix)).Distinct().ToArray();
+        SearchSuffixes ??= NoSuffix.Concat(NetworkInterface.GetAllNetworkInterfaces().Select(i => i.GetIPProperties().DnsSuffix)).Distinct().ToArray();
         var exceptions = new Exception[SearchSuffixes.Length];
         var responses = new DnsResponse[SearchSuffixes.Length];
 

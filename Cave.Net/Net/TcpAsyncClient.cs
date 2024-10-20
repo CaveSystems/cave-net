@@ -17,7 +17,7 @@ namespace Cave.Net;
 [DebuggerDisplay("{RemoteEndPoint}")]
 public class TcpAsyncClient : IDisposable
 {
-    #region private class
+    #region Private Fields
 
     readonly object syncRoot = new();
     long bytesReceived;
@@ -25,6 +25,7 @@ public class TcpAsyncClient : IDisposable
     volatile bool closing;
     bool connectedEventTriggered;
     bool disconnectedEventTriggered;
+    bool disposed;
     LingerOption lingerState = new(false, 0);
     bool noDelay;
     int pendingAsyncSends;
@@ -34,6 +35,10 @@ public class TcpAsyncClient : IDisposable
     short ttl = 255;
     Socket? uncheckedSocket;
 
+    #endregion Private Fields
+
+    #region Private Properties
+
     Socket CheckedSocket => uncheckedSocket == null
         ? throw new InvalidOperationException("Not connected!")
         : closing
@@ -41,6 +46,10 @@ public class TcpAsyncClient : IDisposable
             : uncheckedSocket;
 
     bool Initialized => uncheckedSocket != null;
+
+    #endregion Private Properties
+
+    #region Private Methods
 
     T CachedValue<T>(ref T field, Func<T?> func)
         where T : struct
@@ -64,6 +73,122 @@ public class TcpAsyncClient : IDisposable
         return field;
     }
 
+    void ConnectAsyncCallback(object? sender, SocketAsyncEventArgs e)
+    {
+        EnterLock();
+        try
+        {
+            if (e.SocketError != SocketError.Success)
+            {
+#if !NET20 && !NET35
+                if (e.ConnectByNameError != null)
+                {
+                    OnError(e.ConnectByNameError);
+                    return;
+                }
+#endif
+                OnError(new SocketException((int)e.SocketError));
+                return;
+            }
+            if (!CheckedSocket.Connected)
+            {
+                OnError(new SocketException((int)SocketError.SocketError));
+                return;
+            }
+            try
+            {
+                var socket = (sender as Socket) ?? throw new InvalidCastException("Could not cast sender to socket!");
+                InitializeSocket(socket);
+                StartReader();
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
+        }
+        finally
+        {
+            e.Dispose();
+            ExitLock();
+        }
+    }
+
+    void ConnectAsyncCallback(IAsyncResult asyncResult)
+    {
+        EnterLock();
+        try
+        {
+            var socket = (asyncResult.AsyncState as Socket) ?? throw new InvalidOperationException("Invalid AsyncState.");
+            if (!socket.Connected)
+            {
+                OnError(new SocketException((int)SocketError.SocketError));
+                return;
+            }
+            socket.EndConnect(asyncResult);
+            InitializeSocket(socket);
+            StartReader();
+        }
+        catch (Exception ex)
+        {
+            OnError(ex);
+        }
+        finally
+        {
+            ExitLock();
+        }
+    }
+
+    void ConnectInternal(IPEndPoint endpoint)
+    {
+        EnterLock();
+        try
+        {
+            while (true)
+            {
+                var socket = CreateSocket(endpoint.AddressFamily);
+                var asyncResult = socket.BeginConnect(endpoint.Address, endpoint.Port, null, null);
+                if (HandleAsyncConnectResult(socket, asyncResult))
+                {
+                    return;
+                }
+            }
+        }
+        finally
+        {
+            ExitLock();
+        }
+    }
+
+    void ConnectInternal(string hostname, int port)
+    {
+        EnterLock();
+        try
+        {
+            var response = DnsClient.Default.Resolve(hostname);
+            var errors = new List<Exception>();
+            foreach (var answer in response.Answers)
+            {
+                if (IPAddress.TryParse($"{answer.Value}", out var address))
+                {
+                    try
+                    {
+                        ConnectInternal(new(address, port));
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add(ex);
+                    }
+                }
+            }
+            throw new AggregateException($"Could not connect to any ip address for host {hostname}!", errors);
+        }
+        finally
+        {
+            ExitLock();
+        }
+    }
+
     Socket CreateSocket(AddressFamily family)
     {
         if (closing)
@@ -81,6 +206,26 @@ public class TcpAsyncClient : IDisposable
         return socket;
     }
 
+    void DisposeUnmanaged()
+    {
+        if (!disposed)
+        {
+            disposed = true;
+            {
+                if (uncheckedSocket is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+            {
+                if (socketAsync is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+        }
+    }
+
     void EnterLock()
     {
         if (!Monitor.TryEnter(syncRoot, DeadLockTimeout))
@@ -91,20 +236,34 @@ public class TcpAsyncClient : IDisposable
 
     void ExitLock() => Monitor.Exit(syncRoot);
 
-    internal void InitializeSocket(Socket socket)
+    bool HandleAsyncConnectResult(Socket socket, IAsyncResult asyncResult)
     {
-        if (socket == null)
+        try
         {
-            throw new ArgumentNullException(nameof(socket));
+            if (asyncResult.AsyncWaitHandle.WaitOne(ConnectTimeout))
+            {
+                socket.EndConnect(asyncResult);
+                InitializeSocket(socket);
+                StartReader();
+                return true;
+            }
+            Close();
+            throw new TimeoutException();
         }
-        if (Initialized)
+        catch (SocketException s)
         {
-            throw new InvalidOperationException("Already initialized!");
+            if (s.SocketErrorCode != SocketError.AddressAlreadyInUse)
+            {
+                OnError(s);
+                throw;
+            }
+            return false;
         }
-        SetSocketOptions(socket);
-        RemoteEndPoint = (socket.RemoteEndPoint as IPEndPoint) ?? throw new InvalidOperationException("Could not get RemoteEndPoint!");
-        LocalEndPoint = (socket.LocalEndPoint as IPEndPoint) ?? throw new InvalidOperationException("Could not get LocalEndPoint!");
-        uncheckedSocket = socket;
+        catch (Exception ex)
+        {
+            OnError(ex);
+            throw;
+        }
     }
 
     void InternalSendAsync<T>(byte[] buffer, int offset, int length, Action<T> callback, T state)
@@ -266,52 +425,23 @@ public class TcpAsyncClient : IDisposable
         field = value;
     }
 
-    #endregion private class
+    #endregion Private Methods
 
-    #region internal functions used by TcpSocketServer
+    #region Protected Methods
 
-    /// <summary>Initializes the client for use with the specified <paramref name="server"/> instance.</summary>
-    /// <exception cref="InvalidOperationException">Reader already started.</exception>
-    /// <param name="server">Server instance this client belongs to.</param>
-    /// <param name="socket">Socket instance this client uses.</param>
-    protected internal virtual void InitializeServer(ITcpServer server, Socket socket)
+    /// <summary>Releases the unmanaged resources used by this instance and optionally releases the managed resources.</summary>
+    /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
+    protected virtual void Dispose(bool disposing)
     {
-        if (socket == null)
+        if (disposing)
         {
-            throw new ArgumentNullException(nameof(socket));
+            if (!closing)
+            {
+                Close();
+            }
         }
-        Server = server ?? throw new ArgumentNullException(nameof(server));
-        BufferSize = server.BufferSize;
-        ReceiveTimeout = server.ReceiveTimeout;
-        SendTimeout = server.SendTimeout;
-        InitializeSocket(socket);
+        DisposeUnmanaged();
     }
-
-    /// <summary>Calls the <see cref="OnConnect()"/> function and starts the async socket reader.</summary>
-    internal void StartReader()
-    {
-        if (socketAsync != null)
-        {
-            throw new InvalidOperationException("Reader already started!");
-        }
-        OnConnect();
-        CheckedSocket.SendBufferSize = BufferSize;
-        CheckedSocket.ReceiveBufferSize = BufferSize;
-        var buffer = new byte[BufferSize];
-        socketAsync = new()
-        { UserToken = this };
-        socketAsync.Completed += ReadCompleted;
-        socketAsync.SetBuffer(buffer, 0, buffer.Length);
-        var isPending = CheckedSocket.ReceiveAsync(socketAsync);
-        if (!isPending)
-        {
-            ThreadPool.QueueUserWorkItem(e => ReadCompleted(this, (SocketAsyncEventArgs)e!), socketAsync);
-        }
-    }
-
-    #endregion internal functions used by TcpSocketServer
-
-    #region events
 
     /// <summary>Calls the <see cref="Buffered"/> event (if set).</summary>
     protected virtual void OnBuffered() => Buffered?.Invoke(this, new());
@@ -367,6 +497,27 @@ public class TcpAsyncClient : IDisposable
     /// <param name="length">Length in bytes of the sent data.</param>
     protected virtual void OnSent(byte[] buffer, int offset, int length) => Sent?.Invoke(this, new(buffer, offset, length));
 
+    #endregion Protected Methods
+
+    #region Protected Internal Methods
+
+    /// <summary>Initializes the client for use with the specified <paramref name="server"/> instance.</summary>
+    /// <exception cref="InvalidOperationException">Reader already started.</exception>
+    /// <param name="server">Server instance this client belongs to.</param>
+    /// <param name="socket">Socket instance this client uses.</param>
+    protected internal virtual void InitializeServer(ITcpServer server, Socket socket)
+    {
+        if (socket == null)
+        {
+            throw new ArgumentNullException(nameof(socket));
+        }
+        Server = server ?? throw new ArgumentNullException(nameof(server));
+        BufferSize = server.BufferSize;
+        ReceiveTimeout = server.ReceiveTimeout;
+        SendTimeout = server.SendTimeout;
+        InitializeSocket(socket);
+    }
+
     /// <summary>Calls the Error event (if set) and closes the connection.</summary>
     /// <param name="ex">The exception (most of the time this will be a <see cref="SocketException"/>.</param>
     protected internal virtual void OnError(Exception ex)
@@ -377,6 +528,64 @@ public class TcpAsyncClient : IDisposable
             Close();
         }
     }
+
+    #endregion Protected Internal Methods
+
+    #region Internal Methods
+
+    internal void InitializeSocket(Socket socket)
+    {
+        if (socket == null)
+        {
+            throw new ArgumentNullException(nameof(socket));
+        }
+        if (Initialized)
+        {
+            throw new InvalidOperationException("Already initialized!");
+        }
+        SetSocketOptions(socket);
+        RemoteEndPoint = (socket.RemoteEndPoint as IPEndPoint) ?? throw new InvalidOperationException("Could not get RemoteEndPoint!");
+        LocalEndPoint = (socket.LocalEndPoint as IPEndPoint) ?? throw new InvalidOperationException("Could not get LocalEndPoint!");
+        uncheckedSocket = socket;
+    }
+
+    /// <summary>Calls the <see cref="OnConnect()"/> function and starts the async socket reader.</summary>
+    internal void StartReader()
+    {
+        if (socketAsync != null)
+        {
+            throw new InvalidOperationException("Reader already started!");
+        }
+        OnConnect();
+        CheckedSocket.SendBufferSize = BufferSize;
+        CheckedSocket.ReceiveBufferSize = BufferSize;
+        var buffer = new byte[BufferSize];
+        socketAsync = new()
+        { UserToken = this };
+        socketAsync.Completed += ReadCompleted;
+        socketAsync.SetBuffer(buffer, 0, buffer.Length);
+        var isPending = CheckedSocket.ReceiveAsync(socketAsync);
+        if (!isPending)
+        {
+            ThreadPool.QueueUserWorkItem(e => ReadCompleted(this, (SocketAsyncEventArgs)e!), socketAsync);
+        }
+    }
+
+    #endregion Internal Methods
+
+    #region Public Constructors
+
+    /// <summary>Initializes a new instance of the <see cref="TcpAsyncClient"/> class.</summary>
+    public TcpAsyncClient()
+    {
+        Stream = new(this);
+        LocalEndPoint = new IPEndPoint(IPAddress.Any, 0);
+        RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+    }
+
+    #endregion Public Constructors
+
+    #region Public Events
 
     /// <summary>Event to be called after a buffer was received and was not handled by the <see cref="Received"/> event</summary>
     public event EventHandler<EventArgs>? Buffered;
@@ -396,167 +605,114 @@ public class TcpAsyncClient : IDisposable
     /// <summary>Event to be called after a buffer was sent</summary>
     public event EventHandler<BufferEventArgs>? Sent;
 
-    #endregion events
+    #endregion Public Events
 
-    #region Public Constructors
+    #region Public Properties
 
-    /// <summary>Initializes a new instance of the <see cref="TcpAsyncClient"/> class.</summary>
-    public TcpAsyncClient()
+    /// <summary>Gets the buffer size used.</summary>
+    public int BufferSize { get; private set; }
+
+    /// <summary>Gets the number of bytes received.</summary>
+    public long BytesReceived => Interlocked.Read(ref bytesReceived);
+
+    /// <summary>Gets the number of bytes sent.</summary>
+    public long BytesSent => Interlocked.Read(ref bytesSent);
+
+    /// <summary>Gets or sets the amount of time, in milliseconds, that a connect operation blocks waiting for data.</summary>
+    /// <value>
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the connect operation does not time out.
+    /// </value>
+    public int ConnectTimeout { get; set; } = 5000;
+
+    /// <summary>Gets or sets the dead lock timeout. This is the maximum time thread safe functions wait for acquiring the socket lock.</summary>
+    public TimeSpan DeadLockTimeout { get; set; } = TimeSpan.FromSeconds(1);
+
+    /// <summary>Gets a value indicating whether the client is connected.</summary>
+    public bool IsConnected => !closing && (uncheckedSocket?.Connected ?? false);
+
+    /// <summary>Gets or sets a value that specifies whether the Socket will delay closing a socket in an attempt to send all pending data.</summary>
+    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
+    public LingerOption LingerState
     {
-        Stream = new(this);
-        LocalEndPoint = new IPEndPoint(IPAddress.Any, 0);
-        RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+        get => CachedValue(ref lingerState, () => uncheckedSocket?.LingerState);
+        set => SetValue(ref lingerState, v => CheckedSocket.LingerState = v, value);
     }
 
-    #endregion Public Constructors
+    /// <summary>Gets the local end point.</summary>
+    /// <value>The local end point.</value>
+    public IPEndPoint LocalEndPoint { get; private set; }
 
-    #region public functions
-
-    void ConnectAsyncCallback(object? sender, SocketAsyncEventArgs e)
+    /// <summary>Gets or sets a value indicating whether the stream Socket is using the Nagle algorithm.</summary>
+    /// <value><c>true</c> if the Socket uses the Nagle algorithm; otherwise, <c>false</c>.</value>
+    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
+    public bool NoDelay
     {
-        EnterLock();
-        try
-        {
-            if (e.SocketError != SocketError.Success)
-            {
-#if !NET20 && !NET35
-                if (e.ConnectByNameError != null)
-                {
-                    OnError(e.ConnectByNameError);
-                    return;
-                }
-#endif
-                OnError(new SocketException((int)e.SocketError));
-                return;
-            }
-            if (!CheckedSocket.Connected)
-            {
-                OnError(new SocketException((int)SocketError.SocketError));
-                return;
-            }
-            try
-            {
-                var socket = (sender as Socket) ?? throw new InvalidCastException("Could not cast sender to socket!");
-                InitializeSocket(socket);
-                StartReader();
-            }
-            catch (Exception ex)
-            {
-                OnError(ex);
-            }
-        }
-        finally
-        {
-            e.Dispose();
-            ExitLock();
-        }
+        get => CachedValue(ref noDelay, () => uncheckedSocket?.NoDelay);
+        set => SetValue(ref noDelay, v => CheckedSocket.NoDelay = v, value);
     }
 
-    void ConnectInternal(IPEndPoint endpoint)
+    /// <summary>Gets the number of active async send tasks.</summary>
+    public int PendingAsyncSends => pendingAsyncSends;
+
+    /// <summary>Gets the receive buffer.</summary>
+    /// <value>The receive buffer.</value>
+    /// <remarks>
+    /// Use lock on this buffer to ensure thread safety when using concurrent access to the <see cref="Stream"/> property, <see cref="GetStream()"/> function
+    /// and/or <see cref="Received"/> callbacks.
+    /// </remarks>
+    public FifoStream ReceiveBuffer { get; } = new();
+
+    /// <summary>Gets or sets the amount of time, in milliseconds, that a read operation blocks waiting for data.</summary>
+    /// <value>
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the read operation does not time out.
+    /// </value>
+    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
+    public int ReceiveTimeout
     {
-        EnterLock();
-        try
-        {
-            while (true)
-            {
-                var socket = CreateSocket(endpoint.AddressFamily);
-                var asyncResult = socket.BeginConnect(endpoint.Address, endpoint.Port, null, null);
-                if (HandleAsyncConnectResult(socket, asyncResult))
-                {
-                    return;
-                }
-            }
-        }
-        finally
-        {
-            ExitLock();
-        }
+        get => CachedValue(ref receiveTimeout, () => uncheckedSocket?.ReceiveTimeout);
+        set => SetValue(ref receiveTimeout, v => CheckedSocket.ReceiveTimeout = v, value);
     }
 
-    void ConnectInternal(string hostname, int port)
+    /// <summary>Gets the remote end point.</summary>
+    /// <value>The remote end point.</value>
+    public IPEndPoint RemoteEndPoint { get; private set; }
+
+    /// <summary>Gets or sets the amount of time, in milliseconds, that a write operation blocks waiting for transmission.</summary>
+    /// <value>
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the write operation does not time out.
+    /// </value>
+    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
+    public int SendTimeout
     {
-        EnterLock();
-        try
-        {
-            var response = DnsClient.Default.Resolve(hostname);
-            var errors = new List<Exception>();
-            foreach (var answer in response.Answers)
-            {
-                if (IPAddress.TryParse($"{answer.Value}", out var address))
-                {
-                    try
-                    {
-                        ConnectInternal(new(address, port));
-                        return;
-                    }
-                    catch (Exception ex)
-                    {
-                        errors.Add(ex);
-                    }
-                }
-            }
-            throw new AggregateException($"Could not connect to any ip address for host {hostname}!", errors);
-        }
-        finally
-        {
-            ExitLock();
-        }
+        get => CachedValue<int>(ref sendTimeout, () => uncheckedSocket?.SendTimeout);
+        set => SetValue(ref sendTimeout, v => CheckedSocket.SendTimeout = v, value);
     }
 
-    bool HandleAsyncConnectResult(Socket socket, IAsyncResult asyncResult)
+    /// <summary>Gets the server instance this client belongs to. May be <c>null</c>.</summary>
+    public ITcpServer? Server { get; private set; }
+
+    /// <summary>Gets or sets an user defined object.</summary>
+    public object? State { get; set; }
+
+    /// <summary>Gets the raw TCP stream used to send and receive data.</summary>
+    /// <remarks>This function and access to all stream functions are threadsafe.</remarks>
+    /// <value>The TCP stream instance.</value>
+    public TcpAsyncStream Stream { get; }
+
+    /// <summary>Gets or sets a value that specifies the Time To Live (TTL) value of Internet Protocol (IP) packets sent by the Socket.</summary>
+    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
+    public short Ttl
     {
-        try
-        {
-            if (asyncResult.AsyncWaitHandle.WaitOne(ConnectTimeout))
-            {
-                socket.EndConnect(asyncResult);
-                InitializeSocket(socket);
-                StartReader();
-                return true;
-            }
-            Close();
-            throw new TimeoutException();
-        }
-        catch (SocketException s)
-        {
-            if (s.SocketErrorCode != SocketError.AddressAlreadyInUse)
-            {
-                OnError(s);
-                throw;
-            }
-            return false;
-        }
-        catch (Exception ex)
-        {
-            OnError(ex);
-            throw;
-        }
+        get => CachedValue(ref ttl, () => uncheckedSocket?.Ttl);
+        set => SetValue(ref ttl, v => CheckedSocket.Ttl = v, value);
     }
 
-    void ConnectAsyncCallback(IAsyncResult asyncResult)
-    {
-        EnterLock();
-        try
-        {
-            var socket = (asyncResult.AsyncState as Socket) ?? throw new InvalidOperationException("Invalid AsyncState.");
-            if (!socket.Connected)
-            {
-                OnError(new SocketException((int)SocketError.SocketError));
-                return;
-            }
-            socket.EndConnect(asyncResult);
-            InitializeSocket(socket);
-            StartReader();
-        }
-        catch (Exception ex)
-        {
-            OnError(ex);
-        }
-        finally
-        {
-            ExitLock();
-        }
-    }
+    #endregion Public Properties
+
+    #region Public Methods
 
     /// <summary>Closes this instance gracefully.</summary>
     /// <remarks>
@@ -648,41 +804,6 @@ public class TcpAsyncClient : IDisposable
     /// <param name="bufferSize">tcp buffer size in bytes.</param>
     public void Connect(IPEndPoint endPoint, int bufferSize = 64 * 1024) => Connect(endPoint.Address, endPoint.Port, bufferSize);
 
-    /// <summary>Connects to the specified host and port.</summary>
-    /// <param name="proxy">Proxy settings</param>
-    /// <param name="host">host to connect to..</param>
-    /// <param name="port">port to connect to.</param>
-    public void ConnectViaProxy(Proxy proxy, string host, int port)
-    {
-        var request = WebRequest.Create($"http://{host}:{port}");
-        var webProxy = new WebProxy(proxy.GetUri());
-        request.Proxy = webProxy;
-        request.Method = "CONNECT";
-        if (proxy.Credentials is null)
-        {
-            webProxy.UseDefaultCredentials = true;
-        }
-        else
-        {
-            webProxy.Credentials = proxy.Credentials;
-        }
-        var response = request.GetResponse();
-        try
-        {
-            const BindingFlags privateInstance = BindingFlags.NonPublic | BindingFlags.Instance;
-            var responseStream = response.GetResponseStream() ?? throw new InvalidOperationException("Could not get ResponseStream!");
-            var connection = responseStream.GetPropertyValue("Connection", privateInstance) ?? throw new InvalidOperationException("Could not get Connection!");
-            var networkStream = connection.GetPropertyValue("NetworkStream", privateInstance) ?? throw new InvalidOperationException("Could not get NetworkStream!");
-            var socket = (networkStream.GetPropertyValue("Socket") as Socket) ?? throw new InvalidCastException("Could not cast Socket!");
-            InitializeSocket(socket);
-            StartReader();
-        }
-        catch (Exception ex)
-        {
-            OnError(ex);
-        }
-    }
-
     /// <summary>Connects to the specified hostname and port.</summary>
     /// <param name="hostname">hostname to resolve.</param>
     /// <param name="port">port to connect to.</param>
@@ -758,10 +879,12 @@ public class TcpAsyncClient : IDisposable
         try
         {
             var socket = CreateSocket(endPoint.AddressFamily);
+            socket.ReceiveBufferSize = bufferSize;
+            socket.SendBufferSize = bufferSize;
             var e = new SocketAsyncEventArgs
             {
                 RemoteEndPoint = endPoint,
-                UserToken = socket
+                UserToken = socket,
             };
             e.Completed += ConnectAsyncCallback;
             var isPending = socket.ConnectAsync(e);
@@ -774,6 +897,48 @@ public class TcpAsyncClient : IDisposable
         {
             ExitLock();
         }
+    }
+
+    /// <summary>Connects to the specified host and port.</summary>
+    /// <param name="proxy">Proxy settings</param>
+    /// <param name="host">host to connect to..</param>
+    /// <param name="port">port to connect to.</param>
+    public void ConnectViaProxy(Proxy proxy, string host, int port)
+    {
+        var request = WebRequest.Create($"http://{host}:{port}");
+        var webProxy = new WebProxy(proxy.GetUri());
+        request.Proxy = webProxy;
+        request.Method = "CONNECT";
+        if (proxy.Credentials is null)
+        {
+            webProxy.UseDefaultCredentials = true;
+        }
+        else
+        {
+            webProxy.Credentials = proxy.Credentials;
+        }
+        var response = request.GetResponse();
+        try
+        {
+            const BindingFlags PrivateInstance = BindingFlags.NonPublic | BindingFlags.Instance;
+            var responseStream = response.GetResponseStream() ?? throw new InvalidOperationException("Could not get ResponseStream!");
+            var connection = responseStream.GetPropertyValue("Connection", PrivateInstance) ?? throw new InvalidOperationException("Could not get Connection!");
+            var networkStream = connection.GetPropertyValue("NetworkStream", PrivateInstance) ?? throw new InvalidOperationException("Could not get NetworkStream!");
+            var socket = (networkStream.GetPropertyValue("Socket") as Socket) ?? throw new InvalidCastException("Could not cast Socket!");
+            InitializeSocket(socket);
+            StartReader();
+        }
+        catch (Exception ex)
+        {
+            OnError(ex);
+        }
+    }
+
+    /// <summary>Releases unmanaged and managed resources.</summary>
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        Dispose(true);
     }
 
     /// <summary>Gets the stream.</summary>
@@ -886,162 +1051,6 @@ public class TcpAsyncClient : IDisposable
     /// <param name="state">State to pass to the callback.</param>
     /// <typeparam name="T">Type for the callback <paramref name="state"/> parameter.</typeparam>
     public void SendAsync<T>(byte[] buffer, int offset, int length, Action<T> callback, T state) => InternalSendAsync(buffer, offset, length, callback, state);
-
-    #endregion public functions
-
-    #region IDisposable Support
-
-    bool disposed;
-
-    void DisposeUnmanaged()
-    {
-        if (!disposed)
-        {
-            disposed = true;
-            {
-                if (uncheckedSocket is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
-            }
-            {
-                if (socketAsync is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
-            }
-        }
-    }
-
-    /// <summary>Releases the unmanaged resources used by this instance and optionally releases the managed resources.</summary>
-    /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            if (!closing)
-            {
-                Close();
-            }
-        }
-        DisposeUnmanaged();
-    }
-
-    /// <summary>Releases unmanaged and managed resources.</summary>
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
-        Dispose(true);
-    }
-
-    #endregion IDisposable Support
-
-    #region public properties
-
-    /// <summary>Gets the buffer size used.</summary>
-    public int BufferSize { get; private set; }
-
-    /// <summary>Gets the number of bytes received.</summary>
-    public long BytesReceived => Interlocked.Read(ref bytesReceived);
-
-    /// <summary>Gets the number of bytes sent.</summary>
-    public long BytesSent => Interlocked.Read(ref bytesSent);
-
-    /// <summary>Gets or sets the amount of time, in milliseconds, that a connect operation blocks waiting for data.</summary>
-    /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
-    /// cref="Timeout.Infinite"/> , specifies that the connect operation does not time out.
-    /// </value>
-    public int ConnectTimeout { get; set; } = 5000;
-
-    /// <summary>Gets or sets the dead lock timeout. This is the maximum time thread safe functions wait for acquiring the socket lock.</summary>
-    public TimeSpan DeadLockTimeout { get; set; } = TimeSpan.FromSeconds(1);
-
-    /// <summary>Gets a value indicating whether the client is connected.</summary>
-    public bool IsConnected => !closing && (uncheckedSocket?.Connected ?? false);
-
-    /// <summary>Gets or sets a value that specifies whether the Socket will delay closing a socket in an attempt to send all pending data.</summary>
-    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
-    public LingerOption LingerState
-    {
-        get => CachedValue(ref lingerState, () => uncheckedSocket?.LingerState);
-        set => SetValue(ref lingerState, v => CheckedSocket.LingerState = v, value);
-    }
-
-    /// <summary>Gets the local end point.</summary>
-    /// <value>The local end point.</value>
-    public IPEndPoint LocalEndPoint { get; private set; }
-
-    /// <summary>Gets or sets a value indicating whether the stream Socket is using the Nagle algorithm.</summary>
-    /// <value><c>true</c> if the Socket uses the Nagle algorithm; otherwise, <c>false</c>.</value>
-    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
-    public bool NoDelay
-    {
-        get => CachedValue(ref noDelay, () => uncheckedSocket?.NoDelay);
-        set => SetValue(ref noDelay, v => CheckedSocket.NoDelay = v, value);
-    }
-
-    /// <summary>Gets the number of active async send tasks.</summary>
-    public int PendingAsyncSends => pendingAsyncSends;
-
-    /// <summary>Gets the receive buffer.</summary>
-    /// <value>The receive buffer.</value>
-    /// <remarks>
-    /// Use lock on this buffer to ensure thread safety when using concurrent access to the <see cref="Stream"/> property, <see cref="GetStream()"/> function
-    /// and/or <see cref="Received"/> callbacks.
-    /// </remarks>
-    public FifoStream ReceiveBuffer { get; } = new();
-
-    /// <summary>Gets or sets the amount of time, in milliseconds, that a read operation blocks waiting for data.</summary>
-    /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
-    /// cref="Timeout.Infinite"/> , specifies that the read operation does not time out.
-    /// </value>
-    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
-    public int ReceiveTimeout
-    {
-        get => CachedValue(ref receiveTimeout, () => uncheckedSocket?.ReceiveTimeout);
-        set => SetValue(ref receiveTimeout, v => CheckedSocket.ReceiveTimeout = v, value);
-    }
-
-    /// <summary>Gets the remote end point.</summary>
-    /// <value>The remote end point.</value>
-    public IPEndPoint RemoteEndPoint { get; private set; }
-
-    /// <summary>Gets or sets the amount of time, in milliseconds, that a write operation blocks waiting for transmission.</summary>
-    /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value, <see
-    /// cref="Timeout.Infinite"/> , specifies that the write operation does not time out.
-    /// </value>
-    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
-    public int SendTimeout
-    {
-        get => CachedValue<int>(ref sendTimeout, () => uncheckedSocket?.SendTimeout);
-        set => SetValue(ref sendTimeout, v => CheckedSocket.SendTimeout = v, value);
-    }
-
-    /// <summary>Gets the server instance this client belongs to. May be <c>null</c>.</summary>
-    public ITcpServer? Server { get; private set; }
-
-    /// <summary>Gets or sets an user defined object.</summary>
-    public object? State { get; set; }
-
-    /// <summary>Gets the raw TCP stream used to send and receive data.</summary>
-    /// <remarks>This function and access to all stream functions are threadsafe.</remarks>
-    /// <value>The TCP stream instance.</value>
-    public TcpAsyncStream Stream { get; }
-
-    /// <summary>Gets or sets a value that specifies the Time To Live (TTL) value of Internet Protocol (IP) packets sent by the Socket.</summary>
-    /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
-    public short Ttl
-    {
-        get => CachedValue(ref ttl, () => uncheckedSocket?.Ttl);
-        set => SetValue(ref ttl, v => CheckedSocket.Ttl = v, value);
-    }
-
-    #endregion public properties
-
-    #region Public Methods
 
     /// <inheritdoc/>
     public override string ToString()

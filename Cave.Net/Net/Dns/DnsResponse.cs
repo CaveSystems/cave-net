@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Net;
 using Cave.IO;
@@ -14,9 +15,39 @@ public class DnsResponse
 
     #endregion Private Fields
 
+    #region Private Methods
+
+    static ReadOnlyCollection<DnsQuery> LoadQueries(DataReader reader, int queryCount)
+    {
+        var result = new List<DnsQuery>(queryCount);
+        for (var i = 0; i < queryCount; i++)
+        {
+            var item = DnsQuery.Parse(reader);
+            result.Add(item);
+        }
+        return result.AsReadOnly();
+    }
+
+    /// <summary>Loads the records.</summary>
+    /// <param name="reader">The reader.</param>
+    /// <param name="recordCount">The record count.</param>
+    /// <returns>Returns a list of <see cref="DnsRecord"/> s.</returns>
+    static ReadOnlyCollection<DnsRecord> LoadRecords(DataReader reader, int recordCount)
+    {
+        var result = new List<DnsRecord>(recordCount);
+        for (var i = 0; i < recordCount; i++)
+        {
+            var item = DnsRecord.Parse(reader);
+            result.Add(item);
+        }
+        return result.AsReadOnly();
+    }
+
+    #endregion Private Methods
+
     #region Internal Constructors
 
-    /// <summary>Initializes a new instance of the <see cref="DnsResponse" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="DnsResponse"/> class.</summary>
     /// <param name="srv">The server.</param>
     /// <param name="data">The data.</param>
     internal DnsResponse(IPAddress srv, byte[] data)
@@ -43,7 +74,7 @@ public class DnsResponse
 
     #region Public Constructors
 
-    /// <summary>Initializes a new instance of the <see cref="DnsResponse" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="DnsResponse"/> class.</summary>
     /// <param name="sender">Sender of the response.</param>
     /// <param name="flags">Flags for the response.</param>
     /// <param name="code">Response code.</param>
@@ -60,36 +91,6 @@ public class DnsResponse
     }
 
     #endregion Public Constructors
-
-    #region Private Methods
-
-    static IList<DnsQuery> LoadQueries(DataReader reader, int queryCount)
-    {
-        var result = new List<DnsQuery>(queryCount);
-        for (var i = 0; i < queryCount; i++)
-        {
-            var item = DnsQuery.Parse(reader);
-            result.Add(item);
-        }
-        return result.AsReadOnly();
-    }
-
-    /// <summary>Loads the records.</summary>
-    /// <param name="reader">The reader.</param>
-    /// <param name="recordCount">The record count.</param>
-    /// <returns>Returns a list of <see cref="DnsRecord" /> s.</returns>
-    static IList<DnsRecord> LoadRecords(DataReader reader, int recordCount)
-    {
-        var result = new List<DnsRecord>(recordCount);
-        for (var i = 0; i < recordCount; i++)
-        {
-            var item = DnsRecord.Parse(reader);
-            result.Add(item);
-        }
-        return result.AsReadOnly();
-    }
-
-    #endregion Private Methods
 
     #region Public Properties
 

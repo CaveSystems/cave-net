@@ -14,7 +14,7 @@ public class SmtpValidator
 {
     #region Private Fields
 
-    private static readonly char[] answerSeparator = [' '];
+    static readonly char[] AnswerSeparator = [' '];
 
     #endregion Private Fields
 
@@ -23,7 +23,7 @@ public class SmtpValidator
     static int ParseAnswer(string? answer)
     {
         if (answer is null) throw new InvalidDataException("SmtpValidator_ProtocolError");
-        var parts = answer.Split(answerSeparator, 2);
+        var parts = answer.Split(AnswerSeparator, 2);
         if (!int.TryParse(parts[0], out var code))
         {
             throw new InvalidDataException("SmtpValidator_ProtocolError");

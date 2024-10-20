@@ -87,7 +87,7 @@ static class ImapParser
                 case ' ':
                     if (stack.Count == 0)
                     {
-                        parts.Add(answer.Substring(start, i - start));
+                        parts.Add(answer[start..i]);
                         start = i + 1;
                     }
                     break;
@@ -95,7 +95,7 @@ static class ImapParser
         }
         if (start < answer.Length)
         {
-            parts.Add(answer.Substring(start));
+            parts.Add(answer[start..]);
         }
         return [.. parts];
     }

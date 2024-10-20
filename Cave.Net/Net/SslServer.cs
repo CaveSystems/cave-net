@@ -6,8 +6,6 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
-#nullable enable
-
 namespace Cave.Net;
 
 /// <summary>Provides a ssl server implementation accepting and authenticating <see cref="SslClient"/> connections.</summary>

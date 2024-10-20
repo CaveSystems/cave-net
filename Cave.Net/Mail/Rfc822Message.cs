@@ -122,7 +122,7 @@ public class Rfc822Message
             var header = line!;
             line = reader.ReadLine();
             //add folded content to current line
-            while ((line != null) && (line.StartsWith(" ") || line.StartsWith("\t")))
+            while ((line is not null) && (line.Length > 1) && (line[0] is ' ' or '\t'))
             {
                 header += " " + line.TrimStart(' ', '\t');
                 line = reader.ReadLine();
@@ -134,9 +134,9 @@ public class Rfc822Message
                 break;
             }
 
-            var headerKey = header.Substring(0, splitPos);
+            var headerKey = header[..splitPos];
             splitPos += 2;
-            var headerVal = splitPos >= header.Length ? "" : header.Substring(splitPos);
+            var headerVal = splitPos >= header.Length ? "" : header[splitPos..];
             try
             {
                 Rfc2047.Decode(headerVal);
@@ -291,8 +291,8 @@ public class Rfc822Message
                         continue;
                     }
 
-                    value = part.Substring(index + 1).Trim().UnboxText(false);
-                    name = part.Substring(0, index).Trim().ToLowerInvariant();
+                    value = part[(index + 1)..].Trim().UnboxText(false);
+                    name = part[..index].Trim().ToLowerInvariant();
                     switch (name)
                     {
                         case "charset":
