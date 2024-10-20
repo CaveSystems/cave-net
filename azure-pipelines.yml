@@ -22,17 +22,34 @@ variables:
 
 steps:
 
+- checkout: self 
+  clean: true
+  fetchDepth: 99999
+  lfs: false
+  submodules: false
+
 - task: PowerShell@2
   name: SetGitVars
   displayName: Set git variables
   env:
     BUILD_BUILDNUMBER: $(Build.BuildNumber)
+    BUILD_SOURCEBRANCH: $(Build.SourceBranch)
     BUILD_SOURCEBRANCHNAME: $(Build.SourceBranchName)
   inputs:
     targetType: inline
     script: |
       $fixedVersion = [Version]"$(fixedBuildVersion)"
-      $gitTag = "$(git describe --tags --always)".Trim().TrimStart('v')
+      # build 
+      $build = $env:BUILD_BUILDNUMBER.Split('.')
+      $build = $build[0] + "-" + ([int]$build[1]).ToString("x4")
+      echo "Build: $build"
+      # set branch for tag lookup
+      $branch = $env:BUILD_SOURCEBRANCH.Replace("refs/heads/", "")
+      git branch $branch
+      git branch --set-upstream-to=origin/$branch --force
+      git fetch
+      # get latest tag in history
+      $gitTag = "$(git describe --tags --always $branch)".Trim().TrimStart('v')
       # possible return values: 'hash' (no tags), 'tag-hash' (old tag), 'tag' (if commit == tag)
       if (!$gitTag.Contains('.'))
       {
@@ -46,8 +63,8 @@ steps:
       }
       else
       {
-        $semVer = "ci-$env:BUILD_BUILDNUMBER".Replace('.', '-')
-        # semVer = ci-yyyyMMdd-NN
+        $semVer = "ci-$env:BUILD_SOURCEBRANCHNAME-$build"
+        # semVer = ci-branch-yyyyMMdd-NNNN
         $gitTagVersion = [Version]$gitTag.Split('-')[0]
         if ($gitTagVersion.Major -ne $fixedVersion.Major)
         {
@@ -60,7 +77,7 @@ steps:
           $version = "$($gitTagVersion.Major).$($gitTagVersion.Minor).$($gitTagVersion.Build+1)-$semVer"
         }
       }	  
-      echo "branch = $env:BUILD_SOURCEBRANCHNAME"
+      echo "branch = $branch"
       echo "fixedVersion = '$fixedVersion'"
       echo "gitTag = '$gitTag'"
       echo "build version = '$version'"

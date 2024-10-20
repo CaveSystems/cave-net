@@ -17,7 +17,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\cave-extensions\Cave.Extensions\Cave.Extensions.Latest.csproj" />
-        <ProjectReference Include="..\..\cave-io\Cave.IO\Cave.IO.Latest.csproj" />
+        <ProjectReference Include="..\..\cave-extensions\Cave.Extensions\Cave.Extensions.8.csproj" />
+        <ProjectReference Include="..\..\cave-io\Cave.IO\Cave.IO.8.csproj" />
     </ItemGroup>
 </Project>

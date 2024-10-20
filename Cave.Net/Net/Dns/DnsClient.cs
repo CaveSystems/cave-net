@@ -20,13 +20,13 @@ public class DnsClient
     #region Private Fields
 
     static readonly string[] NoSuffix = ["."];
-    static readonly char[] resolvSeparator = [' ', '\t'];
+    static readonly char[] ResolvSeparator = [' ', '\t'];
 
     #endregion Private Fields
 
     #region Private Methods
 
-    static void LoadEtcResolvConf(IItemSet<IPAddress> result)
+    static void LoadEtcResolvConf(Set<IPAddress> result)
     {
         if (File.Exists("/etc/resolv.conf"))
         {
@@ -41,7 +41,7 @@ public class DnsClient
                         s = s[..i];
                     }
 
-                    var parts = s.Split(resolvSeparator, StringSplitOptions.RemoveEmptyEntries);
+                    var parts = s.Split(ResolvSeparator, StringSplitOptions.RemoveEmptyEntries);
                     if (parts.Length > 1)
                     {
                         if (parts[0].ToUpperInvariant() != "NAMESERVER")
@@ -480,7 +480,7 @@ public class DnsClient
 
         if (query.Name is null)
         {
-            throw new ArgumentNullException(nameof(query.Name), "Name must be provided");
+            throw new InvalidOperationException("Query.Name has to be provided!");
         }
 
         var skipUdp = query.Length > 512;
