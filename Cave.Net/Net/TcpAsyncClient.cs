@@ -90,14 +90,14 @@ public class TcpAsyncClient : IDisposable
                 OnError(new SocketException((int)e.SocketError));
                 return;
             }
-            if (!CheckedSocket.Connected)
+            var socket = (sender as Socket) ?? throw new InvalidCastException("Could not cast sender to socket!");
+            if (!socket.Connected)
             {
                 OnError(new SocketException((int)SocketError.SocketError));
                 return;
             }
             try
             {
-                var socket = (sender as Socket) ?? throw new InvalidCastException("Could not cast sender to socket!");
                 InitializeSocket(socket);
                 StartReader();
             }
@@ -470,8 +470,8 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Calls the <see cref="Received"/> event (if set).</summary>
     /// <remarks>
-    /// You can set <see cref="BufferEventArgs.Handled"/> to true when overriding this function or within <see cref="Received"/> to skip adding data to the <see
-    /// cref="Stream"/> and <see cref="ReceiveBuffer"/>.
+    /// You can set <see cref="BufferEventArgs.Handled"/> to true when overriding this function or within <see cref="Received"/> to skip adding data to the
+    /// <see cref="Stream"/> and <see cref="ReceiveBuffer"/>.
     /// </remarks>
     /// <param name="buffer">Receive buffer instance.</param>
     /// <param name="offset">Start offset of the received data.</param>
@@ -620,8 +620,8 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Gets or sets the amount of time, in milliseconds, that a connect operation blocks waiting for data.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
-    /// cref="Timeout.Infinite"/> , specifies that the connect operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value,
+    /// <see cref="Timeout.Infinite"/> , specifies that the connect operation does not time out.
     /// </value>
     public int ConnectTimeout { get; set; } = 5000;
 
@@ -665,8 +665,8 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Gets or sets the amount of time, in milliseconds, that a read operation blocks waiting for data.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
-    /// cref="Timeout.Infinite"/> , specifies that the read operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value,
+    /// <see cref="Timeout.Infinite"/> , specifies that the read operation does not time out.
     /// </value>
     /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
     public int ReceiveTimeout
@@ -681,8 +681,8 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Gets or sets the amount of time, in milliseconds, that a write operation blocks waiting for transmission.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value, <see
-    /// cref="Timeout.Infinite"/> , specifies that the write operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value,
+    /// <see cref="Timeout.Infinite"/> , specifies that the write operation does not time out.
     /// </value>
     /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
     public int SendTimeout
