@@ -10,18 +10,22 @@ using System.Net;
 using System.Net.Cache;
 using System.Text;
 using Cave.IO;
-using Cave.Progress;
+using System.Net.Security;
 
 namespace Cave.Net;
 
 /// <summary>Provides a simple asynchronous http fetch.</summary>
 public sealed class HttpConnection
 {
-    #region Private Fields
+    /// <summary>
+    /// Proxy bypass server hostnames.
+    /// </summary>
+    public string[] BypassProxyList { get; } = ["localhost"];
 
-    static readonly string[] BypassProxyList = ["localhost"];
-
-    #endregion Private Fields
+    /// <summary>
+    /// Provides a callback for the server certificate validation. In NET &lt; 4.0 this event may receive calls from other connections opened at the same time! 
+    /// </summary>
+    public event RemoteCertificateValidationCallback? RemoteCertificateValidationCallback;
 
     #region Private Methods
 
@@ -33,7 +37,11 @@ public sealed class HttpConnection
 #if NETSTANDARD2_0_OR_GREATER || NET5_0_OR_GREATER
         request.AllowReadStreamBuffering = false;
 #endif
-
+#if NET45_OR_GREATER || NET5_0_OR_GREATER || NETSTANDARD
+        request.ServerCertificateValidationCallback += RemoteCertificateValidationCallback;
+#else
+        ServicePointManager.ServerCertificateValidationCallback += RemoteCertificateValidationCallback;
+#endif
         // set defaults
         request.ProtocolVersion = ProtocolVersion;
         if (Proxy != null)
@@ -88,7 +96,7 @@ public sealed class HttpConnection
     [SuppressMessage("Globalization", "CA1304")]
     static HttpConnection()
     {
-#if !NETCOREAPP && !NETSTANDARD
+#if (!NETCOREAPP && !NETSTANDARD)
         try
         {
             new System.Net.Configuration.HttpWebRequestElement().UseUnsafeHeaderParsing = true;

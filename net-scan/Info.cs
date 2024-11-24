@@ -4,7 +4,7 @@ using Cave.Net.Dns;
 
 namespace SubnetScan;
 
-sealed internal class Info
+internal sealed class Info
 {
     #region Public Constructors
 

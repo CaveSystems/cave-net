@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Net;
-using System.Runtime.CompilerServices;
 
 namespace Cave.Net;
 
 /// <summary>Provides proxy settings.</summary>
-public record Proxy : IWebProxy
+public record Proxy : BaseRecord, IWebProxy
 {
     public static implicit operator Proxy(ConnectionString connectionString)
     {
