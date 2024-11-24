@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using Cave.IO;
@@ -7,6 +8,7 @@ using Cave.IO;
 namespace Cave.Net.Dns;
 
 /// <summary>Provides a DnsAnswer.</summary>
+[DebuggerDisplay("DnsResponse {Sender} {ResponseCode}")]
 public class DnsResponse
 {
     #region Private Fields
@@ -151,4 +153,36 @@ public class DnsResponse
     public int TransactionID { get; private set; }
 
     #endregion Public Properties
+
+    #region Public Methods
+
+    /// <summary>Reads all <see cref="Answers"/> and extracts the ip adress values.</summary>
+    /// <param name="recordClass">Record class filter</param>
+    /// <returns>Returns a list of <see cref="IPAddress"/></returns>
+    public IEnumerable<IPAddress> GetAddresses(DnsRecordClass recordClass = DnsRecordClass.IN)
+    {
+        foreach (var answer in Answers)
+        {
+            if (answer.RecordClass == recordClass && answer.Value is IPAddress address)
+            {
+                yield return address;
+            }
+        }
+    }
+
+    /// <summary>Reads all <see cref="Answers"/> and extracts the hostname values.</summary>
+    /// <param name="recordClass">Record class filter</param>
+    /// <returns>Returns a list of <see cref="DomainName"/></returns>
+    public IEnumerable<DomainName> GetNames(DnsRecordClass recordClass = DnsRecordClass.IN)
+    {
+        foreach (var answer in Answers)
+        {
+            if (answer.RecordClass == recordClass && answer.Value is IPAddress address && answer.Name is not null)
+            {
+                yield return answer.Name;
+            }
+        }
+    }
+
+    #endregion Public Methods
 }
