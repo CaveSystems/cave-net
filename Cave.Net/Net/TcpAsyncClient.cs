@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -865,7 +866,6 @@ public class TcpAsyncClient : IDisposable
 
         RemoteEndPoint = new(address, port);
         BufferSize = bufferSize;
-
         ConnectAsync(RemoteEndPoint, bufferSize);
     }
 
@@ -888,10 +888,8 @@ public class TcpAsyncClient : IDisposable
             };
             e.Completed += ConnectAsyncCallback;
             var isPending = socket.ConnectAsync(e);
-            if (!isPending)
-            {
-                ConnectAsyncCallback(socket, e);
-            }
+            void PendingCallback() => ConnectAsyncCallback(socket, e);
+            if (!isPending) Task.Factory.StartNew(PendingCallback);
         }
         finally
         {
@@ -905,7 +903,7 @@ public class TcpAsyncClient : IDisposable
     /// <param name="port">port to connect to.</param>
     public void ConnectViaProxy(Proxy proxy, string host, int port)
     {
-        var request = WebRequest.Create($"http://{host}:{port}");
+        var request = WebRequest.Create(proxy.GetUri());
         var webProxy = new WebProxy(proxy.GetUri());
         request.Proxy = webProxy;
         request.Method = "CONNECT";
@@ -1066,6 +1064,53 @@ public class TcpAsyncClient : IDisposable
             return $"tcp://[{RemoteEndPoint.Address}]:{RemoteEndPoint.Port}";
         }
         return $"tcp://{RemoteEndPoint}";
+    }
+
+    record ConnectResult(IPAddress Address, TcpAsyncClient Client) : BaseRecord;
+
+    /// <summary>
+    /// Tries to connect to any of the specified <paramref name="addresses"/>. 
+    /// The first successfully connected client will be returned.
+    /// All other already started or opening connections will be disposed.
+    /// </summary>
+    /// <param name="addresses">Address list to use for connection tries.</param>
+    /// <param name="port">Port to connect to</param>
+    /// <param name="timeout">Timeout in msec</param>
+    /// <returns>Returns a connected <see cref="TcpAsyncClient"/> instance.</returns>
+    /// <exception cref="TimeoutException"></exception>
+    public static TcpAsyncClient TryConnect(IEnumerable<IPAddress> addresses, ushort port, int timeout = default)
+    {
+        var ready = new ManualResetEvent(false);
+        void PrivateConnected(object? sender, EventArgs e) => ready.Set();
+        ConnectResult PrivateConnect(IPAddress address) => new(address, TcpAsyncClient.TryConnect(address, port, PrivateConnected, timeout));
+        var list = addresses.Select(PrivateConnect).ToList();
+        try
+        {
+            if (timeout > 0)
+            {
+                if (!ready.WaitOne(timeout)) throw new TimeoutException();
+            }
+            else
+            {
+                if (!ready.WaitOne()) throw new TimeoutException();
+            }
+            var connected = list.First(i => i.Client.IsConnected);
+            list.Remove(connected);
+            return connected.Client;
+        }
+        finally
+        {
+            list.ForEach(i => i.Client.Dispose());
+        }
+    }
+
+    public static TcpAsyncClient TryConnect(IPAddress address, ushort port, EventHandler<EventArgs>? connected, int timeout = 0)
+    {
+        var client = new TcpAsyncClient();
+        if (connected is not null) client.Connected += connected;
+        client.ConnectTimeout = timeout;
+        client.ConnectAsync(new IPEndPoint(address, port));
+        return client;
     }
 
     #endregion Public Methods
