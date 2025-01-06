@@ -11,17 +11,17 @@ using System.Net.Cache;
 using System.Text;
 using Cave.IO;
 using Cave.Progress;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Cave.Net;
 
 /// <summary>Provides a simple asynchronous http fetch.</summary>
 public sealed class HttpConnection
 {
-    #region Private Fields
+    public string[] BypassProxyList { get; } = ["localhost"];
 
-    static readonly string[] BypassProxyList = ["localhost"];
-
-    #endregion Private Fields
+    public event RemoteCertificateValidationCallback? RemoteCertificateValidationCallback;
 
     #region Private Methods
 
@@ -33,7 +33,16 @@ public sealed class HttpConnection
 #if NETSTANDARD2_0_OR_GREATER || NET5_0_OR_GREATER
         request.AllowReadStreamBuffering = false;
 #endif
-
+#if NET20 || NET35 || NET40
+        bool MyCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            try { return RemoteCertificateValidationCallback?.Invoke(sender, certificate, chain, sslPolicyErrors) ?? true; }
+            finally { ServicePointManager.ServerCertificateValidationCallback -= MyCallback; }
+        }
+        ServicePointManager.ServerCertificateValidationCallback += MyCallback;
+#else
+        request.ServerCertificateValidationCallback += RemoteCertificateValidationCallback;
+#endif
         // set defaults
         request.ProtocolVersion = ProtocolVersion;
         if (Proxy != null)
@@ -88,7 +97,7 @@ public sealed class HttpConnection
     [SuppressMessage("Globalization", "CA1304")]
     static HttpConnection()
     {
-#if !NETCOREAPP && !NETSTANDARD
+#if (!NETCOREAPP && !NETSTANDARD)
         try
         {
             new System.Net.Configuration.HttpWebRequestElement().UseUnsafeHeaderParsing = true;

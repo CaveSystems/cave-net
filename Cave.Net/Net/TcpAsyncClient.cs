@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -470,8 +471,8 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Calls the <see cref="Received"/> event (if set).</summary>
     /// <remarks>
-    /// You can set <see cref="BufferEventArgs.Handled"/> to true when overriding this function or within <see cref="Received"/> to skip adding data to the
-    /// <see cref="Stream"/> and <see cref="ReceiveBuffer"/>.
+    /// You can set <see cref="BufferEventArgs.Handled"/> to true when overriding this function or within <see cref="Received"/> to skip adding data to the <see
+    /// cref="Stream"/> and <see cref="ReceiveBuffer"/>.
     /// </remarks>
     /// <param name="buffer">Receive buffer instance.</param>
     /// <param name="offset">Start offset of the received data.</param>
@@ -620,8 +621,8 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Gets or sets the amount of time, in milliseconds, that a connect operation blocks waiting for data.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value,
-    /// <see cref="Timeout.Infinite"/> , specifies that the connect operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the connect operation does not time out.
     /// </value>
     public int ConnectTimeout { get; set; } = 5000;
 
@@ -665,8 +666,8 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Gets or sets the amount of time, in milliseconds, that a read operation blocks waiting for data.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value,
-    /// <see cref="Timeout.Infinite"/> , specifies that the read operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the read operation does not time out.
     /// </value>
     /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
     public int ReceiveTimeout
@@ -681,8 +682,8 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Gets or sets the amount of time, in milliseconds, that a write operation blocks waiting for transmission.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value,
-    /// <see cref="Timeout.Infinite"/> , specifies that the write operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the write operation does not time out.
     /// </value>
     /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
     public int SendTimeout
@@ -865,7 +866,6 @@ public class TcpAsyncClient : IDisposable
 
         RemoteEndPoint = new(address, port);
         BufferSize = bufferSize;
-
         ConnectAsync(RemoteEndPoint, bufferSize);
     }
 
@@ -888,10 +888,8 @@ public class TcpAsyncClient : IDisposable
             };
             e.Completed += ConnectAsyncCallback;
             var isPending = socket.ConnectAsync(e);
-            if (!isPending)
-            {
-                ConnectAsyncCallback(socket, e);
-            }
+            void PendingCallback() => ConnectAsyncCallback(socket, e);
+            if (!isPending) Task.Factory.StartNew(PendingCallback);
         }
         finally
         {
@@ -905,7 +903,7 @@ public class TcpAsyncClient : IDisposable
     /// <param name="port">port to connect to.</param>
     public void ConnectViaProxy(Proxy proxy, string host, int port)
     {
-        var request = WebRequest.Create($"http://{host}:{port}");
+        var request = WebRequest.Create(proxy.GetUri());
         var webProxy = new WebProxy(proxy.GetUri());
         request.Proxy = webProxy;
         request.Method = "CONNECT";
@@ -1066,6 +1064,43 @@ public class TcpAsyncClient : IDisposable
             return $"tcp://[{RemoteEndPoint.Address}]:{RemoteEndPoint.Port}";
         }
         return $"tcp://{RemoteEndPoint}";
+    }
+
+    sealed record ConnectResult(IPAddress Address, TcpAsyncClient Client) : BaseRecord;
+
+    public static TcpAsyncClient TryConnect(IEnumerable<IPAddress> addresses, ushort port, int timeout = default)
+    {
+        var ready = new ManualResetEvent(false);
+        void PrivateConnected(object? sender, EventArgs e) => ready.Set();
+        ConnectResult PrivateConnect(IPAddress address) => new(address, TcpAsyncClient.TryConnect(address, port, PrivateConnected, timeout));
+        var list = addresses.Select(PrivateConnect).ToList();
+        try
+        {
+            if (timeout > 0)
+            {
+                if (!ready.WaitOne(timeout)) throw new TimeoutException();
+            }
+            else
+            {
+                if (!ready.WaitOne()) throw new TimeoutException();
+            }
+            var connected = list.First(i => i.Client.IsConnected);
+            list.Remove(connected);
+            return connected.Client;
+        }
+        finally
+        {
+            list.ForEach(i => i.Client.Dispose());
+        }
+    }
+
+    public static TcpAsyncClient TryConnect(IPAddress address, ushort port, EventHandler<EventArgs>? connected, int timeout = 0)
+    {
+        var client = new TcpAsyncClient();
+        if (connected is not null) client.Connected += connected;
+        client.ConnectTimeout = timeout;
+        client.ConnectAsync(new IPEndPoint(address, port));
+        return client;
     }
 
     #endregion Public Methods

@@ -19,7 +19,7 @@ public class WakeOnLan
     public static IDictionary<IPAddress, Exception?> SendMagicPacket(PhysicalAddress macAddress, string? secureOnPassword = null)
     {
         var result = new Dictionary<IPAddress, Exception?>();
-        foreach (var local in NetTools.GetLocalAddresses(OperationalStatus.Up))
+        foreach (var local in NetTools.GetLocalUnicastIPAddressInformation(OperationalStatus.Up))
         {
             var broadcast = local.GetBroadcastAddress();
             try
