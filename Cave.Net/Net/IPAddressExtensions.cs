@@ -41,7 +41,7 @@ public static class IPAddressExtensions
         i <<= 1;
         if (address.IsIPv6Multicast) i |= 1;
         i <<= 1;
-        if (address.IsIPv6SiteLocal) i |= 1;
+        if (!address.IsIPv6SiteLocal) i |= 1;
         i <<= 1;
         if (!address.IsIPv6LinkLocal) i |= 1;
         i <<= 1;

@@ -19,8 +19,14 @@ namespace Cave.Net;
 /// <summary>Provides a simple asynchronous http fetch.</summary>
 public sealed class HttpConnection
 {
+    /// <summary>
+    /// Proxy bypass server hostnames.
+    /// </summary>
     public string[] BypassProxyList { get; } = ["localhost"];
 
+    /// <summary>
+    /// Provides a callback for the server certificate validation. In NET &lt; 4.0 this event may receive calls from other connections opened at the same time! 
+    /// </summary>
     public event RemoteCertificateValidationCallback? RemoteCertificateValidationCallback;
 
     #region Private Methods

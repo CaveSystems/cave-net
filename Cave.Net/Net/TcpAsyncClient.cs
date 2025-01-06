@@ -1068,6 +1068,16 @@ public class TcpAsyncClient : IDisposable
 
     sealed record ConnectResult(IPAddress Address, TcpAsyncClient Client) : BaseRecord;
 
+    /// <summary>
+    /// Tries to connect to any of the specified <paramref name="addresses"/>. 
+    /// The first successfully connected client will be returned.
+    /// All other already started or opening connections will be disposed.
+    /// </summary>
+    /// <param name="addresses">Address list to use for connection tries.</param>
+    /// <param name="port">Port to connect to</param>
+    /// <param name="timeout">Timeout in msec</param>
+    /// <returns>Returns a connected <see cref="TcpAsyncClient"/> instance.</returns>
+    /// <exception cref="TimeoutException"></exception>
     public static TcpAsyncClient TryConnect(IEnumerable<IPAddress> addresses, ushort port, int timeout = default)
     {
         var ready = new ManualResetEvent(false);
