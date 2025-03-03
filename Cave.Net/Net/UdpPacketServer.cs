@@ -59,14 +59,14 @@ public class UdpPacketServer
         // checks all present clients
         lock (clients)
         {
-            if (!clients.ContainsKey(packet.RemoteEndPoint))
+            if (clients.TryGetValue(packet.RemoteEndPoint, out var value))
             {
-                newConnection = true;
-                clients.Add(packet.RemoteEndPoint, new(packet.RemoteEndPoint, socket));
+                value.LastActivity = DateTime.UtcNow;
             }
             else
             {
-                clients[packet.RemoteEndPoint].LastActivity = DateTime.UtcNow;
+                newConnection = true;
+                clients.Add(packet.RemoteEndPoint, new(packet.RemoteEndPoint, socket));
             }
         }
 
@@ -254,8 +254,10 @@ public class UdpPacketServer
             {
                 foreach (var socket in sockets)
                 {
-                    var ep = socket.LocalEndPoint as IPEndPoint;
-                    if (ep != null) result.Add(ep);
+                    if (socket.LocalEndPoint is IPEndPoint ep)
+                    {
+                        result.Add(ep);
+                    }
                 }
             }
             return result;
@@ -350,12 +352,10 @@ public class UdpPacketServer
 
         lock (clients)
         {
-            if (!clients.ContainsKey(packet.RemoteEndPoint))
+            if (!clients.TryGetValue(packet.RemoteEndPoint, out var client))
             {
                 throw new ArgumentException("No client found with the specified remote end point!");
             }
-
-            var client = clients[packet.RemoteEndPoint];
             client.Send(packet);
         }
     }
@@ -385,12 +385,10 @@ public class UdpPacketServer
 
         lock (clients)
         {
-            if (!clients.ContainsKey(destination))
+            if (!clients.TryGetValue(destination, out var client))
             {
                 throw new ArgumentException("No client found with the specified remote end point!");
             }
-
-            var client = clients[destination];
             client.Send(data, offset, size);
         }
     }

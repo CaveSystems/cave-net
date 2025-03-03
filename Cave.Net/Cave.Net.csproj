@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFrameworks>
-            net20;net35;
-            net40;
-            net45;net46;net47;net48;
-            netstandard2.0;netstandard2.1;
-            net6.0;net8.0;
-        </TargetFrameworks>
+		<TargetFrameworks>
+			net20;net35;
+			net40;
+			net45;net46;net47;net48;
+			netstandard2.0;netstandard2.1;
+			net6.0;net8.0;
+		</TargetFrameworks>
 
-        <!--project-->
+		<!--project-->
         <RootNamespace>Cave</RootNamespace>
         <AssemblyOriginatorKeyFile>cave-net.snk</AssemblyOriginatorKeyFile>
         <Product>CaveSystems Networking Library</Product>
@@ -34,8 +34,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Cave.Extensions" Version="4.0.1" />
-        <PackageReference Include="Cave.IO" Version="4.0.0" />
+        <PackageReference Include="Cave.Extensions" Version="4.0.3" />
+        <PackageReference Include="Cave.IO" Version="4.0.3" />
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

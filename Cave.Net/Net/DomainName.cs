@@ -14,9 +14,9 @@ public sealed class DomainName
 {
     #region Private Fields
 
-    static readonly Regex asciiNameRegex = new("^[a-zA-Z0-9_-]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
-    static readonly string[] empty = [];
-    static readonly IdnMapping idnParser = new() { UseStd3AsciiRules = true };
+    static readonly Regex AsciiNameRegex = new("^[a-zA-Z0-9_-]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    static readonly string[] Empty = [];
+    static readonly IdnMapping IdnParser = new() { UseStd3AsciiRules = true };
 
     #endregion Private Fields
 
@@ -26,12 +26,12 @@ public sealed class DomainName
     {
         try
         {
-            if (asciiNameRegex.IsMatch(value))
+            if (AsciiNameRegex.IsMatch(value))
             {
                 label = value;
                 return true;
             }
-            label = idnParser.GetAscii(value);
+            label = IdnParser.GetAscii(value);
             return true;
         }
         catch
@@ -61,7 +61,7 @@ public sealed class DomainName
     /// <param name="parts">The parts of the DomainName.</param>
     public DomainName(params string[]? parts)
     {
-        Parts = parts ?? empty;
+        Parts = parts ?? Empty;
         foreach (var part in Parts)
         {
             if (part.HasInvalidChars(SafeChars))

@@ -20,14 +20,15 @@ public class DnsClient
     #region Private Fields
 
     static readonly string[] NoSuffix = ["."];
-    static readonly char[] resolvSeparator = [' ', '\t'];
+    static readonly char[] ResolvSeparator = [' ', '\t'];
 
     #endregion Private Fields
 
     #region Private Methods
 
-    static void LoadEtcResolvConf(IItemSet<IPAddress> result)
+    static void LoadEtcResolvConf(Set<IPAddress> result)
     {
+        if (Platform.IsMicrosoft) return;
         if (File.Exists("/etc/resolv.conf"))
         {
             try
@@ -41,7 +42,7 @@ public class DnsClient
                         s = s[..i];
                     }
 
-                    var parts = s.Split(resolvSeparator, StringSplitOptions.RemoveEmptyEntries);
+                    var parts = s.Split(ResolvSeparator, StringSplitOptions.RemoveEmptyEntries);
                     if (parts.Length > 1)
                     {
                         if (parts[0].ToUpperInvariant() != "NAMESERVER")
@@ -174,7 +175,7 @@ public class DnsClient
             tcp.Connect(srv, 53);
             tcp.SendTimeout = timeout;
             tcp.ReceiveTimeout = timeout;
-            tcp.Stream.DirectWrites = true;
+            tcp.Stream.SendOnFlush = true;
             var writer = new DataWriter(tcp.Stream, endian: EndianType.BigEndian);
             writer.Write((ushort)query.Length);
             writer.Write(query);
@@ -317,7 +318,7 @@ public class DnsClient
             return GetPulicDnsServers();
         }
 
-        return [.. result];
+        return [.. result.OrderPrivateFirst()];
     }
 
     /// <summary>Gets a list of public DNS servers (EU and US).</summary>
@@ -383,6 +384,46 @@ public class DnsClient
         }
     }
 
+    /// <summary>Resolves a host name to an IPHostEntry instance.</summary>
+    /// <param name="hostname">Hostname to resolve</param>
+    /// <returns>An IPHostEntry instance that contains address information about the host specified.</returns>
+    public IPHostEntry GetHostEntry(DomainName hostname)
+    {
+        var entry = new IPHostEntry();
+        var responses = ResolveAll(hostname);
+        return new()
+        {
+            HostName = hostname.ToString(),
+            Aliases = responses.SelectMany(r => r.GetNames()).Select(n => n.ToString()).ToArray(),
+            AddressList = responses.SelectMany(r => r.GetAddresses()).ToArray(),
+        };
+    }
+
+    /// <summary>Resolves a host name or IP address to an IPHostEntry instance.</summary>
+    /// <param name="address">IPAdress to resolve</param>
+    /// <returns>An IPHostEntry instance that contains address information about the address specified</returns>
+    public IPHostEntry GetHostEntry(IPAddress address)
+    {
+        var entries = new List<IPHostEntry>();
+        var arpa = address.GetReverseLookupZone();
+        var arpaResponse = Resolve(arpa, DnsRecordType.PTR);
+        if (arpaResponse.ResponseCode == DnsResponseCode.NoError)
+        {
+            var names = arpaResponse.Answers.Select(a => a.Name).Distinct();
+            Parallel.ForEach(names, name =>
+            {
+                var entry = GetHostEntry(name!);
+                lock (entries) entries.Add(entry);
+            });
+        }
+        return new()
+        {
+            AddressList = entries.SelectMany(e => e.AddressList).Distinct().ToArray(),
+            Aliases = entries.SelectMany(e => e.Aliases).Distinct().ToArray(),
+            HostName = address.ToString(),
+        };
+    }
+
     /// <summary>Queries the dns servers for the specified records.</summary>
     /// <remarks>This method works parallel and returns the first result of any <see cref="Servers"/>.</remarks>
     /// <param name="domainName">Domain, that should be queried.</param>
@@ -400,13 +441,7 @@ public class DnsClient
             return ResolveWithSearchSuffix(domainName, recordType, recordClass, flags);
         }
 
-        return Resolve(new()
-        {
-            Name = domainName,
-            RecordType = recordType,
-            RecordClass = recordClass,
-            Flags = flags
-        });
+        return Resolve(new DnsQuery() { Name = domainName, RecordType = recordType, RecordClass = recordClass, Flags = flags });
     }
 
     /// <summary>Queries the dns servers for the specified records.</summary>
@@ -414,7 +449,8 @@ public class DnsClient
     /// <param name="query">The query.</param>
     /// <returns>The complete response of the dns server.</returns>
     /// <exception cref="ArgumentNullException">Name must be provided.</exception>
-    /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp.</exception>
+    /// <exception cref="InvalidOperationException">Query to big for UDP transmission. Enable UseTcp.</exception>
+    /// <exception cref="Exception">No valid response received.</exception>
     /// <exception cref="AggregateException">Could not reach any dns server.</exception>
     public DnsResponse Resolve(DnsQuery query)
     {
@@ -422,7 +458,7 @@ public class DnsClient
 
         if (query.Name is null)
         {
-            throw new ArgumentException("Name must be provided");
+            throw new ArgumentException("Query.Name must be provided");
         }
 
         var skipUdp = query.Length > 512;
@@ -430,7 +466,7 @@ public class DnsClient
         {
             if (!UseTcp)
             {
-                throw new("Query to big for UDP transmission. Enable UseTcp!");
+                throw new InvalidOperationException("Query to big for UDP transmission. Enable UseTcp!");
             }
         }
 
@@ -459,20 +495,15 @@ public class DnsClient
     /// <param name="flags">Options for the query.</param>
     /// <returns>The complete response of the dns server.</returns>
     /// <exception cref="ArgumentNullException">Name must be provided.</exception>
-    public IList<DnsResponse> ResolveAll(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired) => ResolveAll(new()
-    {
-        Name = domainName,
-        RecordType = recordType,
-        RecordClass = recordClass,
-        Flags = flags
-    });
+    public IList<DnsResponse> ResolveAll(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
+        => ResolveAll(new DnsQuery() { Name = domainName, RecordType = recordType, RecordClass = recordClass, Flags = flags });
 
     /// <summary>Queries the dns servers for the specified records.</summary>
     /// <remarks>This method works parallel and returns all results received from all <see cref="Servers"/>.</remarks>
     /// <param name="query">The query.</param>
     /// <returns>The complete response of the dns server.</returns>
-    /// <exception cref="ArgumentNullException">Name must be provided.</exception>
-    /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp.</exception>
+    /// <exception cref="ArgumentException">Name must be provided.</exception>
+    /// <exception cref="InvalidOperationException">Query to big for UDP transmission. Enable UseTcp.</exception>
     /// <exception cref="AggregateException">Could not reach any dns server.</exception>
     public IList<DnsResponse> ResolveAll(DnsQuery query)
     {
@@ -480,7 +511,7 @@ public class DnsClient
 
         if (query.Name is null)
         {
-            throw new ArgumentNullException(nameof(query.Name), "Name must be provided");
+            throw new ArgumentException("Query.Name has to be provided!");
         }
 
         var skipUdp = query.Length > 512;
@@ -488,7 +519,7 @@ public class DnsClient
         {
             if (!UseTcp)
             {
-                throw new("Query to big for UDP transmission. Enable UseTcp!");
+                throw new InvalidOperationException("Query to big for UDP transmission. Enable UseTcp!");
             }
         }
 
@@ -515,13 +546,8 @@ public class DnsClient
     /// <param name="flags">Options for the query.</param>
     /// <returns>The complete response of the dns server.</returns>
     /// <exception cref="ArgumentNullException">Name must be provided.</exception>
-    public DnsResponse ResolveSequential(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired) => ResolveSequential(new DnsQuery
-    {
-        Name = domainName,
-        RecordType = recordType,
-        RecordClass = recordClass,
-        Flags = flags
-    });
+    public DnsResponse ResolveSequential(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
+        => ResolveSequential(new DnsQuery { Name = domainName, RecordType = recordType, RecordClass = recordClass, Flags = flags });
 
     /// <summary>Queries the dns servers for the specified records.</summary>
     /// <remarks>This method works sequential and may need up to <see cref="QueryTimeout"/> per <see cref="Servers"/>.</remarks>
@@ -530,7 +556,8 @@ public class DnsClient
     /// <exception cref="ArgumentNullException">Name must be provided.</exception>
     /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp.</exception>
     /// <exception cref="AggregateException">Could not reach any dns server.</exception>
-    public DnsResponse ResolveSequential(DnsQuery query) => ResolveSequential(query, r => r.ResponseCode == DnsResponseCode.NoError);
+    public DnsResponse ResolveSequential(DnsQuery query)
+        => ResolveSequential(query, r => r.ResponseCode == DnsResponseCode.NoError);
 
     /// <summary>Queries the dns servers for the specified records.</summary>
     /// <remarks>This method works sequential and may need up to <see cref="QueryTimeout"/> per <see cref="Servers"/>.</remarks>
@@ -582,7 +609,7 @@ public class DnsClient
     /// <exception cref="AggregateException">Could not reach any dns server.</exception>
     public DnsResponse ResolveWithSearchSuffix(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
     {
-        SearchSuffixes ??= NoSuffix.Concat(NetworkInterface.GetAllNetworkInterfaces().Select(i => i.GetIPProperties().DnsSuffix)).Distinct().ToArray();
+        SearchSuffixes ??= NoSuffix.Concat(NetworkInterface.GetAllNetworkInterfaces().Select(i => i.GetIPProperties().DnsSuffix)).Where(s => !string.IsNullOrEmpty(s)).Distinct().ToArray();
         var exceptions = new Exception[SearchSuffixes.Length];
         var responses = new DnsResponse[SearchSuffixes.Length];
 
@@ -593,7 +620,7 @@ public class DnsClient
             {
                 responses[n] = Resolve(new()
                 {
-                    Name = $"{domainName}.{SearchSuffixes[n]}",
+                    Name = $"{domainName}.{SearchSuffixes[n]}".Trim('.'),
                     RecordType = recordType,
                     RecordClass = recordClass,
                     Flags = flags

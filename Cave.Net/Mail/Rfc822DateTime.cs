@@ -27,7 +27,7 @@ public static class Rfc822DateTime
 
     #region Private Fields
 
-    static readonly char[] timeZoneSeparator = ['+', '-'];
+    static readonly char[] TimeZoneSeparator = ['+', '-'];
 
     #endregion Private Fields
 
@@ -162,7 +162,7 @@ public static class Rfc822DateTime
                 result.Month = 12;
             }
 
-            var timeZoneIndex = date.IndexOfAny(timeZoneSeparator);
+            var timeZoneIndex = date.IndexOfAny(TimeZoneSeparator);
             if (timeZoneIndex > -1)
             {
                 var timeZone = date[timeZoneIndex..].Trim();

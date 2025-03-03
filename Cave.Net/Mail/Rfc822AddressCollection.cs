@@ -38,7 +38,7 @@ public class Rfc822AddressCollection : ICollection<MailAddress>
         var result = new List<MailAddress>();
         foreach (var address in Data.Split(','))
         {
-            if (address.Contains("@"))
+            if (address.Contains('@'))
             {
                 result.Add(Rfc2047.DecodeMailAddress(address));
             }
@@ -100,7 +100,7 @@ public class Rfc822AddressCollection : ICollection<MailAddress>
         }
 
         var data = Data;
-        if (!data.EndsWith(","))
+        if (!data.EndsWith(','))
         {
             data += ',';
         }

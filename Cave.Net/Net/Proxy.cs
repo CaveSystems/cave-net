@@ -4,25 +4,43 @@ using System.Net;
 namespace Cave.Net;
 
 /// <summary>Provides proxy settings.</summary>
-public class Proxy
+public record Proxy : BaseRecord, IWebProxy
 {
-    #region Public Properties
+    public static implicit operator Proxy(ConnectionString connectionString)
+    {
+        var useHttps = connectionString.Protocol == "https";
+        return new()
+        {
+            Credentials = (connectionString.Password != null) | (connectionString.UserName != null) ? connectionString.GetCredentials() : null,
+            Host = connectionString.Server,
+            UseHttps = useHttps,
+            Port = useHttps ? 443 : 80
+        };
+    }
+
+    public static implicit operator ConnectionString(Proxy proxy)
+    {
+        return new()
+        {
+            Protocol = proxy.UseHttps ? "https" : "http",
+            Password = proxy.Credentials?.Password,
+            UserName = proxy.Credentials?.UserName,
+            Server = proxy.Host,
+            Port = (proxy.UseHttps ? (ushort)443 : (ushort)80)
+        };
+    }
 
     /// <summary>Gets or sets the proxy credentials</summary>
-    public NetworkCredential? Credentials { get; set; }
+    public NetworkCredential? Credentials { get; init; }
 
     /// <summary>Gets or sets the proxy host</summary>
-    public string? Host { get; set; }
+    public string? Host { get; init; }
 
     /// <summary>Gets or sets the proxy port</summary>
-    public int Port { get; set; }
+    public int Port { get; init; }
 
     /// <summary>Gets or sets a value indicating whether the proxy uses https or http.</summary>
-    public bool UseHttps { get; set; } = true;
-
-    #endregion Public Properties
-
-    #region Public Methods
+    public bool UseHttps { get; init; } = true;
 
     /// <summary>Gets the proxy uri.</summary>
     /// <returns>The Proxy uri.</returns>
@@ -32,7 +50,9 @@ public class Proxy
         {
             Scheme = UseHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp,
             Host = Host,
-            Port = Port
+            Port = Port,
+            UserName = Credentials?.UserName,
+            Password = Credentials?.Password,
         };
         return builder.Uri;
     }
@@ -40,5 +60,9 @@ public class Proxy
     /// <inheritdoc/>
     public override string ToString() => GetUri().ToString();
 
-    #endregion Public Methods
+    IWebProxy? cache;
+    Uri? IWebProxy.GetProxy(Uri destination) => GetWebProxy().GetProxy(destination);
+    ICredentials? IWebProxy.Credentials { get => GetWebProxy().Credentials; set => throw new NotSupportedException(); }
+    IWebProxy GetWebProxy() => cache ??= new WebProxy(GetUri());
+    bool IWebProxy.IsBypassed(Uri host) => GetWebProxy().IsBypassed(host);
 }

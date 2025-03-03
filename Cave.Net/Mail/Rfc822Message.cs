@@ -122,7 +122,7 @@ public class Rfc822Message
             var header = line!;
             line = reader.ReadLine();
             //add folded content to current line
-            while ((line != null) && (line.StartsWith(" ") || line.StartsWith("\t")))
+            while ((line is not null) && (line.Length > 1) && (line[0] is ' ' or '\t'))
             {
                 header += " " + line.TrimStart(' ', '\t');
                 line = reader.ReadLine();

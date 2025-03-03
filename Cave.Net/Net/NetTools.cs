@@ -14,6 +14,7 @@ public static class NetTools
     #region Private Fields
 
     static string? myHostName;
+    static readonly object SyncRoot = new();
 
     #endregion Private Fields
 
@@ -28,9 +29,11 @@ public static class NetTools
             {
                 return myHostName;
             }
-
-            myHostName = GetHostName();
-            return myHostName;
+            lock (SyncRoot)
+            {
+                myHostName ??= GetHostName();
+                return myHostName;
+            }
         }
     }
 
@@ -117,9 +120,28 @@ public static class NetTools
         {
             try
             {
-                var entry = System.Net.Dns.GetHostEntry(str);
-                myHostName = entry.HostName;
-                return myHostName;
+                var entry = DnsClient.Default.GetHostEntry(str!);
+                if (entry.AddressList.Any())
+                {
+                    myHostName = entry.HostName;
+                    return myHostName;
+                }
+            }
+            catch { }
+        }
+
+        var addresses = GetLocalAddresses().ExceptLocalhost().OrderPrivateFirst();
+        foreach (var address in addresses)
+        {
+            if (address.IsLocalhost()) continue;
+            try
+            {
+                var entry = DnsClient.Default.GetHostEntry(address);
+                if (entry.AddressList.Any())
+                {
+                    myHostName = entry.HostName;
+                    return myHostName;
+                }
             }
             catch { }
         }
@@ -251,13 +273,19 @@ public static class NetTools
     /// <summary>Retrieves all local addresses.</summary>
     /// <param name="status">Filter to apply.</param>
     /// <returns>Returns <see cref="UnicastIPAddressInformation"/> instances for all local network interfaces.</returns>
-    public static UnicastIPAddressInformation[] GetLocalAddresses(OperationalStatus? status = null)
+    [Obsolete($"Use {nameof(GetLocalUnicastIPAddressInformation)}")]
+    internal static UnicastIPAddressInformation[] GetLocalAddresses(OperationalStatus? status) => GetLocalUnicastIPAddressInformation(status.HasValue ? status.Value : default);
+
+    /// <summary>Retrieves all local addresses.</summary>
+    /// <param name="status">Filter to apply.</param>
+    /// <returns>Returns <see cref="UnicastIPAddressInformation"/> instances for all local network interfaces.</returns>
+    public static UnicastIPAddressInformation[] GetLocalUnicastIPAddressInformation(OperationalStatus status = default)
     {
         var result = new List<UnicastIPAddressInformation>();
         IEnumerable<NetworkInterface> interfaces = NetworkInterface.GetAllNetworkInterfaces();
-        if (status != null)
+        if (status != default)
         {
-            interfaces = interfaces.Where(i => i.OperationalStatus == status.Value);
+            interfaces = interfaces.Where(i => i.OperationalStatus == status);
         }
         foreach (var ni in interfaces)
         {
@@ -270,13 +298,22 @@ public static class NetTools
         return [.. result];
     }
 
-    /// <summary>Retrieves local addresses with the specified addresfamily.</summary>
+    /// <summary>Retrieves local addresses with the specified addressfamily.</summary>
     /// <param name="addressFamily">Address family used to lookup local addresses.</param>
     /// <returns>Returns a list of local ip addresses.</returns>
-    public static IPAddress[] GetLocalAddresses(AddressFamily addressFamily)
+    public static IPAddress[] GetLocalAddresses(AddressFamily addressFamily) => GetLocalAddresses(status: default, addressFamily: addressFamily);
+
+    /// <summary>Retrieves local addresses with the specified addressfamily.</summary>
+    /// <param name="status">Filter to apply.</param>
+    /// <param name="addressFamily">Address family used to lookup local addresses.</param>
+    /// <returns>Returns a list of local ip addresses.</returns>
+    public static IPAddress[] GetLocalAddresses(OperationalStatus status = default, AddressFamily addressFamily = default)
     {
         var result = new List<IPAddress>();
-        foreach (var addr in DnsClient.Default.GetHostAddresses(NetTools.HostName))
+        var addresses = GetLocalUnicastIPAddressInformation(status).Select(i => i.Address);
+        if (addressFamily != default) addresses = addresses.Where(a => a.AddressFamily == addressFamily);
+        addresses = addresses.OrderPrivateFirst();
+        foreach (var addr in addresses)
         {
             if (addr.AddressFamily == addressFamily)
             {
