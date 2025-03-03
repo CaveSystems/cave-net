@@ -1082,7 +1082,7 @@ public class TcpAsyncClient : IDisposable
     {
         var ready = new ManualResetEvent(false);
         void PrivateConnected(object? sender, EventArgs e) => ready.Set();
-        ConnectResult PrivateConnect(IPAddress address) => new(address, TcpAsyncClient.TryConnect(address, port, PrivateConnected, timeout));
+        ConnectResult PrivateConnect(IPAddress address) => new(address, TcpAsyncClient.TryConnectAsync(address, port, PrivateConnected, timeout));
         var list = addresses.Select(PrivateConnect).ToList();
         try
         {
@@ -1104,7 +1104,15 @@ public class TcpAsyncClient : IDisposable
         }
     }
 
-    public static TcpAsyncClient TryConnect(IPAddress address, ushort port, EventHandler<EventArgs>? connected, int timeout = 0)
+    /// <summary>
+    /// Creates a new <see cref="TcpAsyncClient"/> instance and starts a new connection attempt to the specified endpoint.
+    /// </summary>
+    /// <param name="address">Address to connect to.</param>
+    /// <param name="port">Port to connect to.</param>
+    /// <param name="connected">Event to be called on successful connection. (See <see cref="TcpAsyncClient.Error"/> for errors)</param>
+    /// <param name="timeout">Timeout for the connection.</param>
+    /// <returns>Returns the new <see cref="TcpAsyncClient"/> instance trying to connect.</returns>
+    public static TcpAsyncClient TryConnectAsync(IPAddress address, ushort port, EventHandler<EventArgs>? connected, int timeout = 0)
     {
         var client = new TcpAsyncClient();
         if (connected is not null) client.Connected += connected;
