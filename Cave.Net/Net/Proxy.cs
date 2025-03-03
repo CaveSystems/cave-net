@@ -6,6 +6,10 @@ namespace Cave.Net;
 /// <summary>Provides proxy settings.</summary>
 public record Proxy : BaseRecord, IWebProxy
 {
+    /// <summary>
+    /// Converts a connection string structure to a proxy record instance
+    /// </summary>
+    /// <param name="connectionString"></param>
     public static implicit operator Proxy(ConnectionString connectionString)
     {
         var useHttps = connectionString.Protocol == "https";
@@ -14,10 +18,14 @@ public record Proxy : BaseRecord, IWebProxy
             Credentials = (connectionString.Password != null) | (connectionString.UserName != null) ? connectionString.GetCredentials() : null,
             Host = connectionString.Server,
             UseHttps = useHttps,
-            Port = useHttps ? 443 : 80
+            Port = connectionString.GetPort(useHttps ? 443 : 80)
         };
     }
 
+    /// <summary>
+    /// Converts a proxy record instance to a connection string structure
+    /// </summary>
+    /// <param name="proxy"></param>
     public static implicit operator ConnectionString(Proxy proxy)
     {
         return new()
@@ -26,7 +34,7 @@ public record Proxy : BaseRecord, IWebProxy
             Password = proxy.Credentials?.Password,
             UserName = proxy.Credentials?.UserName,
             Server = proxy.Host,
-            Port = (proxy.UseHttps ? (ushort)443 : (ushort)80)
+            Port = (ushort)proxy.Port,
         };
     }
 
