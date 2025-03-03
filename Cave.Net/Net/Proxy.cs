@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Net;
 using System.Runtime.CompilerServices;
 
@@ -7,9 +10,7 @@ namespace Cave.Net;
 /// <summary>Provides proxy settings.</summary>
 public record Proxy : BaseRecord, IWebProxy
 {
-    /// <summary>
-    /// Converts a connection string structure to a proxy record instance
-    /// </summary>
+    /// <summary>Converts a connection string structure to a proxy record instance</summary>
     /// <param name="connectionString"></param>
     public static implicit operator Proxy(ConnectionString connectionString)
     {
@@ -23,9 +24,7 @@ public record Proxy : BaseRecord, IWebProxy
         };
     }
 
-    /// <summary>
-    /// Converts a proxy record instance to a connection string structure
-    /// </summary>
+    /// <summary>Converts a proxy record instance to a connection string structure</summary>
     /// <param name="proxy"></param>
     public static implicit operator ConnectionString(Proxy proxy)
     {
@@ -69,9 +68,23 @@ public record Proxy : BaseRecord, IWebProxy
     /// <inheritdoc/>
     public override string ToString() => GetUri().ToString();
 
+    /// <summary>List of addresses to ignore when using the proxy</summary>
+    public ReadOnlyCollection<string> BypassList { get; init; } = new ReadOnlyCollection<string>([]);
+
+    /// <summary>Protocol used</summary>
+    public string Protocol => (UseHttps ? "https" : "http");
+
     IWebProxy? cache;
     Uri? IWebProxy.GetProxy(Uri destination) => GetWebProxy().GetProxy(destination);
-    ICredentials? IWebProxy.Credentials { get => GetWebProxy().Credentials; set => throw new NotSupportedException(); }
-    IWebProxy GetWebProxy() => cache ??= new WebProxy(GetUri());
+    ICredentials? IWebProxy.Credentials { get => Credentials; set => throw new NotSupportedException(); }
+    IWebProxy GetWebProxy() => cache ??= new WebProxy()
+    {
+        UseDefaultCredentials = false,
+        Credentials = Credentials,
+        Address = new Uri($"{Protocol}://{Host}:{Port}/"),
+        BypassList = BypassList.ToArray(),
+        BypassProxyOnLocal = false,
+    };
+
     bool IWebProxy.IsBypassed(Uri host) => GetWebProxy().IsBypassed(host);
 }
