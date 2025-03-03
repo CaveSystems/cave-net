@@ -10,7 +10,9 @@ using System.Net;
 using System.Net.Cache;
 using System.Text;
 using Cave.IO;
+using Cave.Progress;
 using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Cave.Net;
 
@@ -37,10 +39,15 @@ public sealed class HttpConnection
 #if NETSTANDARD2_0_OR_GREATER || NET5_0_OR_GREATER
         request.AllowReadStreamBuffering = false;
 #endif
-#if NET45_OR_GREATER || NET5_0_OR_GREATER || NETSTANDARD
-        request.ServerCertificateValidationCallback += RemoteCertificateValidationCallback;
+#if NET20 || NET35 || NET40
+        bool MyCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            try { return RemoteCertificateValidationCallback?.Invoke(sender, certificate, chain, sslPolicyErrors) ?? true; }
+            finally { ServicePointManager.ServerCertificateValidationCallback -= MyCallback; }
+        }
+        ServicePointManager.ServerCertificateValidationCallback += MyCallback;
 #else
-        ServicePointManager.ServerCertificateValidationCallback += RemoteCertificateValidationCallback;
+        request.ServerCertificateValidationCallback += RemoteCertificateValidationCallback;
 #endif
         // set defaults
         request.ProtocolVersion = ProtocolVersion;

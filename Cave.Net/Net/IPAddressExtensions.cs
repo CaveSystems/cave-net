@@ -35,18 +35,21 @@ public static class IPAddressExtensions
             return -1;
         }
         var i = 0;
-#if NET5_0_OR_GREATER
-        if (address.IsIPv6UniqueLocal) i |= 1;
-        i <<= 1;
+#if !(NET20 || NET35)
+        if (address.IsIPv6Teredo) i |= 1;
 #endif
+        i <<= 1;
         if (address.IsIPv6Multicast) i |= 1;
         i <<= 1;
-        if (address.IsIPv6SiteLocal) i |= 1;
+        if (!address.IsIPv6SiteLocal) i |= 1;
         i <<= 1;
         if (!address.IsIPv6LinkLocal) i |= 1;
         i <<= 1;
+#if NET5_0_OR_GREATER
+        if (address.IsIPv6UniqueLocal) i |= 1;
+#endif
         return i;
     }
 
-#endregion Public Methods
+    #endregion Public Methods
 }

@@ -471,8 +471,8 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Calls the <see cref="Received"/> event (if set).</summary>
     /// <remarks>
-    /// You can set <see cref="BufferEventArgs.Handled"/> to true when overriding this function or within <see cref="Received"/> to skip adding data to the
-    /// <see cref="Stream"/> and <see cref="ReceiveBuffer"/>.
+    /// You can set <see cref="BufferEventArgs.Handled"/> to true when overriding this function or within <see cref="Received"/> to skip adding data to the <see
+    /// cref="Stream"/> and <see cref="ReceiveBuffer"/>.
     /// </remarks>
     /// <param name="buffer">Receive buffer instance.</param>
     /// <param name="offset">Start offset of the received data.</param>
@@ -621,8 +621,8 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Gets or sets the amount of time, in milliseconds, that a connect operation blocks waiting for data.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value,
-    /// <see cref="Timeout.Infinite"/> , specifies that the connect operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the connect operation does not time out.
     /// </value>
     public int ConnectTimeout { get; set; } = 5000;
 
@@ -666,8 +666,8 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Gets or sets the amount of time, in milliseconds, that a read operation blocks waiting for data.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value,
-    /// <see cref="Timeout.Infinite"/> , specifies that the read operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the read operation does not time out.
     /// </value>
     /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
     public int ReceiveTimeout
@@ -682,8 +682,8 @@ public class TcpAsyncClient : IDisposable
 
     /// <summary>Gets or sets the amount of time, in milliseconds, that a write operation blocks waiting for transmission.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value,
-    /// <see cref="Timeout.Infinite"/> , specifies that the write operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the write operation does not time out.
     /// </value>
     /// <remarks>This cannot be accessed prior <see cref="Connect(string, int, int)"/>.</remarks>
     public int SendTimeout
@@ -1066,7 +1066,7 @@ public class TcpAsyncClient : IDisposable
         return $"tcp://{RemoteEndPoint}";
     }
 
-    record ConnectResult(IPAddress Address, TcpAsyncClient Client) : BaseRecord;
+    sealed record ConnectResult(IPAddress Address, TcpAsyncClient Client) : BaseRecord;
 
     /// <summary>
     /// Tries to connect to any of the specified <paramref name="addresses"/>. 
@@ -1082,7 +1082,7 @@ public class TcpAsyncClient : IDisposable
     {
         var ready = new ManualResetEvent(false);
         void PrivateConnected(object? sender, EventArgs e) => ready.Set();
-        ConnectResult PrivateConnect(IPAddress address) => new(address, TcpAsyncClient.TryConnect(address, port, PrivateConnected, timeout));
+        ConnectResult PrivateConnect(IPAddress address) => new(address, TcpAsyncClient.TryConnectAsync(address, port, PrivateConnected, timeout));
         var list = addresses.Select(PrivateConnect).ToList();
         try
         {
@@ -1104,7 +1104,15 @@ public class TcpAsyncClient : IDisposable
         }
     }
 
-    public static TcpAsyncClient TryConnect(IPAddress address, ushort port, EventHandler<EventArgs>? connected, int timeout = 0)
+    /// <summary>
+    /// Creates a new <see cref="TcpAsyncClient"/> instance and starts a new connection attempt to the specified endpoint.
+    /// </summary>
+    /// <param name="address">Address to connect to.</param>
+    /// <param name="port">Port to connect to.</param>
+    /// <param name="connected">Event to be called on successful connection. (See <see cref="TcpAsyncClient.Error"/> for errors)</param>
+    /// <param name="timeout">Timeout for the connection.</param>
+    /// <returns>Returns the new <see cref="TcpAsyncClient"/> instance trying to connect.</returns>
+    public static TcpAsyncClient TryConnectAsync(IPAddress address, ushort port, EventHandler<EventArgs>? connected, int timeout = 0)
     {
         var client = new TcpAsyncClient();
         if (connected is not null) client.Connected += connected;
