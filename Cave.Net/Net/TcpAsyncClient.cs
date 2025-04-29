@@ -409,9 +409,12 @@ public class TcpAsyncClient : IDisposable
         socket.NoDelay = noDelay;
         socket.Ttl = ttl;
         socket.LingerState = lingerState;
-        if (!lingerState.Enabled)
+        if (Platform.IsMicrosoft)
         {
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontLinger, true);
+            if (!lingerState.Enabled)
+            {
+                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.DontLinger, true);
+            }
         }
         socket.SendTimeout = sendTimeout;
         socket.ReceiveTimeout = receiveTimeout;
@@ -1069,9 +1072,8 @@ public class TcpAsyncClient : IDisposable
     sealed record ConnectResult(IPAddress Address, TcpAsyncClient Client) : BaseRecord;
 
     /// <summary>
-    /// Tries to connect to any of the specified <paramref name="addresses"/>. 
-    /// The first successfully connected client will be returned.
-    /// All other already started or opening connections will be disposed.
+    /// Tries to connect to any of the specified <paramref name="addresses"/>. The first successfully connected client will be returned. All other already
+    /// started or opening connections will be disposed.
     /// </summary>
     /// <param name="addresses">Address list to use for connection tries.</param>
     /// <param name="port">Port to connect to</param>
@@ -1104,9 +1106,7 @@ public class TcpAsyncClient : IDisposable
         }
     }
 
-    /// <summary>
-    /// Creates a new <see cref="TcpAsyncClient"/> instance and starts a new connection attempt to the specified endpoint.
-    /// </summary>
+    /// <summary>Creates a new <see cref="TcpAsyncClient"/> instance and starts a new connection attempt to the specified endpoint.</summary>
     /// <param name="address">Address to connect to.</param>
     /// <param name="port">Port to connect to.</param>
     /// <param name="connected">Event to be called on successful connection. (See <see cref="TcpAsyncClient.Error"/> for errors)</param>
