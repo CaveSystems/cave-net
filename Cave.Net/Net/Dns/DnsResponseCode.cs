@@ -9,10 +9,7 @@ public enum DnsResponseCode : ushort
     /// <summary>The name server was unable to interpret the request due to a format error.</summary>
     FormatError = 1,
 
-    /// <summary>
-    /// The name server encountered an internal failure while processing this request, for example an operating system error or a
-    /// forwarding timeout.
-    /// </summary>
+    /// <summary>The name server encountered an internal failure while processing this request, for example an operating system error or a forwarding timeout.</summary>
     ServerFailure = 2,
 
     /// <summary>Some name that ought to exist, does not exist.</summary>

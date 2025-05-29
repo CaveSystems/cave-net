@@ -7,11 +7,11 @@ namespace Cave.Net.Ntp;
 [StructLayout(LayoutKind.Sequential, Pack = 1, Size = 1)]
 public struct NtpPow2Int8
 {
-    /// <summary>Implicit conversion from sbyte to <see cref="NtpPow2Int8" />.</summary>
+    /// <summary>Implicit conversion from sbyte to <see cref="NtpPow2Int8"/>.</summary>
     /// <param name="value">Value to convert.</param>
     public static implicit operator NtpPow2Int8(sbyte value) => new() { Value = value };
 
-    /// <summary>Implicit conversion from <see cref="NtpPow2Int8" /> to TimeSpan.</summary>
+    /// <summary>Implicit conversion from <see cref="NtpPow2Int8"/> to TimeSpan.</summary>
     /// <param name="value">Value to convert.</param>
     public static implicit operator TimeSpan(NtpPow2Int8 value) => value.Time;
 

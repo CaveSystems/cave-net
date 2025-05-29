@@ -7,6 +7,8 @@ namespace Cave.Mail.Imap;
 
 static class ImapParser
 {
+    #region Public Methods
+
     public static ImapAnswer Parse(string id, Stream stream)
     {
         var answer = new ImapAnswer
@@ -68,12 +70,15 @@ static class ImapParser
                 case ')':
                     if (stack.Pop() != '(') { throw new FormatException(); }
                     break;
+
                 case '}':
                     if (stack.Pop() != '{') { throw new FormatException(); }
                     break;
+
                 case ']':
                     if (stack.Pop() != '[') { throw new FormatException(); }
                     break;
+
                 case '>':
                     if (stack.Pop() != '<') { throw new FormatException(); }
                     break;
@@ -84,6 +89,7 @@ static class ImapParser
                 case '<':
                     stack.Push(c);
                     break;
+
                 case ' ':
                     if (stack.Count == 0)
                     {
@@ -99,4 +105,6 @@ static class ImapParser
         }
         return [.. parts];
     }
+
+    #endregion Public Methods
 }

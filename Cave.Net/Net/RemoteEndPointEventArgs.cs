@@ -8,7 +8,7 @@ public class RemoteEndPointEventArgs : EventArgs
 {
     #region Public Constructors
 
-    /// <summary>Initializes a new instance of the <see cref="RemoteEndPointEventArgs" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="RemoteEndPointEventArgs"/> class.</summary>
     /// <param name="remoteEndPoint">The remote endpoint.</param>
     public RemoteEndPointEventArgs(IPEndPoint remoteEndPoint) => RemoteEndPoint = remoteEndPoint;
 

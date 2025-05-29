@@ -13,7 +13,7 @@ public class NtpPacketEventArgs : EventArgs
 
     #region Public Constructors
 
-    /// <summary>Initializes a new instance of the <see cref="NtpPacketEventArgs" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="NtpPacketEventArgs"/> class.</summary>
     /// <param name="packet">The packet.</param>
     public NtpPacketEventArgs(NtpPacket packet) => Packet = packet;
 

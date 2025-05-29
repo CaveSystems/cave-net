@@ -7,7 +7,7 @@ public class RemoteEndPointBufferEventArgs : BufferEventArgs
 {
     #region Public Constructors
 
-    /// <summary>Initializes a new instance of the <see cref="RemoteEndPointBufferEventArgs" /> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="RemoteEndPointBufferEventArgs"/> class.</summary>
     /// <param name="remoteEndPoint">The remote endpoint.</param>
     /// <param name="buffer">The buffer containing the received data.</param>
     /// <param name="offset">Byte offset the received data starts.</param>

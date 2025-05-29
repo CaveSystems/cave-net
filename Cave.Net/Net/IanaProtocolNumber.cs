@@ -43,8 +43,8 @@ public enum IanaProtocolNumber : byte
     NvpII,
 
     /// <summary>
-    /// [Boggs, D., J. Shoch, E. Taft, and R. Metcalfe, "PUP: An Internetwork Architecture", XEROX Palo Alto Research Center, CSL-79-10,
-    /// July 1979; also in IEEE Transactions on Communication, Volume COM-28, Number 4, April 1980.][[XEROX]]
+    /// [Boggs, D., J. Shoch, E. Taft, and R. Metcalfe, "PUP: An Internetwork Architecture", XEROX Palo Alto Research Center, CSL-79-10, July 1979; also in IEEE
+    /// Transactions on Communication, Volume COM-28, Number 4, April 1980.][[XEROX]]
     /// </summary>
     PUP,
 
@@ -76,11 +76,10 @@ public enum IanaProtocolNumber : byte
     PRM,
 
     /// <summary>
-    /// XEROX NS IDP ["The Ethernet, A Local Area Network: Data Link Layer and Physical Layer Specification", AA-K759B-TK, Digital
-    /// Equipment Corporation, Maynard, MA. Also as: "The Ethernet - A Local Area Network", Version 1.0, Digital Equipment Corporation, Intel
-    /// Corporation, Xerox Corporation, September 1980. And: "The Ethernet, A Local Area Network: Data Link Layer and Physical Layer
-    /// Specifications", Digital, Intel and Xerox, November 1982. And: XEROX, "The Ethernet, A Local Area Network: Data Link Layer and Physical
-    /// Layer Specification", X3T51/80-50, Xerox Corporation, Stamford, CT., October 1980.][[XEROX]]
+    /// XEROX NS IDP ["The Ethernet, A Local Area Network: Data Link Layer and Physical Layer Specification", AA-K759B-TK, Digital Equipment Corporation,
+    /// Maynard, MA. Also as: "The Ethernet - A Local Area Network", Version 1.0, Digital Equipment Corporation, Intel Corporation, Xerox Corporation, September
+    /// 1980. And: "The Ethernet, A Local Area Network: Data Link Layer and Physical Layer Specifications", Digital, Intel and Xerox, November 1982. And: XEROX,
+    /// "The Ethernet, A Local Area Network: Data Link Layer and Physical Layer Specification", X3T51/80-50, Xerox Corporation, Stamford, CT., October 1980.][[XEROX]]
     /// </summary>
     XNS_IDP,
 
@@ -109,8 +108,8 @@ public enum IanaProtocolNumber : byte
     NETBLT,
 
     /// <summary>
-    /// MFE Network Services Protocol [Shuttleworth, B., "A Documentary of MFENet, a National Computer Network", UCRL-52317, Lawrence
-    /// Livermore Labs, Livermore, California, June 1977.][Barry_Howard]
+    /// MFE Network Services Protocol [Shuttleworth, B., "A Documentary of MFENet, a National Computer Network", UCRL-52317, Lawrence Livermore Labs, Livermore,
+    /// California, June 1977.][Barry_Howard]
     /// </summary>
     MFENSP,
 
@@ -280,8 +279,7 @@ public enum IanaProtocolNumber : byte
     NSFNET_IGP,
 
     /// <summary>
-    /// Dissimilar Gateway Protocol [M/A-COM Government Systems, "Dissimilar Gateway Protocol Specification, Draft Version", Contract no.
-    /// CS901145, November 16, 1987.][Mike_Little]
+    /// Dissimilar Gateway Protocol [M/A-COM Government Systems, "Dissimilar Gateway Protocol Specification, Draft Version", Contract no. CS901145, November 16, 1987.][Mike_Little]
     /// </summary>
     DGP,
 
@@ -295,8 +293,8 @@ public enum IanaProtocolNumber : byte
     OSPFIGP,
 
     /// <summary>
-    /// Sprite RPC Protocol [Welch, B., "The Sprite Remote Procedure Call System", Technical Report, UCB/Computer Science Dept., 86/302,
-    /// University of California at Berkeley, June 1986.][Bruce Willins]
+    /// Sprite RPC Protocol [Welch, B., "The Sprite Remote Procedure Call System", Technical Report, UCB/Computer Science Dept., 86/302, University of
+    /// California at Berkeley, June 1986.][Bruce Willins]
     /// </summary>
     Sprite_RPC,
 

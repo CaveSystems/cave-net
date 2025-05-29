@@ -8,7 +8,6 @@ using System.Net.Mail;
 using System.Net.Mime;
 using System.Text;
 using Cave.IO;
-using Cave.Security;
 
 namespace Cave.Mail;
 

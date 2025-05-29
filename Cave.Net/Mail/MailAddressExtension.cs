@@ -5,9 +5,33 @@ using Cave.Net;
 
 namespace Cave.Mail;
 
-/// <summary>Provides an <see cref="MailAddress" /> Extension for verifying an email address at the mail server responsible for the address.</summary>
+/// <summary>Provides an <see cref="MailAddress"/> Extension for verifying an email address at the mail server responsible for the address.</summary>
 public static class MailAddressExtension
 {
+    #region Public Methods
+
+    /// <summary>Loads the addresses from a address array. Each address is checked for validity and uniqueness.</summary>
+    /// <param name="receipients">The receipients.</param>
+    /// <param name="addresses">The addresses.</param>
+    /// <param name="throwErrors">if set to <c>true</c> [throw errors].</param>
+    public static void LoadAddresses(this Set<MailAddress> receipients, string[] addresses, bool throwErrors = false)
+    {
+        foreach (var address in addresses)
+        {
+            try
+            {
+                receipients.Include(new(address));
+            }
+            catch
+            {
+                if (throwErrors)
+                {
+                    throw;
+                }
+            }
+        }
+    }
+
     /// <summary>Checks the specified email address for validity with the mail server responsible for the address.</summary>
     /// <param name="address">The email address to verify.</param>
     public static void Verify(this MailAddress address)
@@ -34,25 +58,5 @@ public static class MailAddressExtension
         validator.Validate(address, true);
     }
 
-    /// <summary>Loads the addresses from a address array. Each address is checked for validity and uniqueness.</summary>
-    /// <param name="receipients">The receipients.</param>
-    /// <param name="addresses">The addresses.</param>
-    /// <param name="throwErrors">if set to <c>true</c> [throw errors].</param>
-    public static void LoadAddresses(this Set<MailAddress> receipients, string[] addresses, bool throwErrors = false)
-    {
-        foreach (var address in addresses)
-        {
-            try
-            {
-                receipients.Include(new(address));
-            }
-            catch
-            {
-                if (throwErrors)
-                {
-                    throw;
-                }
-            }
-        }
-    }
+    #endregion Public Methods
 }

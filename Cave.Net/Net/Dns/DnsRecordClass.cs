@@ -1,6 +1,6 @@
 ﻿namespace Cave.Net.Dns;
 
-/// <summary>DNS record classes <see href="http://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml" />.</summary>
+/// <summary>DNS record classes <see href="http://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml"/>.</summary>
 public enum DnsRecordClass
 {
     /// <summary>Reserved</summary>

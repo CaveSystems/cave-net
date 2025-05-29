@@ -40,9 +40,9 @@ public enum ImapSearchType
     FROM,
 
     /// <summary>
-    /// Parameter: field-name string - Messages that have a header with the specified field-name (as defined in [RFC-2822]) and that
-    /// contains the specified string in the text of the header (what comes after the colon). If the string to search is zero-length, this matches
-    /// all messages that have a header line with the specified field-name regardless of the contents.
+    /// Parameter: field-name string - Messages that have a header with the specified field-name (as defined in [RFC-2822]) and that contains the specified
+    /// string in the text of the header (what comes after the colon). If the string to search is zero-length, this matches all messages that have a header line
+    /// with the specified field-name regardless of the contents.
     /// </summary>
     HEADER,
 
@@ -79,10 +79,7 @@ public enum ImapSearchType
     /// <summary>Parameter: date - Messages whose [RFC-2822] Date: header (disregarding time and timezone) is within the specified date.</summary>
     SENTON,
 
-    /// <summary>
-    /// Parameter: date - Messages whose [RFC-2822] Date: header (disregarding time and timezone) is within or later than the specified
-    /// date.
-    /// </summary>
+    /// <summary>Parameter: date - Messages whose [RFC-2822] Date: header (disregarding time and timezone) is within or later than the specified date.</summary>
     SENTSINCE,
 
     /// <summary>Parameter: date - Messages whose internal date (disregarding time and timezone) is within or later than the specified date.</summary>
@@ -101,8 +98,7 @@ public enum ImapSearchType
     TO,
 
     /// <summary>
-    /// Parameter: sequence set - Messages with unique identifiers corresponding to the specified unique identifier set. Sequence set
-    /// ranges are permitted.
+    /// Parameter: sequence set - Messages with unique identifiers corresponding to the specified unique identifier set. Sequence set ranges are permitted.
     /// </summary>
     UID,
 

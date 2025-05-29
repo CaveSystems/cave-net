@@ -5,7 +5,7 @@ using System.Threading;
 namespace Cave.Net;
 
 /// <summary>Provides a TcpServer interface.</summary>
-/// <seealso cref="IDisposable" />
+/// <seealso cref="IDisposable"/>
 public interface ITcpServer : IDisposable
 {
     #region Public Properties
@@ -27,19 +27,15 @@ public interface ITcpServer : IDisposable
 
     /// <summary>Gets or sets the amount of time, in milliseconds, thata read operation blocks waiting for data.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value,
-    /// <see
-    ///     cref="Timeout.Infinite" />
-    /// , specifies that the read operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a read operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the read operation does not time out.
     /// </value>
     int ReceiveTimeout { get; set; }
 
     /// <summary>Gets or sets the amount of time, in milliseconds, thata write operation blocks waiting for data.</summary>
     /// <value>
-    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value,
-    /// <see
-    ///     cref="Timeout.Infinite" />
-    /// , specifies that the write operation does not time out.
+    /// A Int32 that specifies the amount of time, in milliseconds, that will elapse before a write operation fails. The default value, <see
+    /// cref="Timeout.Infinite"/> , specifies that the write operation does not time out.
     /// </value>
     int SendTimeout { get; set; }
 
