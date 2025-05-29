@@ -5,7 +5,7 @@
 			net40;
 			net45;net46;net47;net48;
 			netstandard2.0;netstandard2.1;
-			net6.0;net8.0;
+			net8.0;
 		</TargetFrameworks>
 
 		<!--project-->
@@ -34,7 +34,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Cave.Extensions" Version="4.0.3" />
+        <PackageReference Include="Cave.Extensions" Version="4.0.5" />
         <PackageReference Include="Cave.IO" Version="4.0.3" />
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
             <PrivateAssets>all</PrivateAssets>

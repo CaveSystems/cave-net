@@ -17,6 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Build.props = Directory.Build.props
 		Directory.Build.targets = Directory.Build.targets
 		LICENSE = LICENSE
+		Tests.RunSettings = Tests.RunSettings
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "wol-send", "wol-send\wol-send.csproj", "{2C7F5CB7-8063-4A1B-9FE5-72FF9865DFA8}"
@@ -31,7 +32,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "net_2.0-3.5", "Test\net_2.0
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "net_4.x", "Test\net_4.x.csproj", "{7FB52805-0E35-4FE5-B41F-082FF0359F17}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "net_5+", "Test\net_5+.csproj", "{58271E4F-6165-4BF1-B90E-4FB7A74DFE2D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "net_latest", "Test\net_latest.csproj", "{58271E4F-6165-4BF1-B90E-4FB7A74DFE2D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
