@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Cave.Collections.Generic;
@@ -22,9 +24,42 @@ public class DnsClient
     static readonly string[] NoSuffix = ["."];
     static readonly char[] ResolvSeparator = [' ', '\t'];
 
+    IPAddress[]? servers;
+
     #endregion Private Fields
 
     #region Private Methods
+
+    static void LoadAnAppleAndBiteIt(Set<IPAddress> result)
+    {
+        var process = new Process
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "/usr/sbin/scutil",
+                Arguments = "--dns",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+        process.Start();
+        var output = process.StandardOutput.ReadToEnd();
+        if (!process.WaitForExit(3000))
+        {
+            process.Kill();
+            return;
+        }
+        var regex = new Regex(@"nameserver\[[0-9]+\] : ([^\s]+)");
+        var matches = regex.Matches(output);
+        foreach (Match match in matches)
+        {
+            if (IPAddress.TryParse(match.Groups[1].Value, out var address))
+            {
+                result.Include(address);
+            }
+        }
+    }
 
     static void LoadEtcResolvConf(Set<IPAddress> result)
     {
@@ -119,7 +154,7 @@ public class DnsClient
             {
                 tasks.Add(Task.Factory.StartNew(() => Query(server, false)), $"{query} @udp://{server}");
             }
-            if (UseTcp)
+            if (skipUdp || UseTcp)
             {
                 tasks.Add(Task.Factory.StartNew(() => Query(server, true)), $"{query} @tcp://{server}");
             }
@@ -172,7 +207,7 @@ public class DnsClient
             {
                 ConnectTimeout = timeout
             };
-            tcp.Connect(srv, 53);
+            tcp.Connect(srv, Port);
             tcp.SendTimeout = timeout;
             tcp.ReceiveTimeout = timeout;
             tcp.Stream.SendOnFlush = true;
@@ -199,7 +234,7 @@ public class DnsClient
         }
         var timeout = Math.Max(100, (int)QueryTimeout.TotalMilliseconds);
         using var udp = new UdpClient(srv.AddressFamily);
-        udp.Connect(srv, 53);
+        udp.Connect(srv, Port);
         udp.Client.SendTimeout = timeout;
         udp.Client.ReceiveTimeout = timeout;
         udp.Send(query, query.Length);
@@ -211,58 +246,39 @@ public class DnsClient
 
     #endregion Private Methods
 
-    #region Public Constructors
-
-    /// <summary>Initializes a new instance of the <see cref="DnsClient"/> class.</summary>
-    public DnsClient()
-    {
-        UseUdp = true;
-        UseTcp = true;
-        Port = 53;
-        QueryTimeout = TimeSpan.FromSeconds(5);
-    }
-
-    #endregion Public Constructors
-
     #region Public Properties
 
-    /// <summary>Gets a default instance of the DnsClient, which uses the configured dns servers of the executing computer and a query timeout of 10 seconds.</summary>
+    /// <summary>Gets a default instance of the DnsClient, which uses the cisco open dns and a query timeout of 5 seconds.</summary>
+    public static DnsClient CiscoOpenDns => new() { Servers = GetPulicDnsServers(DnsServerSelection.CiscoOpenDns) };
+
+    /// <summary>Gets a default instance of the DnsClient, which uses the quad 9 dns and a query timeout of 5 seconds.</summary>
+    public static DnsClient Cloudflare => new() { Servers = GetPulicDnsServers(DnsServerSelection.Cloudflare) };
+
+    /// <summary>Gets a default instance of the DnsClient, which uses the configured dns servers of the executing computer and a query timeout of 5 seconds.</summary>
     public static DnsClient Default { get; } = new();
 
-    /// <summary>Gets a default instance of the DnsClient, which uses the configured dns servers of the executing computer and a query timeout of 10 seconds.</summary>
-    public static DnsClient Google
-    {
-        get
-        {
-            var google = new DnsClient
-            {
-                Servers =
-                [
-                    IPAddress.Parse("8.8.4.4"),
-                    IPAddress.Parse("8.8.8.8"),
-                    IPAddress.Parse("2001:4860:4860::8844"),
-                    IPAddress.Parse("2001:4860:4860::8888")
-                ]
-            };
-            return google;
-        }
-    }
+    /// <summary>Gets a default instance of the DnsClient, which uses the dns watch and a query timeout of 5 seconds.</summary>
+    public static DnsClient DnsWatch => new() { Servers = GetPulicDnsServers(DnsServerSelection.DnsWatch) };
 
-    /// <summary>Gets or sets the port.</summary>
+    /// <summary>Gets a default instance of the DnsClient, which uses the google dns and a query timeout of 5 seconds.</summary>
+    public static DnsClient Google => new() { Servers = GetPulicDnsServers(DnsServerSelection.Google) };
+
+    /// <summary>Gets a default instance of the DnsClient, which uses the quad 9 dns and a query timeout of 5 seconds.</summary>
+    public static DnsClient Quad9 => new() { Servers = GetPulicDnsServers(DnsServerSelection.Quad9) };
+
+    /// <summary>Gets or sets the port used for all connections of this client.</summary>
     /// <value>The port.</value>
-    public ushort Port { get; set; }
+    public ushort Port { get; set; } = 53;
 
-    /// <summary>Gets or sets the query timeout.</summary>
-    /// <value>The query timeout.</value>
-    public TimeSpan QueryTimeout { get; set; }
+    /// <summary>Gets or sets the query timeout (default = 5s).</summary>
+    public TimeSpan QueryTimeout { get; set; } = new(5 * TimeSpan.TicksPerSecond);
 
     /// <summary>Gets or sets the search suffixes for short names.</summary>
-    /// <value>The dns suffixes.</value>
     public string[]? SearchSuffixes { get; set; }
 
     /// <summary>Gets or sets the servers.</summary>
     /// <value>The servers.</value>
-    public IPAddress[] Servers { get; set; } = Default?.Servers ?? GetDefaultDnsServers();
+    public IPAddress[] Servers { get => servers ??= Default.servers ?? GetDefaultDnsServers(); set => servers = value; }
 
     /// <summary>Gets a value indicating whether [use random case].</summary>
     /// <value><c>true</c> if [use random case]; otherwise, <c>false</c>.</value>
@@ -270,10 +286,10 @@ public class DnsClient
     public bool UseRandomCase { get; set; }
 
     /// <summary>Gets or sets a value indicating whether queries can be sent using TCP.</summary>
-    public bool UseTcp { get; set; }
+    public bool UseTcp { get; set; } = true;
 
     /// <summary>Gets or sets a value indicating whether queries can be sent using UDP.</summary>
-    public bool UseUdp { get; set; }
+    public bool UseUdp { get; set; } = true;
 
     #endregion Public Properties
 
@@ -307,6 +323,10 @@ public class DnsClient
             case PlatformID.WinCE:
                 break;
 
+            case PlatformID.MacOSX:
+                LoadAnAppleAndBiteIt(result);
+                break;
+
             default:
                 LoadEtcResolvConf(result);
                 break;
@@ -321,30 +341,105 @@ public class DnsClient
         return [.. result.OrderPrivateFirst()];
     }
 
-    /// <summary>Gets a list of public DNS servers (EU and US).</summary>
-    public static IPAddress[] GetPulicDnsServers() => new[]
+    /// <summary>Gets a list of public DNS servers.</summary>
+    public static IPAddress[] GetPulicDnsServers() => GetPulicDnsServers(DnsServerSelection.Everything);
+
+    /// <summary>Gets a list of public DNS servers.</summary>
+    public static IPAddress[] GetPulicDnsServers(DnsServerSelection selection)
     {
-        //Deutsche Telekom AG
-        IPAddress.Parse("194.25.0.60"),
-        //uunet germany
-        IPAddress.Parse("193.101.111.10"),
-        //uunet france
-        IPAddress.Parse("194.98.65.65"),
-        //cloudflare usa
-        IPAddress.Parse("1.1.1.1"),
-        IPAddress.Parse("2606:4700:4700::1001"),
-        //google
-        IPAddress.Parse("8.8.4.4"),
-        IPAddress.Parse("8.8.8.8"),
-        IPAddress.Parse("2001:4860:4860::8844"),
-        IPAddress.Parse("2001:4860:4860::8888")
-    };
+        List<IPAddress> result = new();
+        if (selection == 0) selection = DnsServerSelection.Everything;
+        var v4 = selection.HasFlag(DnsServerSelection.V4);
+        var v6 = selection.HasFlag(DnsServerSelection.V6);
+        if (!v4 && !v6) { v4 = true; v6 = true; }
+
+        if (selection.HasFlag(DnsServerSelection.DnsWatch))
+        {
+            if (v4)
+            {
+                result.Add(IPAddress.Parse("84.200.69.80"));
+                result.Add(IPAddress.Parse("84.200.70.40"));
+            }
+            if (v6)
+            {
+                result.Add(IPAddress.Parse("2001:1608:10:25::1c04:b12f"));
+                result.Add(IPAddress.Parse("2001:1608:10:25::1c04:b12c"));
+            }
+        }
+
+        if (selection.HasFlag(DnsServerSelection.CiscoOpenDns))
+        {
+            if (v4)
+            {
+                result.Add(IPAddress.Parse("208.67.222.222"));
+                result.Add(IPAddress.Parse("208.67.220.220"));
+            }
+            if (v6)
+            {
+                result.Add(IPAddress.Parse("2620:119:35::35"));
+                result.Add(IPAddress.Parse("2620:119:53::53"));
+            }
+        }
+
+        if (selection.HasFlag(DnsServerSelection.Quad9))
+        {
+            if (v4)
+            {
+                result.Add(IPAddress.Parse("9.9.9.9"));
+                result.Add(IPAddress.Parse("149.112.112.112"));
+            }
+            if (v6)
+            {
+                result.Add(IPAddress.Parse("2620:fe::9"));
+                result.Add(IPAddress.Parse("2620:fe::fe"));
+            }
+        }
+
+        if (selection.HasFlag(DnsServerSelection.Cloudflare))
+        {
+            if (v4)
+            {
+                result.Add(IPAddress.Parse("1.1.1.1"));
+                result.Add(IPAddress.Parse("1.0.0.1"));
+            }
+            if (v6)
+            {
+                result.Add(IPAddress.Parse("2606:4700:4700::1001"));
+                result.Add(IPAddress.Parse("2606:4700:4700::1111"));
+            }
+        }
+
+        if (selection.HasFlag(DnsServerSelection.Google))
+        {
+            if (v4)
+            {
+                result.Add(IPAddress.Parse("8.8.4.4"));
+                result.Add(IPAddress.Parse("8.8.8.8"));
+            }
+            if (v6)
+            {
+                result.Add(IPAddress.Parse("2001:4860:4860::8844"));
+                result.Add(IPAddress.Parse("2001:4860:4860::8888"));
+            }
+        }
+
+        return [.. result];
+    }
 
     /// <summary>Returns the Internet Protocol (IP) addresses for the specified host.</summary>
     /// <param name="domainName">The host or domain name to resolve</param>
     /// <returns>Returns all ip addresses of the specified domain or host</returns>
     public IEnumerable<IPAddress> GetHostAddresses(DomainName domainName)
     {
+        if (domainName.IsLocalhost)
+        {
+            foreach (var address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback })
+            {
+                yield return address;
+            }
+            yield break;
+        }
+
         Queue<IPAddress> addresses = new();
         var done = 0;
         bool GotOne(DnsResponse response)
@@ -434,13 +529,11 @@ public class DnsClient
     /// <exception cref="ArgumentNullException">Name must be provided.</exception>
     public DnsResponse Resolve(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
     {
-        Servers ??= GetDefaultDnsServers();
-
+        if (domainName.IsLocalhost) throw new InvalidOperationException("Do not lookup localhost via dns!");
         if (domainName.Parts.Length == 1)
         {
             return ResolveWithSearchSuffix(domainName, recordType, recordClass, flags);
         }
-
         return Resolve(new DnsQuery() { Name = domainName, RecordType = recordType, RecordClass = recordClass, Flags = flags });
     }
 
@@ -454,12 +547,11 @@ public class DnsClient
     /// <exception cref="AggregateException">Could not reach any dns server.</exception>
     public DnsResponse Resolve(DnsQuery query)
     {
-        Servers ??= GetDefaultDnsServers();
-
         if (query.Name is null)
         {
             throw new ArgumentException("Query.Name must be provided");
         }
+        if (query.Name.IsLocalhost) throw new InvalidOperationException("Do not lookup localhost via dns!");
 
         var skipUdp = query.Length > 512;
         if (skipUdp)
@@ -482,7 +574,7 @@ public class DnsClient
         ex.Data.Add("DnsResponse.Count", responses.Count);
         for (var i = 0; i < responses.Count; i++)
         {
-            ex.Data.Add($"DnsResponse[{i}]", responses[i]);
+            ex.Data.Add($"DnsResponse[{i}]", $"{responses[i]}");
         }
         throw ex;
     }
@@ -507,12 +599,11 @@ public class DnsClient
     /// <exception cref="AggregateException">Could not reach any dns server.</exception>
     public IList<DnsResponse> ResolveAll(DnsQuery query)
     {
-        Servers ??= GetDefaultDnsServers();
-
         if (query.Name is null)
         {
             throw new ArgumentException("Query.Name has to be provided!");
         }
+        if (query.Name.IsLocalhost) throw new InvalidOperationException("Do not lookup localhost via dns!");
 
         var skipUdp = query.Length > 512;
         if (skipUdp)
@@ -528,6 +619,106 @@ public class DnsClient
             return responses;
         }
         throw new AggregateException("Could not complete query.", exceptions);
+    }
+
+    /// <summary>Queries the dns servers for the specified records using all <see cref="SearchSuffixes"/>.</summary>
+    /// <remarks>This method works parallel and returns the first result of any <see cref="Servers"/>.</remarks>
+    /// <param name="domainName">Domain, that should be queried.</param>
+    /// <param name="recordType">Type the should be queried.</param>
+    /// <param name="recordClass">Class the should be queried.</param>
+    /// <param name="flags">Options for the query.</param>
+    /// <returns>The first successful response of the dns server.</returns>
+    /// <exception cref="ArgumentNullException">Name must be provided.</exception>
+    /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp.</exception>
+    /// <exception cref="AggregateException">Could not reach any dns server.</exception>
+    public IList<DnsResponse> ResolveAllWithSearchSuffix(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
+    {
+        if (domainName.IsLocalhost) throw new InvalidOperationException("Do not lookup localhost via dns!");
+        SearchSuffixes ??= NoSuffix.Concat(NetworkInterface.GetAllNetworkInterfaces().Select(i => i.GetIPProperties().DnsSuffix)).Where(s => !string.IsNullOrEmpty(s)).Distinct().ToArray();
+        var exceptions = new Exception[SearchSuffixes.Length];
+        var responses = new DnsResponse[SearchSuffixes.Length];
+
+        void Query(object? state)
+        {
+            if (state is not int n) return;
+            try
+            {
+                responses[n] = Resolve(new()
+                {
+                    Name = $"{domainName}.{SearchSuffixes[n]}".Trim('.'),
+                    RecordType = recordType,
+                    RecordClass = recordClass,
+                    Flags = flags
+                });
+            }
+            catch (Exception ex)
+            {
+                exceptions[n] = ex;
+            }
+        }
+
+        var tasks = new Task[SearchSuffixes.Length];
+        for (var i = 0; i < tasks.Length; i++)
+        {
+            object parameter = i;
+            tasks[i] = Task.Factory.StartNew(Query, parameter);
+        }
+
+        Task.WaitAll(tasks);
+        return [.. responses.Where(r => r is not null)];
+    }
+
+    /// <summary>Queries the dns servers for the specified records using all <see cref="SearchSuffixes"/>.</summary>
+    /// <remarks>This method works parallel and returns the first result of any <see cref="Servers"/>.</remarks>
+    /// <param name="computerNames">Computernames, that should be queried.</param>
+    /// <param name="recordType">Type the should be queried.</param>
+    /// <param name="recordClass">Class the should be queried.</param>
+    /// <param name="flags">Options for the query.</param>
+    /// <returns>The first successful response of the dns server.</returns>
+    /// <exception cref="ArgumentNullException">Name must be provided.</exception>
+    /// <exception cref="Exception">Query to big for UDP transmission. Enable UseTcp.</exception>
+    /// <exception cref="AggregateException">Could not reach any dns server.</exception>
+    public IList<DnsResponse> ResolveAllWithSearchSuffix(IList<string> computerNames, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
+    {
+        SearchSuffixes ??= NoSuffix.Concat(NetworkInterface.GetAllNetworkInterfaces().Select(i => i.GetIPProperties().DnsSuffix)).Where(s => !string.IsNullOrEmpty(s)).Distinct().ToArray();
+        var itemCount = computerNames.Count;
+        var exceptions = new Exception[itemCount * SearchSuffixes.Length];
+        var responses = new DnsResponse[itemCount * SearchSuffixes.Length];
+
+        void Query(object? state)
+        {
+            var parts = $"{state}".Split(';');
+            if (parts.Length != 2 || !int.TryParse(parts[0], out var index)) return;
+            try
+            {
+                responses[index] = Resolve(new()
+                {
+                    Name = parts[1].Trim('.'),
+                    RecordType = recordType,
+                    RecordClass = recordClass,
+                    Flags = flags
+                });
+            }
+            catch (Exception ex)
+            {
+                exceptions[index] = ex;
+            }
+        }
+
+        var tasks = new Task[itemCount * SearchSuffixes.Length];
+        var i = 0;
+        foreach (var suffix in SearchSuffixes)
+        {
+            foreach (var computerName in computerNames)
+            {
+                DomainName domain = $"{computerName}.{suffix}";
+                if (domain.IsLocalhost) throw new InvalidOperationException("Do not lookup localhost via dns!");
+                object parameter = $"{i++};{domain}";
+                tasks[i] = Task.Factory.StartNew(Query, parameter);
+            }
+        }
+        Task.WaitAll(tasks);
+        return [.. responses.Where(r => r is not null)];
     }
 
     /// <summary>Queries the dns servers for the specified ipadress returning matching PTR records.</summary>
@@ -569,12 +760,11 @@ public class DnsClient
     /// <exception cref="AggregateException">Could not reach any dns server.</exception>
     public DnsResponse ResolveSequential(DnsQuery query, Func<DnsResponse, bool> predicate)
     {
-        Servers ??= GetDefaultDnsServers();
-
         if (query.Name is null)
         {
             throw new ArgumentException("Name must be provided");
         }
+        if (query.Name.IsLocalhost) throw new InvalidOperationException("Do not lookup localhost via dns!");
 
         var exceptions = new List<Exception>();
         foreach (var server in Servers)
@@ -609,6 +799,7 @@ public class DnsClient
     /// <exception cref="AggregateException">Could not reach any dns server.</exception>
     public DnsResponse ResolveWithSearchSuffix(DomainName domainName, DnsRecordType recordType = DnsRecordType.A, DnsRecordClass recordClass = DnsRecordClass.IN, DnsFlags flags = DnsFlags.RecursionDesired)
     {
+        if (domainName.IsLocalhost) throw new InvalidOperationException("Do not lookup localhost via dns!");
         SearchSuffixes ??= NoSuffix.Concat(NetworkInterface.GetAllNetworkInterfaces().Select(i => i.GetIPProperties().DnsSuffix)).Where(s => !string.IsNullOrEmpty(s)).Distinct().ToArray();
         var exceptions = new Exception[SearchSuffixes.Length];
         var responses = new DnsResponse[SearchSuffixes.Length];

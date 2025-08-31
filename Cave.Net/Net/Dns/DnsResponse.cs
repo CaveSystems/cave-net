@@ -7,7 +7,7 @@ using Cave.IO;
 
 namespace Cave.Net.Dns;
 
-/// <summary>Provides a DnsAnswer.</summary>
+/// <summary>Provides a DnsResponse.</summary>
 [DebuggerDisplay("DnsResponse {Sender} {ResponseCode}")]
 public class DnsResponse
 {
@@ -183,6 +183,9 @@ public class DnsResponse
             }
         }
     }
+
+    /// <summary>DnsResponse {Sender} {ResponseCode}</summary>
+    public override string ToString() => $"{nameof(DnsResponse)} {Sender} {ResponseCode}";
 
     #endregion Public Methods
 }

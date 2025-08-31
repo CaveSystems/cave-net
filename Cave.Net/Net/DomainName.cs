@@ -79,6 +79,9 @@ public sealed class DomainName
     /// <value>The root.</value>
     public static DomainName Root { get; } = new(null);
 
+    /// <summary>Gets a value indicating whether localhost is requested or not.</summary>
+    public bool IsLocalhost => Parts.FirstOrDefault()?.ToUpper() == "LOCALHOST";
+
     /// <summary>Gets the parts of the domain name.</summary>
     /// <value>The parts.</value>
     public string[] Parts { get; }

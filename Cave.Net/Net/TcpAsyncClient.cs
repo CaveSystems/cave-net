@@ -164,21 +164,18 @@ public class TcpAsyncClient : IDisposable
         EnterLock();
         try
         {
-            var response = DnsClient.Default.Resolve(hostname);
-            var errors = new List<Exception>();
-            foreach (var answer in response.Answers)
+            var addresses = DnsClient.Default.GetHostAddresses(hostname);
+            List<Exception> errors = new();
+            foreach (var address in addresses)
             {
-                if (IPAddress.TryParse($"{answer.Value}", out var address))
+                try
                 {
-                    try
-                    {
-                        ConnectInternal(new(address, port));
-                        return;
-                    }
-                    catch (Exception ex)
-                    {
-                        errors.Add(ex);
-                    }
+                    ConnectInternal(new(address, port));
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(ex);
                 }
             }
             throw new AggregateException($"Could not connect to any ip address for host {hostname}!", errors);
